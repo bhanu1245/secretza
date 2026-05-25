@@ -70,7 +70,7 @@ export async function GET(request: Request) {
       break;
   }
 
-  const [listings, total] = await Promise.all([
+  const [listings, total, reviewStats] = await Promise.all([
     db.listing.findMany({
       where,
       orderBy,
@@ -82,6 +82,7 @@ export async function GET(request: Request) {
         country: true,
         state: true,
         city: true,
+        _count: { select: { reviews: { where: { status: "approved" } } } },
         listingImages: {
           where: { moderationStatus: { in: ["pending", "approved"] } },
           orderBy: { sortOrder: "asc" },
@@ -101,6 +102,17 @@ export async function GET(request: Request) {
     }),
     db.listing.count({ where }),
   ]);
+
+  // Average review rating per listing (lightweight follow-up query)
+  const listingIds = listings.map((l) => l.id);
+  const reviewStats = listingIds.length > 0
+    ? await db.review.groupBy({
+        by: ["listingId"],
+        where: { status: "approved", listingId: { in: listingIds } },
+        _avg: { rating: true },
+      })
+    : [];
+  const avgRatingMap = new Map(reviewStats.map((r) => [r.listingId, r._avg.rating ?? 0]));
 
   // Compute real-time scores and rank labels for each listing
   const transformed = listings.map((l) => {
@@ -197,6 +209,8 @@ export async function GET(request: Request) {
       rankLabel,
       boostActive: isBoostActive(rankInput),
       featuredActive: isFeaturedActive(rankInput),
+      reviewCount: l._count.reviews,
+      averageRating: Math.round((avgRatingMap.get(l.id) ?? 0) * 10) / 10,
     };
   });
 

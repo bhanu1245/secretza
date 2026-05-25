@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Listing } from "@/lib/types";
 import TimeAgo from "@/components/secretza/shared/TimeAgo";
 import { useNavigationStore, useUIStore } from "@/store/useAppStore";
+import StarRating from "@/components/secretza/review/StarRating";
 import { cn } from "@/lib/utils";
 
 interface ListingCardProps {
@@ -326,6 +327,12 @@ export default function ListingCard({ listing }: ListingCardProps) {
           </Badge>
         </div>
 
+        {(listing.reviewCount ?? 0) > 0 && (
+          <div className="flex items-center gap-1.5">
+            <StarRating rating={listing.averageRating ?? 0} size="sm" showValue={true} />
+            <span className="text-[10px] text-[#A1A1AA]">({listing.reviewCount})</span>
+          </div>
+        )}
         {/* Tags */}
         {listing.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">

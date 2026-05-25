@@ -77,6 +77,7 @@ import type { ListingStatus, User, ModerationItem } from "@/lib/types";
 import { toast } from "sonner";
 import SeoManager from "@/components/secretza/admin/SeoManager";
 import SeoDashboard from "@/components/secretza/admin/SeoDashboard";
+import { AdminReviewQueue, AdminReviewAnalytics } from "@/components/secretza/admin/AdminReviewPanel";
 
 // ==========================================
 // Types
@@ -90,6 +91,8 @@ type AdminPage =
   | "geo"
   | "pricing"
   | "payments"
+  | "reviews"
+  | "review-analytics"
   | "seo"
   | "seo-dashboard"
   | "coupons"
@@ -142,6 +145,8 @@ const adminNavItems: { id: AdminPage; label: string; icon: React.ComponentType<{
   { id: "geo", label: "Geo Management", icon: Globe },
   { id: "pricing", label: "Pricing", icon: CreditCard },
   { id: "payments", label: "Payments", icon: Receipt },
+  { id: "reviews", label: "Reviews", icon: Star },
+  { id: "review-analytics", label: "Review Analytics", icon: BarChart3 },
   { id: "coupons", label: "Coupons", icon: Tag },
   { id: "cms", label: "CMS Pages", icon: FileEdit },
   { id: "seo", label: "SEO", icon: Globe },
@@ -1880,6 +1885,10 @@ export default function AdminPanel() {
         return <PlaceholderPage title="Pricing" description="Configure pricing packages and features." />;
       case "payments":
         return <ManualPaymentQueue />;
+      case "reviews":
+        return <AdminReviewQueue />;
+      case "review-analytics":
+        return <AdminReviewAnalytics />;
       case "coupons":
         return <PlaceholderPage title="Coupons" description="Create and manage discount coupons." />;
       case "cms":

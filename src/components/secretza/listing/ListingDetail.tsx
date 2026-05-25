@@ -36,6 +36,7 @@ import TimeAgo, { formatDate } from "@/components/secretza/shared/TimeAgo";
 import { useUIStore } from "@/store/useAppStore";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import ReviewList from "@/components/secretza/review/ReviewList";
 
 interface ListingDetailProps {
   listing: Listing;
@@ -479,6 +480,9 @@ export default function ListingDetail({
                 <Flag className="size-4" />
                 Report this listing
               </Button>
+
+              {/* Reviews Section */}
+              <ReviewList listingId={listing.id} />
 
               {/* Bottom spacing for mobile close handle */}
               {isMobile && <div className="h-6" />}

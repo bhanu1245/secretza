@@ -66,6 +66,9 @@ model User {
   manualPayments         ManualPaymentSubmission[] @relation("ManualPaymentUser")
   notifications          Notification[]
   payments               Payment[]
+  reviews                Review[]
+  reviewReports          ReviewReport[]
+  reviewCredits          ReviewCredit[]
   sessions               Session[]
 }
 
@@ -170,6 +173,7 @@ model Listing {
   listingImages    ListingImage[]
   payments         Payment[]
   reports          Report[]
+  reviews          Review[]
 
   @@index([userId, status])
   @@index([categorySlug, citySlug, status])
@@ -334,6 +338,66 @@ model Notification {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model Review {
+  id             String    @id @default(cuid())
+  listingId      String
+  userId         String
+  rating         Int       // 1-5 stars
+  title          String?
+  body           String?
+  isVerified     Boolean   @default(false)
+  isFeatured     Boolean   @default(false)
+  isPremium      Boolean   @default(false)
+  featuredUntil  DateTime?
+  status         String    @default("pending") // pending | approved | rejected | flagged
+  flaggedReason  String?
+  moderatedBy    String?
+  moderatedAt    DateTime?
+  adminNote      String?
+  helpfulCount   Int       @default(0)
+  reportCount    Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  listing        Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reports        ReviewReport[]
+
+  @@unique([listingId, userId]) // One review per user per listing
+  @@index([listingId, status])
+  @@index([userId])
+  @@index([rating])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([createdAt(sort: Desc)])
+}
+
+model ReviewReport {
+  id          String   @id @default(cuid())
+  reviewId    String
+  userId      String   // Reporter
+  reason      String
+  description String?
+  isResolved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  review      Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  reporter    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId]) // One report per user per review
+  @@index([reviewId])
+}
+
+model ReviewCredit {
+  id          String   @id @default(cuid())
+  userId      String
+  credits     Int      @default(0)
+  usedCredits Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
 }
 
 model CrawlEvent {

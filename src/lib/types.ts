@@ -134,6 +134,8 @@ export interface Listing {
   user: Pick<User, "id" | "name" | "avatar">;
   computedScore?: number;
   rankLabel?: RankLabel;
+  reviewCount?: number;
+  averageRating?: number;
 }
 
 // ==========================================
@@ -256,4 +258,46 @@ export type AppView =
 export interface NavigationState {
   view: AppView;
   params: Record<string, string>;
+}
+
+// ==========================================
+// Review Types
+// ==========================================
+export type ReviewStatus = "pending" | "approved" | "rejected" | "flagged";
+
+export interface Review {
+  id: string;
+  listingId: string;
+  userId: string;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  isVerified: boolean;
+  isFeatured: boolean;
+  isPremium: boolean;
+  status: ReviewStatus;
+  helpfulCount: number;
+  reportCount: number;
+  createdAt: string;
+  updatedAt: string;
+  user: Pick<User, "id" | "name" | "avatar">;
+  featuredUntil?: string | null;
+}
+
+export interface ReviewSummary {
+  count: number;
+  averageRating: number;
+  ratingDistribution: Record<string, number>; // { "1": 5, "2": 3, ... }
+}
+
+export interface ReviewAnalytics {
+  totalReviews: number;
+  approvedReviews: number;
+  pendingReviews: number;
+  rejectedReviews: number;
+  flaggedReviews: number;
+  averageRating: number;
+  reviewsByDay: Array<{ date: string; count: number; avgRating: number }>;
+  topRatedListings: Array<{ listingId: string; title: string; avgRating: number; reviewCount: number }>;
+  recentFlagged: Review[];
 }

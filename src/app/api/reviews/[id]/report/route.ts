@@ -1,0 +1,133 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
+// POST /api/reviews/[id]/report — report a review
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+    const { reason, description } = body as {
+      reason?: string;
+      description?: string;
+    };
+
+    if (!reason) {
+      return NextResponse.json(
+        { error: "reason is required" },
+        { status: 400 }
+      );
+    }
+
+    const review = await db.review.findUnique({
+      where: { id },
+    });
+
+    if (!review) {
+      return NextResponse.json({ error: "Review not found" }, { status: 404 });
+    }
+
+    // Cannot report your own review
+    if (review.userId === session.user.id) {
+      return NextResponse.json(
+        { error: "You cannot report your own review" },
+        { status: 400 }
+      );
+    }
+
+    // Check if user already reported this review (unique constraint)
+    const existingReport = await db.reviewReport.findUnique({
+      where: {
+        reviewId_userId: {
+          reviewId: id,
+          userId: session.user.id,
+        },
+      },
+    });
+
+    if (existingReport) {
+      return NextResponse.json(
+        { error: "You have already reported this review" },
+        { status: 409 }
+      );
+    }
+
+    // Create the report and increment reportCount
+    const [report, updatedReview] = await db.$transaction(async (tx) => {
+      const newReport = await tx.reviewReport.create({
+        data: {
+          reviewId: id,
+          userId: session.user.id,
+          reason,
+          description: description || null,
+        },
+      });
+
+      const newCount = review.reportCount + 1;
+
+      // Auto-flag if reportCount >= 3
+      const updateData: Record<string, unknown> = {
+        reportCount: { increment: 1 },
+      };
+
+      if (newCount >= 3 && review.status === "approved") {
+        updateData.status = "flagged";
+        updateData.flaggedReason = "Auto-flagged due to multiple reports";
+      }
+
+      const updated = await tx.review.update({
+        where: { id },
+        data: updateData,
+      });
+
+      return [newReport, updated];
+    });
+
+    return NextResponse.json(
+      {
+        message:
+          updatedReview.status === "flagged"
+            ? "Review has been reported and auto-flagged for moderation"
+            : "Review reported successfully",
+        report: {
+          id: report.id,
+          reviewId: report.reviewId,
+          reason: report.reason,
+          createdAt: report.createdAt.toISOString(),
+        },
+        reviewStatus: updatedReview.status,
+        reportCount: updatedReview.reportCount,
+      },
+      { status: 201 }
+    );
+  } catch (error: unknown) {
+    console.error("Review report error:", error);
+
+    // Handle Prisma unique constraint violation (race condition)
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002"
+    ) {
+      return NextResponse.json(
+        { error: "You have already reported this review" },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: "Failed to report review" },
+      { status: 500 }
+    );
+  }
+}
