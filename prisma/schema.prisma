@@ -69,6 +69,7 @@ model User {
   reviews                Review[]
   reviewReports          ReviewReport[]
   reviewCredits          ReviewCredit[]
+  helpfulVotes           HelpfulVote[]
   sessions               Session[]
 }
 
@@ -83,8 +84,13 @@ model Category {
   isActive     Boolean   @default(true)
   isFeatured   Boolean   @default(false)
   listingCount Int       @default(0)
+  parentId     String?
+  seoTitle     String?
+  seoDescription String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  parent       Category? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children     Category[] @relation("CategoryHierarchy")
   listings     Listing[]
 }
 
@@ -99,6 +105,8 @@ model Country {
   updatedAt    DateTime  @updatedAt
   listings     Listing[]
   states       State[]
+
+  @@index([isActive, listingCount(sort: Desc)])
 }
 
 model State {
@@ -112,7 +120,11 @@ model State {
   updatedAt    DateTime  @updatedAt
   cities       City[]
   listings     Listing[]
-  country      Country   @relation(fields: [countryId], references: [id])
+  country      Country   @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@unique([slug, countryId])
+  @@index([countryId, isActive])
+  @@index([isActive, listingCount(sort: Desc)])
 }
 
 model City {
@@ -125,8 +137,13 @@ model City {
   listingCount Int       @default(0)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
-  state        State     @relation(fields: [stateId], references: [id])
+  state        State     @relation(fields: [stateId], references: [id], onDelete: Cascade)
   listings     Listing[]
+
+  @@unique([slug, stateId])
+  @@index([stateId, isActive])
+  @@index([isActive, listingCount(sort: Desc)])
+  @@index([isFeatured, isActive])
 }
 
 model Listing {
@@ -165,22 +182,28 @@ model Listing {
   countryId        String
   stateId          String
   cityId           String
-  city             City           @relation(fields: [cityId], references: [id])
-  state            State          @relation(fields: [stateId], references: [id])
-  country          Country        @relation(fields: [countryId], references: [id])
+  city             City           @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  state            State          @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  country          Country        @relation(fields: [countryId], references: [id], onDelete: Cascade)
   category         Category       @relation(fields: [categoryId], references: [id])
-  user             User           @relation(fields: [userId], references: [id])
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   listingImages    ListingImage[]
   payments         Payment[]
   reports          Report[]
   reviews          Review[]
 
   @@index([userId, status])
+  @@index([categoryId])
+  @@index([countryId])
+  @@index([stateId])
+  @@index([cityId])
   @@index([categorySlug, citySlug, status])
   @@index([citySlug, status])
   @@index([status, priorityScore(sort: Desc)])
   @@index([status, updatedAt(sort: Desc)])
   @@index([createdAt(sort: Desc)])
+  @@index([isFeatured, featuredUntil])
+  @@index([isBoosted, boostUntil])
 }
 
 model ListingImage {
@@ -202,8 +225,11 @@ model ListingImage {
   reviewedAt       DateTime?
   blurHash         String?
   createdAt        DateTime  @default(now())
-  reviewer         User?     @relation(fields: [reviewedBy], references: [id])
+  reviewer         User?     @relation(fields: [reviewedBy], references: [id], onDelete: SetNull)
   listing          Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, moderationStatus])
+  @@index([moderationStatus, createdAt(sort: Desc)])
 }
 
 model Payment {
@@ -369,6 +395,7 @@ model Review {
   listing        Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   reports        ReviewReport[]
+  helpfulVotes    HelpfulVote[]
 
   @@unique([listingId, userId]) // One review per user per listing
   @@index([listingId, status])
@@ -392,6 +419,19 @@ model ReviewReport {
 
   @@unique([reviewId, userId]) // One report per user per review
   @@index([reviewId])
+}
+
+model HelpfulVote {
+  id        String   @id @default(cuid())
+  reviewId  String
+  userId    String
+  createdAt DateTime @default(now())
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId]) // One vote per user per review
+  @@index([reviewId])
+  @@index([userId])
 }
 
 model ReviewCredit {

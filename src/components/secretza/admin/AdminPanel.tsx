@@ -730,6 +730,37 @@ function AdminListingsPage() {
   loadListings();
 }, []);
 
+  const handleListingAction = async (listingId: string, action: "approve" | "reject" | "feature" | "unfeature" | "delete") => {
+    try {
+      const res = await fetch(`/api/admin/listings/${listingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (res.ok) {
+        setListings((prev) => {
+          if (action === "delete") return prev.filter((l) => l.id !== listingId);
+          return prev.map((l) => {
+            if (l.id !== listingId) return l;
+            switch (action) {
+              case "approve": return { ...l, status: "approved" };
+              case "reject": return { ...l, status: "rejected" };
+              case "feature": return { ...l, isFeatured: true };
+              case "unfeature": return { ...l, isFeatured: false };
+              default: return l;
+            }
+          });
+        });
+        toast.success(`Listing ${action === "delete" ? "deleted" : `${action}d`}`);
+      } else {
+        const data = await res.json();
+        toast.error(data.error || `Failed to ${action} listing`);
+      }
+    } catch {
+      toast.error(`Network error while trying to ${action} listing`);
+    }
+  };
+
   const filteredListings = listings.filter(
     (l) => statusFilter === "all" || l.status === statusFilter
   );
@@ -869,16 +900,32 @@ function AdminListingsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button className="p-1.5 rounded-md hover:bg-[rgba(255,255,255,0.05)] text-[#A1A1AA] hover:text-[#F5F5F7] transition-colors">
+                        <button
+                          onClick={() => setSelectedListingId(listing.id)}
+                          className="p-1.5 rounded-md hover:bg-[rgba(255,255,255,0.05)] text-[#A1A1AA] hover:text-[#F5F5F7] transition-colors"
+                          title="View"
+                        >
                           <Eye className="size-3.5" />
                         </button>
-                        <button className="p-1.5 rounded-md hover:bg-emerald-500/10 text-[#A1A1AA] hover:text-emerald-400 transition-colors">
+                        <button
+                          onClick={() => handleListingAction(listing.id, "approve")}
+                          className="p-1.5 rounded-md hover:bg-emerald-500/10 text-[#A1A1AA] hover:text-emerald-400 transition-colors"
+                          title="Approve"
+                        >
                           <CheckCircle className="size-3.5" />
                         </button>
-                        <button className="p-1.5 rounded-md hover:bg-red-500/10 text-[#A1A1AA] hover:text-red-400 transition-colors">
+                        <button
+                          onClick={() => handleListingAction(listing.id, "reject")}
+                          className="p-1.5 rounded-md hover:bg-red-500/10 text-[#A1A1AA] hover:text-red-400 transition-colors"
+                          title="Reject"
+                        >
                           <XCircle className="size-3.5" />
                         </button>
-                        <button className="p-1.5 rounded-md hover:bg-red-500/10 text-[#A1A1AA] hover:text-red-400 transition-colors">
+                        <button
+                          onClick={() => handleListingAction(listing.id, "delete")}
+                          className="p-1.5 rounded-md hover:bg-red-500/10 text-[#A1A1AA] hover:text-red-400 transition-colors"
+                          title="Delete"
+                        >
                           <Trash2 className="size-3.5" />
                         </button>
                       </div>

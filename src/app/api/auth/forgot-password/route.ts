@@ -2,9 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { generateToken } from "@/lib/auth-helpers";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { rateLimit, RATE_LIMITS, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting by IP
+    const ip = getClientIp(request);
+    const rl = rateLimit(`forgot-password:${ip}`, RATE_LIMITS.forgotPassword);
+    if (!rl.success) {
+      return NextResponse.json(
+        { message: "If an account exists, a reset link has been sent." },
+        {
+          status: 200,
+          headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
+        }
+      );
+    }
+
     const body = await request.json();
     const { email } = body;
 

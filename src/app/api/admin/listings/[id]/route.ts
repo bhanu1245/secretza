@@ -19,9 +19,9 @@ export async function PATCH(
     const body = await request.json();
     const { action } = body as { action?: string };
 
-    if (!action || !["approve", "reject", "feature", "unfeature"].includes(action)) {
+    if (!action || !["approve", "reject", "feature", "unfeature", "delete"].includes(action)) {
       return NextResponse.json(
-        { error: "Invalid action. Must be: approve, reject, feature, unfeature" },
+        { error: "Invalid action. Must be: approve, reject, feature, unfeature, delete" },
         { status: 400 }
       );
     }
@@ -38,7 +38,7 @@ export async function PATCH(
       case "approve":
         updated = await db.listing.update({
           where: { id },
-          data: { status: "active" },
+          data: { status: "approved" },
         });
         auditAction = "listing_approve";
         break;
@@ -86,6 +86,20 @@ export async function PATCH(
       { action, listingTitle: listing.title, previousStatus: listing.status },
       extractIpAddress(request)
     );
+
+    // Delete listing
+    if (action === "delete") {
+      await db.listing.delete({ where: { id } });
+      logAdminAction(
+        admin.id,
+        "listing_delete",
+        "Listing",
+        id,
+        { listingTitle: listing.title, previousStatus: listing.status },
+        extractIpAddress(request)
+      );
+      return NextResponse.json({ success: true, message: "Listing deleted" });
+    }
 
     return NextResponse.json({ success: true, listing: updated });
   } catch (error) {
