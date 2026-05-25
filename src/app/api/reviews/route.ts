@@ -175,11 +175,19 @@ export async function POST(request: Request) {
     // Check listing exists and is approved
     const listing = await db.listing.findUnique({
       where: { id: listingId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, userId: true },
     });
 
     if (!listing) {
       return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+    }
+
+    // Prevent self-review
+    if (listing.userId === session.user.id) {
+      return NextResponse.json(
+        { error: "Cannot review your own listing" },
+        { status: 403 }
+      );
     }
 
     if (listing.status !== "approved") {

@@ -27,6 +27,11 @@ export async function POST(
       return NextResponse.json({ error: "Listing not found" }, { status: 404 });
     }
 
+    // Ownership check: only the listing owner or an admin can feature
+    if (listing.userId !== session.user.id && session.user.role !== "admin") {
+      return NextResponse.json({ error: "You can only feature your own listings" }, { status: 403 });
+    }
+
     if (listing.status !== "approved") {
       return NextResponse.json(
         { error: "Only approved listings can be featured" },
@@ -78,7 +83,7 @@ export async function POST(
         listingId: id,
         amount,
         currency: "USD",
-        status: "completed", // In production, "pending" until payment confirms
+        status: "pending", // Awaiting real payment gateway confirmation
         method: "feature",
       },
     });

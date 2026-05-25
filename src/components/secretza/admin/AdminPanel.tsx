@@ -491,22 +491,72 @@ function AdminUsersPage() {
       u.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const toggleSuspend = (id: string) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, isSuspended: !u.isSuspended } : u))
-    );
+  const toggleSuspend = async (id: string) => {
+    const target = users.find((u) => u.id === id);
+    if (!target) return;
+    const action = target.isSuspended ? "unsuspend" : "suspend";
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (res.ok) {
+        setUsers((prev) =>
+          prev.map((u) => (u.id === id ? { ...u, isSuspended: !u.isSuspended } : u))
+        );
+        toast.success(`User ${action === "suspend" ? "suspended" : "unsuspended"}`);
+      } else {
+        const data = await res.json();
+        toast.error(data.error || `Failed to ${action} user`);
+      }
+    } catch {
+      toast.error(`Network error while trying to ${action} user`);
+    }
   };
 
-  const toggleVerify = (id: string) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, isVerified: !u.isVerified } : u))
-    );
+  const toggleVerify = async (id: string) => {
+    const target = users.find((u) => u.id === id);
+    if (!target) return;
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verify" }),
+      });
+      if (res.ok) {
+        setUsers((prev) =>
+          prev.map((u) => (u.id === id ? { ...u, isVerified: !u.isVerified } : u))
+        );
+        toast.success(`User ${target.isVerified ? "unverified" : "verified"}`);
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to verify user");
+      }
+    } catch {
+      toast.error("Network error while trying to verify user");
+    }
   };
 
-  const changeRole = (id: string, role: User["role"]) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, role } : u))
-    );
+  const changeRole = async (id: string, role: User["role"]) => {
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "setRole", role }),
+      });
+      if (res.ok) {
+        setUsers((prev) =>
+          prev.map((u) => (u.id === id ? { ...u, role } : u))
+        );
+        toast.success(`Role changed to ${role}`);
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to change role");
+      }
+    } catch {
+      toast.error("Network error while changing role");
+    }
   };
 
   if (usersLoading) {
@@ -1051,12 +1101,42 @@ function AdminModerationPage() {
   loadItems();
 }, []);
 
-  const approveItem = (id: string) => {
-    setItems((prev) => prev.filter((i) => i.listing.id !== id));
+  const approveItem = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/listings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "approve" }),
+      });
+      if (res.ok) {
+        setItems((prev) => prev.filter((i) => i.listing.id !== id));
+        toast.success("Listing approved");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to approve listing");
+      }
+    } catch {
+      toast.error("Network error while approving listing");
+    }
   };
 
-  const rejectItem = (id: string) => {
-    setItems((prev) => prev.filter((i) => i.listing.id !== id));
+  const rejectItem = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/listings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reject" }),
+      });
+      if (res.ok) {
+        setItems((prev) => prev.filter((i) => i.listing.id !== id));
+        toast.success("Listing rejected");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to reject listing");
+      }
+    } catch {
+      toast.error("Network error while rejecting listing");
+    }
   };
 
   const getRiskBadge = (score: number) => {

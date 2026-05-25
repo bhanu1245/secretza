@@ -82,7 +82,7 @@ export default function CreateReviewForm({
       const url = isEditing
         ? `/api/reviews/${existingReview.id}`
         : "/api/reviews";
-      const method = isEditing ? "PUT" : "POST";
+      const method = isEditing ? "PATCH" : "POST";
 
       const res = await fetch(url, {
         method,

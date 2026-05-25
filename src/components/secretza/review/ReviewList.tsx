@@ -71,10 +71,10 @@ export default function ReviewList({ listingId }: ReviewListProps) {
       setError(null);
 
       try {
-        const offset = append ? reviews.length : 0;
+        const page = append ? Math.ceil((reviews.length + 1) / PAGE_SIZE) : 1;
         const sortParam = sortBy;
         const res = await fetch(
-          `/api/reviews?listingId=${listingId}&sort=${sortParam}&limit=${PAGE_SIZE}&offset=${offset}`,
+          `/api/reviews?listingId=${listingId}&sort=${sortParam}&limit=${PAGE_SIZE}&page=${page}`,
           { credentials: "include" }
         );
 

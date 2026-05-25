@@ -219,8 +219,12 @@ model Payment {
   invoiceUrl  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  listing     Listing? @relation(fields: [listingId], references: [id])
-  user        User     @relation(fields: [userId], references: [id])
+  listing     Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([listingId])
+  @@index([status])
 }
 
 model Coupon {
@@ -243,7 +247,9 @@ model Report {
   description String?
   isResolved  Boolean  @default(false)
   createdAt   DateTime @default(now())
-  listing     Listing  @relation(fields: [listingId], references: [id])
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
 }
 
 model AuditLog {

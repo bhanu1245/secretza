@@ -27,6 +27,11 @@ export async function POST(
       return NextResponse.json({ error: "Listing not found" }, { status: 404 });
     }
 
+    // Ownership check: only the listing owner or an admin can boost
+    if (listing.userId !== session.user.id && session.user.role !== "admin") {
+      return NextResponse.json({ error: "You can only boost your own listings" }, { status: 403 });
+    }
+
     if (listing.status !== "approved") {
       return NextResponse.json(
         { error: "Only approved listings can be boosted" },
@@ -71,7 +76,7 @@ export async function POST(
         listingId: id,
         amount: durationMinutes <= 60 ? 4.99 : durationMinutes <= 360 ? 14.99 : 39.99,
         currency: "USD",
-        status: "completed", // In production, this would be "pending" until payment confirms
+        status: "pending", // Awaiting real payment gateway confirmation
         method: "boost",
       },
     });
