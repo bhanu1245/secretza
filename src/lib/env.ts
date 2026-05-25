@@ -81,7 +81,11 @@ const envSchema = z.object({
 
   // ---- Analytics (optional) ----
   GA_MEASUREMENT_ID: z.string().optional(),
+  GA_API_SECRET: z.string().optional(),
   PLAUSIBLE_DOMAIN: z.string().optional(),
+  PLAUSIBLE_API_TOKEN: z.string().optional(),
+  NEXT_PUBLIC_GA_ID: z.string().optional(),
+  NEXT_PUBLIC_PLAUSIBLE_DOMAIN: z.string().optional(),
 
   // ---- SEO site verification (optional) ----
   GOOGLE_SITE_VERIFICATION: z.string().optional(),
@@ -94,6 +98,12 @@ const envSchema = z.object({
 
   // ---- Cron (optional) ----
   CRON_SECRET: z.string().optional(),
+
+  // ---- Redis (optional) ----
+  REDIS_URL: z.string().url("Must be a valid Redis URL").optional(),
+
+  // ---- Security / Virus Scanning (optional) ----
+  CLAMAV_HOST: z.string().optional(),
 
   // ---- Email / SMTP (optional) ----
   RESEND_API_KEY: z.string().optional(),
@@ -228,5 +238,8 @@ export const features = {
   },
   get r2() {
     return runtimeConfig().isR2Configured;
+  },
+  get redis() {
+    return Boolean(process.env.REDIS_URL);
   },
 };

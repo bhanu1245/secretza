@@ -4,17 +4,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
+import { logError } from "@/lib/monitoring";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { existsSync } from "fs";
-import { detectMimeType, ALLOWED_MIME_TYPES, MAX_FILE_SIZE } from "@/lib/image-processing";
-
-// Valid amounts (INR) for each payment type
-const VALID_AMOUNTS: Record<string, number[]> = {
-  boost: [99, 199, 499],
-  feature: [149, 399, 799],
-  premium: [999],
-};
+import { detectMimeType, ALLOWED_MIME_TYPES } from "@/lib/image-processing";
+import { getValidAmounts } from "@/lib/payment-settings";
 
 const VALID_PAYMENT_TYPES = ["boost", "feature", "premium"];
 
@@ -50,7 +45,7 @@ export async function POST(request: Request) {
     const userId = session.user.id;
 
     // --- Rate Limiting ---
-    const rateLimitResult = rateLimit(
+    const rateLimitResult = await rateLimit(
       `manualPayment:${userId}`,
       RATE_LIMITS.manualPayment
     );
@@ -100,7 +95,9 @@ export async function POST(request: Request) {
     }
 
     const amount = parseFloat(amountStr);
-    const validAmounts = VALID_AMOUNTS[paymentType];
+
+    // --- Validate amount against dynamic PaymentSettings ---
+    const validAmounts = await getValidAmounts(paymentType as "boost" | "feature" | "premium");
     if (!validAmounts.includes(amount)) {
       return NextResponse.json(
         {
@@ -157,9 +154,9 @@ export async function POST(request: Request) {
     // --- Screenshot validation ---
     let screenshotUrl: string | null = null;
     if (screenshot && screenshot.size > 0) {
-      if (screenshot.size > MAX_FILE_SIZE) {
+      if (screenshot.size > MAX_SCREENSHOT_SIZE) {
         return NextResponse.json(
-          { error: "Screenshot must be under 5MB" },
+          { error: `Screenshot must be under ${MAX_SCREENSHOT_SIZE / (1024 * 1024)}MB` },
           { status: 400 }
         );
       }
@@ -185,7 +182,7 @@ export async function POST(request: Request) {
         amount,
         utrNumber: utrTrimmed,
         notes: notes || null,
-        screenshotUrl: null, // Will update after saving file
+        screenshotUrl: null,
         status: "pending",
       },
     });
@@ -210,9 +207,7 @@ export async function POST(request: Request) {
       const bytes = await screenshot.arrayBuffer();
       await writeFile(filePath, Buffer.from(bytes));
 
-      // Use `key` query param matching the file serving endpoint convention
       const servingUrl = `/api/upload/file?key=screenshots/${fileName}`;
-      // Update submission with screenshot URL
       await db.manualPaymentSubmission.update({
         where: { id: submission.id },
         data: { screenshotUrl: servingUrl },
@@ -265,7 +260,7 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Manual payment submission error:", error);
+    logError(error, { component: "route:api/payments/manual" });
     return NextResponse.json(
       { error: "Failed to submit payment proof" },
       { status: 500 }
@@ -320,7 +315,7 @@ export async function GET() {
       total: submissions.length,
     });
   } catch (error) {
-    console.error("Manual payment fetch error:", error);
+    logError(error, { component: "route:api/payments/manual" });
     return NextResponse.json(
       { error: "Failed to fetch payment submissions" },
       { status: 500 }

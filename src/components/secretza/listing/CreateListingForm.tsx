@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { logError, logWarning } from "@/lib/logger";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -226,7 +227,7 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
         };
         localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
       } catch (err) {
-        console.warn("[CreateListingForm] Failed to save draft:", err);
+        logWarning("Failed to save draft", { component: "CreateListingForm" });
       }
     }, DRAFT_DEBOUNCE_MS);
 
@@ -272,7 +273,7 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
         description: "Your previous form progress has been restored.",
       });
     } catch (err) {
-      console.warn("[CreateListingForm] Failed to restore draft:", err);
+      logWarning("Failed to restore draft", { component: "CreateListingForm" });
       // Clear corrupted draft
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
     }
@@ -496,7 +497,7 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
-      console.error("[CreateListingForm] Submission failed:", message, err);
+      logError(err, { component: "CreateListingForm" });
       const errorMsg = `Network error: ${message}. Please check your connection and try again.`;
       setSubmitError(errorMsg);
       toast.error("Network error", {

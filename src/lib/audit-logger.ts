@@ -24,7 +24,17 @@ export type AdminActionType =
   | "seo_update"
   | "settings_change"
   | "login"
-  | "export_data";
+  | "export_data"
+  | "review_approve"
+  | "review_reject"
+  | "review_flag"
+  | "review_feature"
+  | "review_unfeature"
+  | "report_resolve"
+  | "report_dismiss"
+  | "category_create"
+  | "category_update"
+  | "category_delete";
 
 interface AuditLogParams {
   userId: string;
@@ -51,6 +61,16 @@ const VALID_ACTIONS: ReadonlySet<string> = new Set<AdminActionType>([
   "settings_change",
   "login",
   "export_data",
+  "review_approve",
+  "review_reject",
+  "review_flag",
+  "review_feature",
+  "review_unfeature",
+  "report_resolve",
+  "report_dismiss",
+  "category_create",
+  "category_update",
+  "category_delete",
 ]);
 
 function isValidAction(action: string): action is AdminActionType {

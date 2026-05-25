@@ -1,4 +1,4 @@
-// Resend-compatible email service abstraction
+import { logInfo } from "@/lib/monitoring";
 
 interface EmailPayload {
   to: string;
@@ -24,10 +24,7 @@ function escapeHtml(str: string): string {
 // Console provider (dev mode)
 class ConsoleEmailProvider implements EmailProvider {
   async send(payload: EmailPayload): Promise<{ success: boolean; error?: string }> {
-    console.log("📧 Email sent (dev mode):", {
-      to: payload.to,
-      subject: payload.subject,
-    });
+    logInfo("Email sent (dev mode)", { module: "email", to: payload.to, subject: payload.subject });
     return { success: true };
   }
 }

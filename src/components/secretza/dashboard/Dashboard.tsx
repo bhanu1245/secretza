@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { signOut } from "next-auth/react";
+import { logError } from "@/lib/logger";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -574,8 +575,6 @@ function MyListingsPage({ listings }: { listings: Listing[] }) {
 
   const handleEdit = useCallback(
   (listing: any) => {
-    console.log("Edit clicked", listing);
-
     navigate("post-ad", {
       listingId: listing.id,
       mode: "edit",
@@ -585,8 +584,6 @@ function MyListingsPage({ listings }: { listings: Listing[] }) {
 );
 
 const handleDelete = async (id: string) => {
-  console.log("DELETE START", id);
-
   const confirmed = window.confirm(
     "Are you sure you want to delete this listing?"
   );
@@ -608,7 +605,7 @@ const handleDelete = async (id: string) => {
 
     alert("Listing deleted successfully");
   } catch (error) {
-    console.error(error);
+    logError(error, { component: "Dashboard" });
     alert("Delete failed");
   }
 };

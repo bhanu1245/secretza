@@ -9,6 +9,7 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { logError } from "@/lib/logger";
 import { Skeleton } from "@/components/ui/skeleton";
 import StarRating from "@/components/secretza/review/StarRating";
 import ReviewCard from "@/components/secretza/review/ReviewCard";
@@ -91,7 +92,7 @@ export default function ReviewList({ listingId }: ReviewListProps) {
 
         setHasMore(newReviews.length >= PAGE_SIZE);
       } catch (err) {
-        console.error("[ReviewList] Failed to fetch:", err);
+        logError(err, { component: "ReviewList" });
         setError("Could not load reviews. Please try again.");
       } finally {
         loadingFn(false);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
+import { logError } from "@/lib/monitoring";
 
 export async function GET() {
   try {
@@ -79,7 +80,7 @@ export async function GET() {
       monthlyRevenue,
     });
   } catch (error) {
-    console.error("Admin stats error:", error);
+    logError(error, { component: "route:api/admin/stats" });
     return NextResponse.json(
       { error: "Failed to fetch admin statistics" },
       { status: 500 }

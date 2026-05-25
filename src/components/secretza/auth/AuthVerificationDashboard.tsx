@@ -113,12 +113,12 @@ const TEST_EVIDENCE: Record<string, string> = {
 };
 
 const TEST_ACCOUNTS: TestAccount[] = [
-  { email: "admin@secretza.com", role: "admin", verified: true, suspended: false, password: "Admin123", status: "active" },
-  { email: "moderator@secretza.com", role: "moderator", verified: true, suspended: false, password: "Mod12345", status: "active" },
-  { email: "test@secretza.com", role: "user", verified: true, suspended: false, password: "Test1234", status: "active" },
-  { email: "premium@secretza.com", role: "user", verified: true, suspended: false, password: "Premium123", status: "active" },
-  { email: "suspended@secretza.com", role: "user", verified: true, suspended: true, password: "Suspended123", status: "suspended" },
-  { email: "unverified@secretza.com", role: "user", verified: false, suspended: false, password: "Unverified123", status: "unverified" },
+  { email: "admin@secretza.com", role: "admin", verified: true, suspended: false, password: "•••••••", status: "active" },
+  { email: "moderator@secretza.com", role: "moderator", verified: true, suspended: false, password: "••••••••", status: "active" },
+  { email: "test@secretza.com", role: "user", verified: true, suspended: false, password: "••••••••", status: "active" },
+  { email: "premium@secretza.com", role: "user", verified: true, suspended: false, password: "••••••••••", status: "active" },
+  { email: "suspended@secretza.com", role: "user", verified: true, suspended: true, password: "••••••••••••", status: "suspended" },
+  { email: "unverified@secretza.com", role: "user", verified: false, suspended: false, password: "••••••••••••", status: "unverified" },
 ];
 
 const ROUTE_PROTECTION: RouteProtectionEntry[] = [

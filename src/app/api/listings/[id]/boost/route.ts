@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { logError } from "@/lib/monitoring";
 
 // Whitelist of valid boost durations to prevent pricing exploits
 const VALID_BOOST_DURATIONS = [60, 120, 360]; // minutes
@@ -82,7 +83,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("Boost error:", error);
+    logError(error, { component: "route:api/listings/[id]/boost" });
     return NextResponse.json(
       { error: "Failed to boost listing" },
       { status: 500 }

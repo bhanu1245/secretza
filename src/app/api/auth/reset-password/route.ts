@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { rateLimit, RATE_LIMITS, getClientIp } from "@/lib/rate-limit";
+import { logError } from "@/lib/monitoring";
 
 const HTML_TEMPLATE = (title: string, body: string) => `
 <!DOCTYPE html>
@@ -276,7 +277,7 @@ export async function GET(request: NextRequest) {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   } catch (error) {
-    console.error("Reset password GET error:", error);
+    logError(error, { component: "route:api/auth/reset-password" });
     const body = `
       <div class="container">
         <div class="logo">
@@ -301,7 +302,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting
     const ip = getClientIp(request);
-    const rl = rateLimit(`reset-password:${ip}`, RATE_LIMITS.resetPassword);
+    const rl = await rateLimit(`reset-password:${ip}`, RATE_LIMITS.resetPassword);
     if (!rl.success) {
       return NextResponse.json(
         { errors: ["Too many attempts. Please try again later."] },
@@ -323,6 +324,13 @@ export async function POST(request: NextRequest) {
     if (newPassword.length < 8) {
       return NextResponse.json(
         { errors: ["Password must be at least 8 characters long."] },
+        { status: 400 }
+      );
+    }
+
+    if (newPassword.length > 128) {
+      return NextResponse.json(
+        { errors: ["Password must be at most 128 characters."] },
         { status: 400 }
       );
     }
@@ -402,7 +410,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Reset password error:", error);
+    logError(error, { component: "route:api/auth/reset-password" });
     return NextResponse.json(
       { errors: ["An unexpected error occurred. Please try again."] },
       { status: 500 }

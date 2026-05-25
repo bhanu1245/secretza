@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
+import { logAdminAction, extractIpAddress } from "@/lib/audit-logger";
+import { logError } from "@/lib/monitoring";
 
 // GET /api/admin/categories — list all categories (tree structure)
 export async function GET() {
@@ -48,7 +50,7 @@ export async function GET() {
 
     return NextResponse.json({ categories: tree });
   } catch (error) {
-    console.error("Categories list error:", error);
+    logError(error, { component: "route:api/admin/categories" });
     return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 });
   }
 }
@@ -110,9 +112,19 @@ export async function POST(request: Request) {
       },
     });
 
+    // Audit log category creation
+    logAdminAction(
+      admin.id,
+      "category_create",
+      "Category",
+      category.id,
+      { name, slug, parentId },
+      extractIpAddress(request)
+    );
+
     return NextResponse.json({ category }, { status: 201 });
   } catch (error) {
-    console.error("Category create error:", error);
+    logError(error, { component: "route:api/admin/categories" });
     return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
   }
 }
@@ -181,9 +193,19 @@ export async function PATCH(request: Request) {
       data: updateData,
     });
 
+    // Audit log category update
+    logAdminAction(
+      admin.id,
+      "category_update",
+      "Category",
+      id,
+      { name, slug, previousSlug: existing.slug },
+      extractIpAddress(request)
+    );
+
     return NextResponse.json({ category });
   } catch (error) {
-    console.error("Category update error:", error);
+    logError(error, { component: "route:api/admin/categories" });
     return NextResponse.json({ error: "Failed to update category" }, { status: 500 });
   }
 }
@@ -212,10 +234,27 @@ export async function DELETE(request: Request) {
       );
     }
 
+    // Fetch category for audit log before deletion
+    const existing = await db.category.findUnique({ where: { id }, select: { name: true, slug: true } });
+    if (!existing) {
+      return NextResponse.json({ error: "Category not found" }, { status: 404 });
+    }
+
     await db.category.delete({ where: { id } });
+
+    // Audit log category deletion
+    logAdminAction(
+      admin.id,
+      "category_delete",
+      "Category",
+      id,
+      { name: existing.name, slug: existing.slug },
+      extractIpAddress(request)
+    );
+
     return NextResponse.json({ message: "Category deleted" });
   } catch (error) {
-    console.error("Category delete error:", error);
+    logError(error, { component: "route:api/admin/categories" });
     return NextResponse.json({ error: "Failed to delete category" }, { status: 500 });
   }
 }

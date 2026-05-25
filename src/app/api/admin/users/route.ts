@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
 import { Prisma } from "@prisma/client";
+import { logError } from "@/lib/monitoring";
 
 export async function GET(request: Request) {
   try {
@@ -73,7 +74,7 @@ export async function GET(request: Request) {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error("Admin users list error:", error);
+    logError(error, { component: "route:api/admin/users" });
     return NextResponse.json(
       { error: "Failed to fetch users" },
       { status: 500 }

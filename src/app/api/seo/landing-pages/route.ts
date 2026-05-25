@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { indiaCities, indiaStates, getCityBySlug, getStateBySlug } from '@/lib/india-geo-data';
 import { CATEGORIES, isCategorySlug } from '@/lib/seo-resolver';
+import { logError } from '@/lib/monitoring';
 
 // ------------------------------------------
 // Types
@@ -170,7 +171,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
     }
   } catch (error) {
-    console.error('Landing pages API error:', error);
+    logError(error, { component: "route:api/seo/landing-pages" });
     return NextResponse.json(
       { error: 'Failed to generate landing page data' },
       { status: 500 },

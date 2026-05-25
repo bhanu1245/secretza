@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireMinRole } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
+import { logError } from '@/lib/monitoring';
 
 // Supported providers and their SiteSettings keys
 const PROVIDER_KEYS: Record<string, string> = {
@@ -68,7 +69,7 @@ export async function GET() {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    console.error('SEO verification GET error:', error);
+    logError(error, { component: "route:api/seo/verification" });
     return NextResponse.json(
       { error: 'Failed to fetch verification config' },
       { status: 500 }
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
       }
     }
-    console.error('SEO verification POST error:', error);
+    logError(error, { component: "route:api/seo/verification" });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to save verification config' },
       { status: 500 }

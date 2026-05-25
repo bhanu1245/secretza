@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { logError } from "@/lib/monitoring";
 
 /**
  * POST /api/notifications/read-all
@@ -27,7 +28,7 @@ export async function POST() {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Mark all notifications read error:", error);
+    logError(error, { component: "route:api/notifications/read-all" });
     return NextResponse.json(
       { error: "Failed to mark all notifications as read" },
       { status: 500 }

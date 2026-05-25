@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
 import { logAdminAction } from "@/lib/audit-logger";
 import { extractIpAddress } from "@/lib/audit-logger";
+import { createStorageService } from "@/lib/storage";
+import { logError } from "@/lib/monitoring";
 
 // PATCH /api/admin/listings/[id] — Admin listing moderation
 export async function PATCH(
@@ -74,6 +76,17 @@ export async function PATCH(
         break;
 
       case "delete": {
+        // Clean up storage files first
+        const images = await db.listingImage.findMany({
+          where: { listingId: id },
+          select: { storageKey: true },
+        });
+        if (images.length > 0) {
+          const storage = createStorageService();
+          await Promise.allSettled(
+            images.map((img) => storage.delete(img.storageKey))
+          );
+        }
         await db.listing.delete({ where: { id } });
         auditAction = "listing_delete";
         break;
@@ -99,7 +112,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, listing: updated });
   } catch (error) {
-    console.error("Admin listing moderate error:", error);
+    logError(error, { component: "route:api/admin/listings/[id]" });
     return NextResponse.json(
       { error: "Failed to moderate listing" },
       { status: 500 }

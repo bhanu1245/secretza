@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
 import { Prisma } from "@prisma/client";
+import { logError } from "@/lib/monitoring";
 
 export async function GET(request: Request) {
   try {
@@ -118,7 +119,7 @@ export async function GET(request: Request) {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error("Admin listings error:", error);
+    logError(error, { component: "route:api/admin/listings" });
     return NextResponse.json(
       { error: "Failed to fetch listings" },
       { status: 500 }

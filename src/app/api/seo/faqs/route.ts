@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
+import { logError } from "@/lib/monitoring";
 
 /**
  * POST /api/seo/faqs
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("SEO FAQ create error:", error);
+    logError(error, { component: "route:api/seo/faqs" });
     return NextResponse.json(
       { error: "Failed to create FAQ" },
       { status: 500 }
@@ -129,7 +130,7 @@ export async function PATCH(request: Request) {
       },
     });
   } catch (error) {
-    console.error("SEO FAQ update error:", error);
+    logError(error, { component: "route:api/seo/faqs" });
     return NextResponse.json(
       { error: "Failed to update FAQ" },
       { status: 500 }
@@ -168,7 +169,7 @@ export async function DELETE(request: Request) {
       message: "FAQ deleted successfully",
     });
   } catch (error) {
-    console.error("SEO FAQ delete error:", error);
+    logError(error, { component: "route:api/seo/faqs" });
     return NextResponse.json(
       { error: "Failed to delete FAQ" },
       { status: 500 }

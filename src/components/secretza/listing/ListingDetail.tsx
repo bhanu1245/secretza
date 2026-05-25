@@ -299,10 +299,12 @@ export default function ListingDetail({
                     Featured
                   </Badge>
                 )}
-                <Badge className="gap-1 bg-emerald-500/90 text-white border-0">
-                  <Shield className="size-3" />
-                  Verified
-                </Badge>
+                {listing.user?.isVerified && (
+                  <Badge className="gap-1 bg-emerald-500/90 text-white border-0">
+                    <Shield className="size-3" />
+                    Verified
+                  </Badge>
+                )}
                 <Badge
                   className="border-0"
                   style={{

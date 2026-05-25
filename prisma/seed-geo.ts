@@ -1,13 +1,19 @@
 // ==========================================
 // Enterprise Geo Seed Script
 // ==========================================
-// Seeds Country, State, City, and District data.
+// Seeds Country, State, City, District, and Locality data.
 // Run with: bunx tsx prisma/seed-geo.ts
 //
 // Idempotent: safe to run multiple times (skips existing records).
 // ==========================================
 
 import { PrismaClient } from "@prisma/client";
+import {
+  indiaAllStates,
+  indiaDistricts,
+  indiaLocalities,
+} from "../src/lib/india-geo-seed-data";
+import { indiaCities } from "../src/lib/india-geo-data";
 
 const db = new PrismaClient();
 
@@ -70,26 +76,9 @@ const COUNTRIES = [
 ];
 
 // ==========================================
-// States/Provinces (countryCode, name, slug)
+// Non-Indian States/Provinces
 // ==========================================
-const STATES: Array<{ countryCode: string; name: string; slug: string }> = [
-  // India
-  { countryCode: "IN", name: "Maharashtra", slug: "maharashtra" },
-  { countryCode: "IN", name: "Delhi", slug: "delhi" },
-  { countryCode: "IN", name: "Karnataka", slug: "karnataka" },
-  { countryCode: "IN", name: "Tamil Nadu", slug: "tamil-nadu" },
-  { countryCode: "IN", name: "Telangana", slug: "telangana" },
-  { countryCode: "IN", name: "West Bengal", slug: "west-bengal" },
-  { countryCode: "IN", name: "Gujarat", slug: "gujarat" },
-  { countryCode: "IN", name: "Rajasthan", slug: "rajasthan" },
-  { countryCode: "IN", name: "Uttar Pradesh", slug: "uttar-pradesh" },
-  { countryCode: "IN", name: "Madhya Pradesh", slug: "madhya-pradesh" },
-  { countryCode: "IN", name: "Kerala", slug: "kerala" },
-  { countryCode: "IN", name: "Punjab", slug: "punjab" },
-  { countryCode: "IN", name: "Haryana", slug: "haryana" },
-  { countryCode: "IN", name: "Bihar", slug: "bihar" },
-  { countryCode: "IN", name: "Odisha", slug: "odisha" },
-  { countryCode: "IN", name: "Andhra Pradesh", slug: "andhra-pradesh" },
+const NON_INDIA_STATES: Array<{ countryCode: string; name: string; slug: string }> = [
   // US
   { countryCode: "US", name: "California", slug: "california" },
   { countryCode: "US", name: "New York", slug: "new-york" },
@@ -160,35 +149,9 @@ const STATES: Array<{ countryCode: string; name: string; slug: string }> = [
 ];
 
 // ==========================================
-// Cities (countryCode, stateSlug, name, slug, isFeatured)
+// Non-Indian Cities
 // ==========================================
-const CITIES: Array<{ countryCode: string; stateSlug: string; name: string; slug: string; isFeatured?: boolean }> = [
-  // India
-  { countryCode: "IN", stateSlug: "maharashtra", name: "Mumbai", slug: "mumbai", isFeatured: true },
-  { countryCode: "IN", stateSlug: "maharashtra", name: "Pune", slug: "pune", isFeatured: true },
-  { countryCode: "IN", stateSlug: "delhi", name: "New Delhi", slug: "new-delhi", isFeatured: true },
-  { countryCode: "IN", stateSlug: "karnataka", name: "Bangalore", slug: "bangalore", isFeatured: true },
-  { countryCode: "IN", stateSlug: "tamil-nadu", name: "Chennai", slug: "chennai", isFeatured: true },
-  { countryCode: "IN", stateSlug: "telangana", name: "Hyderabad", slug: "hyderabad", isFeatured: true },
-  { countryCode: "IN", stateSlug: "west-bengal", name: "Kolkata", slug: "kolkata", isFeatured: true },
-  { countryCode: "IN", stateSlug: "gujarat", name: "Ahmedabad", slug: "ahmedabad", isFeatured: true },
-  { countryCode: "IN", stateSlug: "rajasthan", name: "Jaipur", slug: "jaipur", isFeatured: true },
-  { countryCode: "IN", stateSlug: "uttar-pradesh", name: "Lucknow", slug: "lucknow" },
-  { countryCode: "IN", stateSlug: "madhya-pradesh", name: "Bhopal", slug: "bhopal" },
-  { countryCode: "IN", stateSlug: "kerala", name: "Kochi", slug: "kochi" },
-  { countryCode: "IN", stateSlug: "kerala", name: "Thiruvananthapuram", slug: "thiruvananthapuram" },
-  { countryCode: "IN", stateSlug: "punjab", name: "Chandigarh", slug: "chandigarh" },
-  { countryCode: "IN", stateSlug: "haryana", name: "Gurgaon", slug: "gurgaon" },
-  { countryCode: "IN", stateSlug: "haryana", name: "Faridabad", slug: "faridabad" },
-  { countryCode: "IN", stateSlug: "bihar", name: "Patna", slug: "patna" },
-  { countryCode: "IN", stateSlug: "odisha", name: "Bhubaneswar", slug: "bhubaneswar" },
-  { countryCode: "IN", stateSlug: "andhra-pradesh", name: "Visakhapatnam", slug: "visakhapatnam" },
-  { countryCode: "IN", stateSlug: "gujarat", name: "Surat", slug: "surat" },
-  { countryCode: "IN", stateSlug: "maharashtra", name: "Nagpur", slug: "nagpur" },
-  { countryCode: "IN", stateSlug: "rajasthan", name: "Udaipur", slug: "udaipur" },
-  { countryCode: "IN", stateSlug: "uttar-pradesh", name: "Agra", slug: "agra" },
-  { countryCode: "IN", stateSlug: "karnataka", name: "Mysore", slug: "mysore" },
-  { countryCode: "IN", stateSlug: "tamil-nadu", name: "Coimbatore", slug: "coimbatore" },
+const NON_INDIA_CITIES: Array<{ countryCode: string; stateSlug: string; name: string; slug: string; isFeatured?: boolean }> = [
   // US
   { countryCode: "US", stateSlug: "california", name: "Los Angeles", slug: "los-angeles", isFeatured: true },
   { countryCode: "US", stateSlug: "california", name: "San Francisco", slug: "san-francisco", isFeatured: true },
@@ -266,101 +229,18 @@ const CITIES: Array<{ countryCode: string; stateSlug: string; name: string; slug
   { countryCode: "ZA", stateSlug: "kwazulu-natal", name: "Durban", slug: "durban" },
   // Singapore
   { countryCode: "SG", stateSlug: "central-region", name: "Singapore", slug: "singapore", isFeatured: true },
-  // Thailand
+  // No state
   { countryCode: "TH", name: "Bangkok", slug: "bangkok", stateSlug: "", isFeatured: true },
-  // Italy
   { countryCode: "IT", name: "Rome", slug: "rome", stateSlug: "", isFeatured: true },
   { countryCode: "IT", name: "Milan", slug: "milan", stateSlug: "" },
-  // Spain
   { countryCode: "ES", name: "Madrid", slug: "madrid", stateSlug: "", isFeatured: true },
   { countryCode: "ES", name: "Barcelona", slug: "barcelona", stateSlug: "" },
-  // Netherlands
   { countryCode: "NL", name: "Amsterdam", slug: "amsterdam", stateSlug: "", isFeatured: true },
-  // Israel
   { countryCode: "IL", name: "Tel Aviv", slug: "tel-aviv", stateSlug: "", isFeatured: true },
-  // Greece
   { countryCode: "GR", name: "Athens", slug: "athens", stateSlug: "" },
-  // Mexico
   { countryCode: "MX", name: "Mexico City", slug: "mexico-city", stateSlug: "", isFeatured: true },
-  // Argentina
   { countryCode: "AR", name: "Buenos Aires", slug: "buenos-aires", stateSlug: "", isFeatured: true },
-  // New Zealand
   { countryCode: "NZ", name: "Auckland", slug: "auckland", stateSlug: "" },
-];
-
-// ==========================================
-// Districts (citySlug, countryCode, name, slug)
-// ==========================================
-const DISTRICTS: Array<{ citySlug: string; countryCode: string; name: string; slug: string }> = [
-  // Mumbai
-  { citySlug: "mumbai", countryCode: "IN", name: "Andheri", slug: "andheri" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Bandra", slug: "bandra" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Juhu", slug: "juhu" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Worli", slug: "worli" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Colaba", slug: "colaba" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Powai", slug: "powai" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Malad", slug: "malad" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Borivali", slug: "borivali" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Thane", slug: "thane" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Navi Mumbai", slug: "navi-mumbai" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Vashi", slug: "vashi" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Churchgate", slug: "churchgate" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Dadar", slug: "dadar" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Lower Parel", slug: "lower-parel" },
-  { citySlug: "mumbai", countryCode: "IN", name: "Kurla", slug: "kurla" },
-  // Delhi
-  { citySlug: "new-delhi", countryCode: "IN", name: "Connaught Place", slug: "connaught-place" },
-  { citySlug: "new-delhi", countryCode: "IN", name: "South Delhi", slug: "south-delhi" },
-  { citySlug: "new-delhi", countryCode: "IN", name: "North Delhi", slug: "north-delhi" },
-  { citySlug: "new-delhi", countryCode: "IN", name: "East Delhi", slug: "east-delhi" },
-  { citySlug: "new-delhi", countryCode: "IN", name: "West Delhi", slug: "west-delhi" },
-  { citySlug: "new-delhi", countryCode: "IN", name: "Dwarka", slug: "dwarka" },
-  { citySlug: "new-delhi", countryCode: "IN", name: "Rohini", slug: "rohini" },
-  { citySlug: "new-delhi", countryCode: "IN", name: "Saket", slug: "saket" },
-  { citySlug: "new-delhi", countryCode: "IN", name: "Karol Bagh", slug: "karol-bagh" },
-  { citySlug: "new-delhi", countryCode: "IN", name: "Lajpat Nagar", slug: "lajpat-nagar" },
-  { citySlug: "new-delhi", countryCode: "IN", name: "Greater Kailash", slug: "greater-kailash" },
-  { citySlug: "new-delhi", countryCode: "IN", name: "Hauz Khas", slug: "hauz-khas" },
-  { citySlug: "new-delhi", countryCode: "IN", name: "Chanakyapuri", slug: "chanakyapuri" },
-  { citySlug: "new-delhi", countryCode: "IN", name: "Mehrauli", slug: "mehrauli" },
-  // Bangalore
-  { citySlug: "bangalore", countryCode: "IN", name: "Koramangala", slug: "koramangala" },
-  { citySlug: "bangalore", countryCode: "IN", name: "Indiranagar", slug: "indiranagar" },
-  { citySlug: "bangalore", countryCode: "IN", name: "Whitefield", slug: "whitefield" },
-  { citySlug: "bangalore", countryCode: "IN", name: "Electronic City", slug: "electronic-city" },
-  { citySlug: "bangalore", countryCode: "IN", name: "HSR Layout", slug: "hsr-layout" },
-  { citySlug: "bangalore", countryCode: "IN", name: "Jayanagar", slug: "jayanagar" },
-  { citySlug: "bangalore", countryCode: "IN", name: "MG Road", slug: "mg-road" },
-  { citySlug: "bangalore", countryCode: "IN", name: "Bannerghatta Road", slug: "bannerghatta-road" },
-  { citySlug: "bangalore", countryCode: "IN", name: "Marathahalli", slug: "marathahalli" },
-  { citySlug: "bangalore", countryCode: "IN", name: "Yelahanka", slug: "yelahanka" },
-  // Chennai
-  { citySlug: "chennai", countryCode: "IN", name: "T. Nagar", slug: "t-nagar" },
-  { citySlug: "chennai", countryCode: "IN", name: "Adyar", slug: "adyar" },
-  { citySlug: "chennai", countryCode: "IN", name: "Anna Nagar", slug: "anna-nagar" },
-  { citySlug: "chennai", countryCode: "IN", name: "Velachery", slug: "velachery" },
-  { citySlug: "chennai", countryCode: "IN", name: "Nungambakkam", slug: "nungambakkam" },
-  { citySlug: "chennai", countryCode: "IN", name: "Egmore", slug: "egmore" },
-  { citySlug: "chennai", countryCode: "IN", name: "Guindy", slug: "guindy" },
-  { citySlug: "chennai", countryCode: "IN", name: "OMR", slug: "omr" },
-  { citySlug: "chennai", countryCode: "IN", name: "Porur", slug: "porur" },
-  // Hyderabad
-  { citySlug: "hyderabad", countryCode: "IN", name: "Banjara Hills", slug: "banjara-hills" },
-  { citySlug: "hyderabad", countryCode: "IN", name: "Jubilee Hills", slug: "jubilee-hills" },
-  { citySlug: "hyderabad", countryCode: "IN", name: "Madhapur", slug: "madhapur" },
-  { citySlug: "hyderabad", countryCode: "IN", name: "Hitech City", slug: "hitech-city" },
-  { citySlug: "hyderabad", countryCode: "IN", name: "Gachibowli", slug: "gachibowli" },
-  { citySlug: "hyderabad", countryCode: "IN", name: "Secunderabad", slug: "secunderabad" },
-  { citySlug: "hyderabad", countryCode: "IN", name: "Ameerpet", slug: "ameerpet" },
-  { citySlug: "hyderabad", countryCode: "IN", name: "Kukatpally", slug: "kukatpally" },
-  // Kolkata
-  { citySlug: "kolkata", countryCode: "IN", name: "Park Street", slug: "park-street" },
-  { citySlug: "kolkata", countryCode: "IN", name: "Salt Lake", slug: "salt-lake" },
-  { citySlug: "kolkata", countryCode: "IN", name: "New Town", slug: "new-town" },
-  { citySlug: "kolkata", countryCode: "IN", name: "Howrah", slug: "howrah" },
-  { citySlug: "kolkata", countryCode: "IN", name: "Dum Dum", slug: "dum-dum" },
-  { citySlug: "kolkata", countryCode: "IN", name: "Gariahat", slug: "gariahat" },
-  { citySlug: "kolkata", countryCode: "IN", name: "Behala", slug: "behala" },
 ];
 
 // ==========================================
@@ -368,7 +248,7 @@ const DISTRICTS: Array<{ citySlug: string; countryCode: string; name: string; sl
 // ==========================================
 
 async function seedCountries() {
-  console.log(`\n  Seeding ${COUNTRIES.length} countries...`);
+  console.log(`\n🌍 Seeding ${COUNTRIES.length} countries...`);
   let created = 0;
   let updated = 0;
   const countryMap = new Map<string, string>();
@@ -384,17 +264,50 @@ async function seedCountries() {
     countryMap.set(c.code, result.id);
   }
 
-  console.log(`  Countries: ${created} created, ${updated} updated`);
+  console.log(`   ✅ Countries: ${created} created, ${updated} updated`);
   return countryMap;
 }
 
-async function seedStates(countryMap: Map<string, string>) {
-  console.log(`\n  Seeding ${STATES.length} states/provinces...`);
+async function seedIndiaStates(countryMap: Map<string, string>) {
+  const indiaCountryId = countryMap.get("IN");
+  if (!indiaCountryId) {
+    console.warn("   ⚠️  India country not found, skipping Indian states");
+    return new Map<string, string>();
+  }
+
+  console.log(`\n🇮🇳 Seeding ${indiaAllStates.length} Indian states & UTs...`);
   let created = 0;
   let skipped = 0;
   const stateIdMap = new Map<string, string>();
 
-  for (const s of STATES) {
+  for (const s of indiaAllStates) {
+    const existing = await db.state.findUnique({
+      where: { slug_countryId: { slug: s.slug, countryId: indiaCountryId } },
+    });
+    if (existing) {
+      stateIdMap.set(`IN:${s.slug}`, existing.id);
+      skipped++;
+      continue;
+    }
+
+    const result = await db.state.create({
+      data: { name: s.name, slug: s.slug, countryId: indiaCountryId, isActive: true },
+    });
+    stateIdMap.set(`IN:${s.slug}`, result.id);
+    created++;
+  }
+
+  console.log(`   ✅ Indian states: ${created} created, ${skipped} already exist`);
+  return stateIdMap;
+}
+
+async function seedNonIndiaStates(countryMap: Map<string, string>) {
+  console.log(`\n🌐 Seeding ${NON_INDIA_STATES.length} international states/provinces...`);
+  let created = 0;
+  let skipped = 0;
+  const stateIdMap = new Map<string, string>();
+
+  for (const s of NON_INDIA_STATES) {
     const countryId = countryMap.get(s.countryCode);
     if (!countryId) { skipped++; continue; }
 
@@ -414,25 +327,57 @@ async function seedStates(countryMap: Map<string, string>) {
     created++;
   }
 
-  console.log(`  States: ${created} created, ${skipped} already exist`);
+  console.log(`   ✅ International states: ${created} created, ${skipped} already exist`);
   return stateIdMap;
 }
 
-async function seedCities(stateIdMap: Map<string, string>) {
-  console.log(`\n  Seeding ${CITIES.length} cities...`);
+async function seedIndiaCities(stateIdMap: Map<string, string>) {
+  console.log(`\n🏙️  Seeding ${indiaCities.length} Indian cities...`);
   let created = 0;
   let skipped = 0;
-  const cityIdMap = new Map<string, string>(); // "countryCode:citySlug" -> id
+  const cityIdMap = new Map<string, string>();
 
-  for (const c of CITIES) {
-    // Find the state ID
+  for (const c of indiaCities) {
+    const stateId = stateIdMap.get(`IN:${c.stateSlug}`);
+    if (!stateId) { skipped++; continue; }
+
+    const existing = await db.city.findUnique({
+      where: { slug_stateId: { slug: c.slug, stateId } },
+    });
+    if (existing) {
+      cityIdMap.set(`IN:${c.slug}:${c.stateSlug}`, existing.id);
+      skipped++;
+      continue;
+    }
+
+    const result = await db.city.create({
+      data: {
+        name: c.name,
+        slug: c.slug,
+        stateId,
+        isActive: true,
+        isFeatured: c.tier === 1 || c.isMetro,
+      },
+    });
+    cityIdMap.set(`IN:${c.slug}:${c.stateSlug}`, result.id);
+    created++;
+  }
+
+  console.log(`   ✅ Indian cities: ${created} created, ${skipped} already exist`);
+  return cityIdMap;
+}
+
+async function seedNonIndiaCities(stateIdMap: Map<string, string>, countryMap: Map<string, string>) {
+  console.log(`\n🏙️  Seeding ${NON_INDIA_CITIES.length} international cities...`);
+  let created = 0;
+  let skipped = 0;
+  const cityIdMap = new Map<string, string>();
+
+  for (const c of NON_INDIA_CITIES) {
     let stateId: string | undefined;
-
     if (c.stateSlug) {
       stateId = stateIdMap.get(`${c.countryCode}:${c.stateSlug}`);
     }
-
-    // For cities without state slugs, find any state in that country
     if (!stateId) {
       const country = await db.country.findUnique({ where: { code: c.countryCode } });
       if (country) {
@@ -440,7 +385,6 @@ async function seedCities(stateIdMap: Map<string, string>) {
         if (anyState) stateId = anyState.id;
       }
     }
-
     if (!stateId) { skipped++; continue; }
 
     const existing = await db.city.findUnique({
@@ -465,45 +409,118 @@ async function seedCities(stateIdMap: Map<string, string>) {
     created++;
   }
 
-  console.log(`  Cities: ${created} created, ${skipped} already exist`);
+  console.log(`   ✅ International cities: ${created} created, ${skipped} already exist`);
   return cityIdMap;
 }
 
 async function seedDistricts(cityIdMap: Map<string, string>) {
-  console.log(`\n  Seeding ${DISTRICTS.length} districts...`);
+  console.log(`\n📊 Seeding ${indiaDistricts.length} districts...`);
   let created = 0;
   let skipped = 0;
+  const districtIdMap = new Map<string, string>();
 
-  for (const d of DISTRICTS) {
-    const cityId = cityIdMap.get(`${d.countryCode}:${d.citySlug}`);
+  for (const d of indiaDistricts) {
+    const cityId = cityIdMap.get(`IN:${d.citySlug}:${d.stateSlug}`);
     if (!cityId) { skipped++; continue; }
 
     const existing = await db.district.findUnique({
       where: { slug_cityId: { slug: d.slug, cityId } },
     });
+    if (existing) {
+      districtIdMap.set(`IN:${d.stateSlug}:${d.citySlug}:${d.slug}`, existing.id);
+      skipped++;
+      continue;
+    }
+
+    const result = await db.district.create({
+      data: { name: d.name, slug: d.slug, cityId, isActive: true },
+    });
+    districtIdMap.set(`IN:${d.stateSlug}:${d.citySlug}:${d.slug}`, result.id);
+    created++;
+  }
+
+  console.log(`   ✅ Districts: ${created} created, ${skipped} already exist`);
+  return districtIdMap;
+}
+
+async function seedLocalities(districtIdMap: Map<string, string>, cityIdMap: Map<string, string>) {
+  console.log(`\n📍 Seeding ${indiaLocalities.length} localities...`);
+  let created = 0;
+  let skipped = 0;
+
+  for (const l of indiaLocalities) {
+    const districtId = districtIdMap.get(`IN:${l.stateSlug}:${l.citySlug}:${l.districtSlug}`);
+    if (!districtId) { skipped++; continue; }
+
+    const existing = await db.locality.findUnique({
+      where: { slug_districtId: { slug: l.slug, districtId } },
+    });
     if (existing) { skipped++; continue; }
 
-    await db.district.create({
-      data: { name: d.name, slug: d.slug, cityId, isActive: true },
+    await db.locality.create({
+      data: { name: l.name, slug: l.slug, districtId, isActive: true },
     });
     created++;
   }
 
-  console.log(`  Districts: ${created} created, ${skipped} already exist`);
+  console.log(`   ✅ Localities: ${created} created, ${skipped} already exist`);
+  return { created, skipped };
 }
 
 // ==========================================
 // Main
 // ==========================================
 async function main() {
-  console.log("Geo Seed - Starting...\n");
+  console.log("═══════════════════════════════════════");
+  console.log("  INDIA GEO SEED — COMPREHENSIVE");
+  console.log("═══════════════════════════════════════");
 
-  const countryMap = await seedCountries();
-  const stateIdMap = await seedStates(countryMap);
-  const cityIdMap = await seedCities(stateIdMap);
-  await seedDistricts(cityIdMap);
+  const startTime = Date.now();
 
-  console.log("\nGeo Seed complete!");
+  try {
+    // 1. Seed countries
+    const countryMap = await seedCountries();
+
+    // 2. Seed Indian states (all 36)
+    const indiaStateIdMap = await seedIndiaStates(countryMap);
+
+    // 3. Seed non-Indian states
+    const nonIndiaStateIdMap = await seedNonIndiaStates(countryMap);
+
+    // Merge state maps
+    const allStateIdMap = new Map([...indiaStateIdMap, ...nonIndiaStateIdMap]);
+
+    // 4. Seed Indian cities (500+)
+    const indiaCityIdMap = await seedIndiaCities(indiaStateIdMap);
+
+    // 5. Seed non-Indian cities
+    const nonIndiaCityIdMap = await seedNonIndiaCities(nonIndiaStateIdMap, countryMap);
+
+    // Merge city maps
+    const allCityIdMap = new Map([...indiaCityIdMap, ...nonIndiaCityIdMap]);
+
+    // 6. Seed districts (200+)
+    const districtIdMap = await seedDistricts(indiaCityIdMap);
+
+    // 7. Seed localities (300+)
+    const { created: localitiesCreated, skipped: localitiesSkipped } = await seedLocalities(districtIdMap, indiaCityIdMap);
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+    console.log("\n═══════════════════════════════════════");
+    console.log("  SEED COMPLETE");
+    console.log("═══════════════════════════════════════");
+    console.log(`  🌍 Countries:     ${countryMap.size}`);
+    console.log(`  📍 States:        ${indiaAllStates.length} India + ${NON_INDIA_STATES.length} International`);
+    console.log(`  🏙️  Cities:        ${indiaCities.length} India + ${NON_INDIA_CITIES.length} International`);
+    console.log(`  📊 Districts:     ${indiaDistricts.length}`);
+    console.log(`  📍 Localities:    ${localitiesCreated} created, ${localitiesSkipped} existing`);
+    console.log(`  ⏱️  Time:          ${elapsed}s`);
+    console.log("═══════════════════════════════════════");
+  } catch (error) {
+    console.error("\n❌ Seed failed:", error);
+    throw error;
+  }
 }
 
 main()

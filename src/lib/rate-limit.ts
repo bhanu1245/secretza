@@ -7,9 +7,12 @@
  *   • Configurable thresholds with sensible defaults
  *   • Abuse detection: burst protection & repeated-failure tracking
  *   • Standard `RateLimit-*` response headers via `getRateLimitHeaders()`
+ *   • Automatic Redis backend when REDIS_URL is set (transparent fallback to in-memory)
  *
- * In production, swap the in-memory store for Redis to survive restarts
- * and work across multiple server instances.
+ * REDIS AUTO-WIRING:
+ * When REDIS_URL is set, all rate limit / abuse detection functions automatically
+ * delegate to the Redis-backed implementation in redis-rate-limit.ts. This happens
+ * transparently — no import changes needed by consumers.
  */
 
 // ---------------------------------------------------------------------------
@@ -98,14 +101,10 @@ function ensureCleanup(): void {
 // ---------------------------------------------------------------------------
 
 /**
- * Check and increment rate limit for a given identifier using a sliding
- * window algorithm.
- *
- * Unlike the fixed-window approach, this prevents edge-of-window bursts:
- * the window "slides" with each request, so the rate is truly enforced
- * over any `windowSeconds` period.
+ * In-memory sliding window rate limiter (synchronous).
+ * Exported for use by redis-rate-limit.ts as a fallback.
  */
-export function rateLimit(
+export function _memoryRateLimit(
   identifier: string,
   config: RateLimitConfig
 ): RateLimitResult {
@@ -153,20 +152,34 @@ export function rateLimit(
   };
 }
 
+/**
+ * Check and increment rate limit for a given identifier.
+ *
+ * When REDIS_URL is set, delegates to the Redis-backed implementation.
+ * Otherwise uses the synchronous in-memory sliding window algorithm.
+ *
+ * All consumers must `await` this call.
+ */
+export async function rateLimit(
+  identifier: string,
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
+  if (process.env.REDIS_URL) {
+    const { rateLimit: redisRateLimit } = await import("@/lib/redis-rate-limit");
+    return redisRateLimit(identifier, config);
+  }
+  return _memoryRateLimit(identifier, config);
+}
+
 // ---------------------------------------------------------------------------
 // Abuse detection
 // ---------------------------------------------------------------------------
 
 /**
- * Check whether a given identifier is exhibiting abusive behaviour.
- *
- * Two independent checks:
- *   1. **Burst protection** — too many requests in a very short window
- *   2. **Repeated failures** — tracked via `recordFailure()` / `clearFailures()`
- *
- * Call this *before* rate-limiting to short-circuit obvious abusers.
+ * In-memory abuse detection (synchronous).
+ * Exported for use by redis-rate-limit.ts as a fallback.
  */
-export function checkAbuse(
+export function _memoryCheckAbuse(
   identifier: string,
   config?: AbuseCheckConfig
 ): AbuseCheckResult {
@@ -233,9 +246,33 @@ export function checkAbuse(
 }
 
 /**
+ * Check whether a given identifier is exhibiting abusive behaviour.
+ *
+ * When REDIS_URL is set, delegates to the Redis-backed implementation.
+ * Otherwise uses the synchronous in-memory implementation.
+ *
+ * All consumers must `await` this call.
+ */
+export async function checkAbuse(
+  identifier: string,
+  config?: AbuseCheckConfig
+): Promise<AbuseCheckResult> {
+  if (process.env.REDIS_URL) {
+    const { checkAbuse: redisCheckAbuse } = await import("@/lib/redis-rate-limit");
+    return redisCheckAbuse(identifier, config);
+  }
+  return _memoryCheckAbuse(identifier, config);
+}
+
+/**
  * Record a failed attempt (e.g. bad password, invalid token) for abuse tracking.
  */
 export function recordFailure(identifier: string): void {
+  // If Redis is configured, delegate asynchronously (fire-and-forget for sync API)
+  if (process.env.REDIS_URL) {
+    import("@/lib/redis-rate-limit").then((m) => m.recordFailure(identifier)).catch(() => {});
+    return;
+  }
   ensureCleanup();
   const key = `abuse:fail:${identifier}`;
   const now = Date.now();
@@ -256,6 +293,10 @@ export function recordFailure(identifier: string): void {
  * Clear failure history — call after a successful attempt to reset the counter.
  */
 export function clearFailures(identifier: string): void {
+  if (process.env.REDIS_URL) {
+    import("@/lib/redis-rate-limit").then((m) => m.clearFailures(identifier)).catch(() => {});
+    return;
+  }
   store.delete(`abuse:fail:${identifier}`);
 }
 

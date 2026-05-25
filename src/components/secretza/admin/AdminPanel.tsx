@@ -51,9 +51,12 @@ import {
   AlertCircle,
   Copy,
   ExternalLink,
+  Upload,
+  Plus,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { logError } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -247,7 +250,7 @@ function AdminDashboardPage() {
           }
         }
       } catch (error) {
-        console.error("Failed to load admin stats:", error);
+        logError(error, { component: "AdminPanel" });
       } finally {
         setStatsLoading(false);
       }
@@ -263,9 +266,7 @@ function AdminDashboardPage() {
         const data = await response.json();
         setListings(data.listings || []);
       } catch (error) {
-        console.error("Failed to load listings:", error);
-      } finally {
-        setListingsLoading(false);
+        logError(error, { component: "AdminPanel" });
       }
     };
     loadListings();
@@ -477,7 +478,7 @@ function AdminUsersPage() {
           );
         }
       } catch (error) {
-        console.error("Failed to load users:", error);
+        logError(error, { component: "AdminPanel" });
       } finally {
         setUsersLoading(false);
       }
@@ -721,8 +722,7 @@ function AdminListingsPage() {
 
       setListings(data.listings || []);
     } catch (error) {
-      console.error("Failed to load listings:", error);
-    } finally {
+      logError(error, { component: "AdminPanel" });
       setLoading(false);
     }
   };
@@ -1219,7 +1219,7 @@ function AdminModerationPage() {
 
       setItems(moderationItems);
     } catch (error) {
-      console.error("Failed to load moderation items:", error);
+      logError(error, { component: "AdminPanel" });
     }
   };
 
@@ -1483,51 +1483,8 @@ function AdminSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Payment Settings */}
-      <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
-        <CardHeader>
-          <CardTitle className="text-base font-semibold text-[#F5F5F7]">Payment Gateway</CardTitle>
-          <CardDescription className="text-xs text-[#A1A1AA]">Configure payment processing</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-3 rounded-lg bg-[#1E1E2A] border border-[rgba(255,255,255,0.04)]">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/15 flex items-center justify-center">
-                <CreditCard className="size-4 text-indigo-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[#F5F5F7]">Stripe</p>
-                <p className="text-[10px] text-[#A1A1AA]">Accept credit cards and digital wallets</p>
-              </div>
-            </div>
-            <Switch defaultChecked className="data-[state=checked]:bg-[#7C3AED]" />
-          </div>
-          <div className="flex items-center justify-between p-3 rounded-lg bg-[#1E1E2A] border border-[rgba(255,255,255,0.04)]">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center">
-                <CreditCard className="size-4 text-blue-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[#F5F5F7]">PayPal</p>
-                <p className="text-[10px] text-[#A1A1AA]">Accept PayPal payments</p>
-              </div>
-            </div>
-            <Switch className="data-[state=checked]:bg-[#7C3AED]" />
-          </div>
-          <div className="flex items-center justify-between p-3 rounded-lg bg-[#1E1E2A] border border-[rgba(255,255,255,0.04)]">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center">
-                <DollarSign className="size-4 text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-[#F5F5F7]">Crypto</p>
-                <p className="text-[10px] text-[#A1A1AA]">Accept Bitcoin and Ethereum</p>
-              </div>
-            </div>
-            <Switch className="data-[state=checked]:bg-[#7C3AED]" />
-          </div>
-        </CardContent>
-      </Card>
+      {/* UPI Payment Settings */}
+      <UPIPaymentSettings />
 
       {/* SEO Settings */}
       <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
@@ -1562,6 +1519,474 @@ function AdminSettingsPage() {
         </Button>
       </div>
     </div>
+  );
+}
+
+// ==========================================
+// Types for Payment Settings Admin UI
+// ==========================================
+interface PricingTier {
+  label: string;
+  amount: number;
+  durationMinutes?: number;
+  durationDays?: number;
+}
+
+interface PaymentSettingsAdminData {
+  id: string;
+  upiId: string;
+  whatsappNumber: string;
+  boostPrice: number;
+  featuredPrice: number;
+  premiumPrice: number;
+  qrImageUrl: string | null;
+  instructions: string[];
+  boostTiers: PricingTier[];
+  featuredTiers: PricingTier[];
+  premiumTiers: PricingTier[];
+}
+
+// ==========================================
+// UPI Payment Settings Component
+// ==========================================
+function UPIPaymentSettings() {
+  const [settings, setSettings] = useState<PaymentSettingsAdminData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Local form state
+  const [upiId, setUpiId] = useState("");
+  const [upiError, setUpiError] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [boostPrice, setBoostPrice] = useState("");
+  const [featuredPrice, setFeaturedPrice] = useState("");
+  const [premiumPrice, setPremiumPrice] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const [boostTiers, setBoostTiers] = useState<PricingTier[]>([]);
+  const [featuredTiers, setFeaturedTiers] = useState<PricingTier[]>([]);
+  const [premiumTiers, setPremiumTiers] = useState<PricingTier[]>([]);
+  const [qrPreview, setQrPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const res = await fetch("/api/admin/payment-settings");
+        if (res.ok) {
+          const data = await res.json();
+          const s = data.settings as PaymentSettingsAdminData;
+          setSettings(s);
+          setUpiId(s.upiId);
+          setWhatsappNumber(s.whatsappNumber);
+          setBoostPrice(String(s.boostPrice));
+          setFeaturedPrice(String(s.featuredPrice));
+          setPremiumPrice(String(s.premiumPrice));
+          setInstructions(s.instructions.join("\n"));
+          setBoostTiers(s.boostTiers || []);
+          setFeaturedTiers(s.featuredTiers || []);
+          setPremiumTiers(s.premiumTiers || []);
+          setQrPreview(s.qrImageUrl);
+        }
+      } catch {
+        // Keep defaults
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadSettings();
+  }, []);
+
+  // UPI validation
+  const handleUpiChange = (val: string) => {
+    setUpiId(val);
+    if (val && !/^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z0-9.\-]{2,}$/.test(val.trim())) {
+      setUpiError(val.length > 0 ? "Invalid UPI format (expected: name@provider)" : "");
+    } else {
+      setUpiError("");
+    }
+  };
+
+  // Phone validation
+  const handlePhoneChange = (val: string) => {
+    setWhatsappNumber(val);
+    if (val && !/^\+?[1-9]\d{7,14}$/.test(val.trim())) {
+      setPhoneError(val.length > 0 ? "Invalid phone (E.164, e.g. +919876543210)" : "");
+    } else {
+      setPhoneError("");
+    }
+  };
+
+  // QR image upload
+  const handleQrUpload = async (file: File) => {
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image too large", { description: "Max 2MB for QR images." });
+      return;
+    }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("qrImage", file);
+      const res = await fetch("/api/admin/payment-settings/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setQrPreview(data.qrImageUrl);
+        toast.success("QR uploaded", { description: "Payment QR image saved." });
+      } else {
+        const err = await res.json();
+        toast.error("Upload failed", { description: err.error || "Unknown error" });
+      }
+    } catch {
+      toast.error("Upload failed", { description: "Could not reach server." });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Tier management helpers
+  const addTier = (type: "boost" | "featured" | "premium") => {
+    const newTier: PricingTier = { label: "", amount: 0 };
+    if (type === "boost") {
+      newTier.durationMinutes = 60;
+      setBoostTiers([...boostTiers, newTier]);
+    } else {
+      newTier.durationDays = type === "featured" ? 7 : 30;
+      if (type === "featured") setFeaturedTiers([...featuredTiers, newTier]);
+      else setPremiumTiers([...premiumTiers, newTier]);
+    }
+  };
+
+  const removeTier = (type: "boost" | "featured" | "premium", index: number) => {
+    if (type === "boost") setBoostTiers(boostTiers.filter((_, i) => i !== index));
+    else if (type === "featured") setFeaturedTiers(featuredTiers.filter((_, i) => i !== index));
+    else setPremiumTiers(premiumTiers.filter((_, i) => i !== index));
+  };
+
+  const updateTier = (
+    type: "boost" | "featured" | "premium",
+    index: number,
+    field: keyof PricingTier,
+    value: string | number
+  ) => {
+    const updater = (tiers: PricingTier[]) =>
+      tiers.map((t, i) => (i === index ? { ...t, [field]: value } : t));
+    if (type === "boost") setBoostTiers(updater(boostTiers));
+    else if (type === "featured") setFeaturedTiers(updater(featuredTiers));
+    else setPremiumTiers(updater(premiumTiers));
+  };
+
+  const handleSave = useCallback(async () => {
+    // Validate before save
+    if (upiError) {
+      toast.error("Fix errors", { description: upiError });
+      return;
+    }
+    if (phoneError) {
+      toast.error("Fix errors", { description: phoneError });
+      return;
+    }
+    if (!upiId.trim()) {
+      toast.error("Missing field", { description: "UPI ID is required" });
+      return;
+    }
+    if (!whatsappNumber.trim()) {
+      toast.error("Missing field", { description: "WhatsApp number is required" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const instructionsArray = instructions
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      const res = await fetch("/api/admin/payment-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          upiId: upiId.trim(),
+          whatsappNumber: whatsappNumber.trim(),
+          boostPrice: Number(boostPrice) || 0,
+          featuredPrice: Number(featuredPrice) || 0,
+          premiumPrice: Number(premiumPrice) || 0,
+          instructions: instructionsArray,
+          boostTiers,
+          featuredTiers,
+          premiumTiers,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSettings(data.settings);
+        toast.success("Payment settings updated", { description: "All pricing and UPI config saved." });
+      } else {
+        const err = await res.json();
+        toast.error("Failed to save", { description: err.error || "Unknown error" });
+      }
+    } catch {
+      toast.error("Network error", { description: "Could not reach server." });
+    } finally {
+      setSaving(false);
+    }
+  }, [upiId, upiError, whatsappNumber, phoneError, boostPrice, featuredPrice, premiumPrice, instructions, boostTiers, featuredTiers, premiumTiers]);
+
+  if (loading) {
+    return (
+      <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
+        <CardContent className="p-6 flex items-center justify-center">
+          <Loader2 className="size-5 text-[#52525B] animate-spin" />
+          <span className="text-sm text-[#52525B] ml-2">Loading payment settings...</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Tier editor sub-component
+  const TierEditor = ({
+    title,
+    tiers,
+    type,
+    onChange,
+  }: {
+    title: string;
+    tiers: PricingTier[];
+    type: "boost" | "featured" | "premium";
+    onChange: (tiers: PricingTier[]) => void;
+  }) => {
+    const isBoost = type === "boost";
+    const durationLabel = isBoost ? "Minutes" : "Days";
+    const durationField = isBoost ? "durationMinutes" : "durationDays";
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm text-[#A1A1AA] font-medium">{title}</Label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-violet-400 hover:text-violet-300 hover:bg-violet-500/10"
+            onClick={() => addTier(type)}
+          >
+            <Plus className="size-3 mr-1" />
+            Add Tier
+          </Button>
+        </div>
+        {tiers.length === 0 ? (
+          <p className="text-xs text-[#52525B] py-2">No tiers configured. Click &quot;Add Tier&quot; to add one.</p>
+        ) : (
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+            {tiers.map((tier, idx) => (
+              <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-[#1E1E2A] border border-[rgba(255,255,255,0.06)]">
+                <Input
+                  value={tier.label}
+                  onChange={(e) => updateTier(type, idx, "label", e.target.value)}
+                  placeholder="Tier name"
+                  className="flex-1 h-8 text-xs bg-[#15151D] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] rounded-md"
+                />
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-[#52525B]">₹</span>
+                  <Input
+                    type="number"
+                    value={tier.amount || ""}
+                    onChange={(e) => updateTier(type, idx, "amount", Number(e.target.value))}
+                    placeholder="0"
+                    min="0"
+                    className="w-20 h-8 text-xs bg-[#15151D] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] rounded-md"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-[#52525B]">{durationLabel}</span>
+                  <Input
+                    type="number"
+                    value={tier[durationField] || ""}
+                    onChange={(e) => updateTier(type, idx, durationField, Number(e.target.value))}
+                    placeholder="0"
+                    min="1"
+                    className="w-16 h-8 text-xs bg-[#15151D] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] rounded-md"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeTier(type, idx)}
+                  className="p-1 rounded text-[#52525B] hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  aria-label="Remove tier"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
+      <CardHeader>
+        <CardTitle className="text-base font-semibold text-[#F5F5F7]">UPI Payment Settings</CardTitle>
+        <CardDescription className="text-xs text-[#A1A1AA]">Configure UPI payment details, pricing tiers, and QR code</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* QR Code Upload */}
+        <div className="space-y-2">
+          <Label className="text-sm text-[#A1A1AA] font-medium">Payment QR Code</Label>
+          <div className="flex items-start gap-4">
+            <div className="w-32 h-32 rounded-lg bg-[#1E1E2A] border border-[rgba(255,255,255,0.08)] overflow-hidden flex items-center justify-center shrink-0">
+              {uploading ? (
+                <Loader2 className="size-5 text-[#52525B] animate-spin" />
+              ) : qrPreview ? (
+                <img src={qrPreview} alt="Payment QR" className="w-full h-full object-contain" />
+              ) : (
+                <div className="flex flex-col items-center gap-1 text-center px-2">
+                  <ImageIcon className="size-4 text-[#52525B]" />
+                  <span className="text-[10px] text-[#52525B]">No QR uploaded</span>
+                </div>
+              )}
+            </div>
+            <div className="flex-1 space-y-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleQrUpload(file);
+                }}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs border-[rgba(255,255,255,0.08)] bg-[#1E1E2A] text-[#A1A1AA] hover:text-[#F5F5F7] hover:bg-[rgba(255,255,255,0.06)]"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                <Upload className="size-3.5 mr-1.5" />
+                {uploading ? "Uploading..." : "Upload QR Image"}
+              </Button>
+              <p className="text-[10px] text-[#52525B]">JPG, PNG, or WebP — max 2MB</p>
+            </div>
+          </div>
+        </div>
+
+        {/* UPI ID & WhatsApp */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-sm text-[#A1A1AA]">UPI ID</Label>
+            <Input
+              value={upiId}
+              onChange={(e) => handleUpiChange(e.target.value)}
+              placeholder="secretza@ybl"
+              className={`bg-[#1E1E2A] border h-10 rounded-lg text-[#F5F5F7] ${upiError ? "border-red-500/50" : "border-[rgba(255,255,255,0.08)]"}`}
+            />
+            {upiError && <p className="text-[10px] text-red-400">{upiError}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm text-[#A1A1AA]">WhatsApp Number</Label>
+            <Input
+              value={whatsappNumber}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              placeholder="+919876543210"
+              className={`bg-[#1E1E2A] border h-10 rounded-lg text-[#F5F5F7] ${phoneError ? "border-red-500/50" : "border-[rgba(255,255,255,0.08)]"}`}
+            />
+            {phoneError && <p className="text-[10px] text-red-400">{phoneError}</p>}
+          </div>
+        </div>
+
+        {/* Base Prices */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-sm text-[#A1A1AA]">Boost Price (₹)</Label>
+            <Input
+              type="number"
+              value={boostPrice}
+              onChange={(e) => setBoostPrice(e.target.value)}
+              min="0"
+              className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] h-10 rounded-lg"
+            />
+            <p className="text-[10px] text-[#52525B]">Default / base price</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm text-[#A1A1AA]">Featured Price (₹)</Label>
+            <Input
+              type="number"
+              value={featuredPrice}
+              onChange={(e) => setFeaturedPrice(e.target.value)}
+              min="0"
+              className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] h-10 rounded-lg"
+            />
+            <p className="text-[10px] text-[#52525B]">Default / base price</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm text-[#A1A1AA]">Premium Price (₹)</Label>
+            <Input
+              type="number"
+              value={premiumPrice}
+              onChange={(e) => setPremiumPrice(e.target.value)}
+              min="0"
+              className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] h-10 rounded-lg"
+            />
+            <p className="text-[10px] text-[#52525B]">Default / base price</p>
+          </div>
+        </div>
+
+        {/* Pricing Tiers */}
+        <Separator className="bg-[rgba(255,255,255,0.06)]" />
+        <div className="space-y-4">
+          <Label className="text-sm text-[#A1A1AA] font-medium">Pricing Tiers</Label>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <TierEditor
+              title="Boost Tiers"
+              tiers={boostTiers}
+              type="boost"
+              onChange={setBoostTiers}
+            />
+            <TierEditor
+              title="Featured Tiers"
+              tiers={featuredTiers}
+              type="featured"
+              onChange={setFeaturedTiers}
+            />
+            <TierEditor
+              title="Premium Tiers"
+              tiers={premiumTiers}
+              type="premium"
+              onChange={setPremiumTiers}
+            />
+          </div>
+        </div>
+
+        {/* Instructions */}
+        <div className="space-y-1.5">
+          <Label className="text-sm text-[#A1A1AA] font-medium">Payment Instructions (one per line)</Label>
+          <Textarea
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+            rows={5}
+            placeholder={"Open any UPI app...\nScan the QR code..."}
+            className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] text-sm resize-none rounded-lg"
+          />
+        </div>
+
+        {/* Save Button */}
+        <Button
+          onClick={handleSave}
+          disabled={saving || !!upiError || !!phoneError}
+          className="w-full gradient-violet hover:opacity-90 text-white font-semibold h-10"
+        >
+          {saving ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+          {saving ? "Saving..." : "Save Payment Settings"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 

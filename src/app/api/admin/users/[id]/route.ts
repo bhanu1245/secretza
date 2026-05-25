@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
+import { logAdminAction, extractIpAddress } from "@/lib/audit-logger";
+import { logError } from "@/lib/monitoring";
 
 export async function GET(
   _request: Request,
@@ -87,7 +89,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Admin user detail error:", error);
+    logError(error, { component: "route:api/admin/users/[id]" });
     return NextResponse.json(
       { error: "Failed to fetch user" },
       { status: 500 }
@@ -128,6 +130,13 @@ export async function PATCH(
 
     switch (action) {
       case "suspend":
+        if (id === admin.id) {
+          return NextResponse.json({ error: "Cannot suspend your own account" }, { status: 403 });
+        }
+        // Prevent admin from suspending other admins
+        if (existingUser.role === "admin" && existingUser.id !== admin.id) {
+          return NextResponse.json({ error: "Cannot suspend another admin" }, { status: 403 });
+        }
         updateData = { isSuspended: true, sessionVersion: { increment: 1 } };
         message = "User suspended successfully";
         break;
@@ -159,6 +168,13 @@ export async function PATCH(
             { status: 403 }
           );
         }
+        // Prevent admin from demoting another admin
+        if (existingUser.role === "admin" && role !== "admin") {
+          return NextResponse.json(
+            { error: "Cannot demote another admin" },
+            { status: 403 }
+          );
+        }
         updateData = { role };
         message = `User role updated to ${role}`;
         break;
@@ -184,6 +200,16 @@ export async function PATCH(
       },
     });
 
+    // Audit log the admin action
+    logAdminAction(
+      admin.id,
+      action === "suspend" ? "user_suspend" : action === "verify" ? "user_verify" : "settings_change",
+      "User",
+      id,
+      { action, previousRole: existingUser.role, previousIsSuspended: existingUser.isSuspended, newRole: role },
+      extractIpAddress(request)
+    );
+
     return NextResponse.json({
       message,
       user: {
@@ -195,7 +221,7 @@ export async function PATCH(
       },
     });
   } catch (error) {
-    console.error("Admin user action error:", error);
+    logError(error, { component: "route:api/admin/users/[id]" });
     return NextResponse.json(
       { error: "Failed to perform user action" },
       { status: 500 }

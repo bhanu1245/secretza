@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { logError } from "@/lib/monitoring";
 
 /**
  * GET /api/notifications
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
       hasMore: skip + notifications.length < totalCount,
     });
   } catch (error) {
-    console.error("Notifications fetch error:", error);
+    logError(error, { component: "route:api/notifications" });
     return NextResponse.json(
       { error: "Failed to fetch notifications" },
       { status: 500 }

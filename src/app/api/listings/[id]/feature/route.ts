@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { logError } from "@/lib/monitoring";
 
 // Whitelist of valid feature durations to prevent pricing exploits
 const VALID_FEATURE_DURATIONS = [1, 7, 14, 30]; // days
@@ -83,7 +84,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("Feature error:", error);
+    logError(error, { component: "route:api/listings/[id]/feature" });
     return NextResponse.json(
       { error: "Failed to feature listing" },
       { status: 500 }

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { readdir, stat, unlink } from "fs/promises";
-import { join } from "path";
-import { logInfo, logWarning } from "@/lib/monitoring";
+import path, { join } from "path";
+import { timingSafeEqual } from "crypto";
+import { logInfo, logWarning, logError } from "@/lib/monitoring";
 
 /**
  * Cron endpoint: Cleanup orphaned uploaded files
@@ -17,9 +18,17 @@ import { logInfo, logWarning } from "@/lib/monitoring";
  * Security: Requires x-cron-secret header
  */
 export async function GET(request: Request) {
-  // Authentication: require cron secret header
+  // Authentication: require cron secret header with constant-time comparison
   const cronSecret = request.headers.get("x-cron-secret");
-  if (!cronSecret || cronSecret !== process.env.CRON_SECRET) {
+  const expectedSecret = process.env.CRON_SECRET;
+  if (!cronSecret || !expectedSecret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Constant-time comparison to prevent timing attacks
+  const a = Buffer.from(cronSecret, "utf-8");
+  const b = Buffer.from(expectedSecret, "utf-8");
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -45,19 +54,39 @@ export async function GET(request: Request) {
     // ==========================================
     // Step 2: Get all referenced storage keys from DB
     // ==========================================
-    const referencedImages = await db.listingImage.findMany({
-      select: { storageKey: true },
-    });
+    const [referencedImages, paymentSubmissions] = await Promise.all([
+      db.listingImage.findMany({
+        select: { storageKey: true },
+      }),
+      db.manualPaymentSubmission.findMany({
+        where: { screenshotUrl: { not: null } },
+        select: { screenshotUrl: true },
+      }),
+    ]);
 
     const referencedKeys = new Set(
       referencedImages.map((img) => img.storageKey).filter(Boolean)
     );
 
+    // Extract storage keys from payment screenshot URLs
+    // URLs follow pattern: /api/upload/file?key=screenshots/file.jpg
+    for (const sub of paymentSubmissions) {
+      if (sub.screenshotUrl) {
+        try {
+          const url = new URL(sub.screenshotUrl, "http://localhost");
+          const key = url.searchParams.get("key");
+          if (key) referencedKeys.add(key);
+        } catch {
+          // If URL parsing fails, try using the raw value as a key
+          referencedKeys.add(sub.screenshotUrl.replace(/^\/api\/upload\/file\?key=/, ""));
+        }
+      }
+    }
+
     // ==========================================
     // Step 3: Scan upload directories for orphaned files
     // ==========================================
-    const uploadsDir = join(process.cwd(), "public", "uploads");
-    const screenshotsDir = join(process.cwd(), "uploads", "screenshots");
+    const uploadsDir = join(process.cwd(), "uploads");
     const gracePeriod = 24 * 60 * 60 * 1000; // 24 hours
     const cutoff = Date.now() - gracePeriod;
 
@@ -75,10 +104,9 @@ export async function GET(request: Request) {
             // Only delete files older than the grace period
             if (mtime < cutoff) {
               // Check if this file is referenced
-              const storageKey = `listings/${entry}`;
-              const screenshotKey = `screenshots/${entry}`;
+              const storageKey = filePath.replace(uploadsDir + path.sep, "").replace(/\\/g, "/");
 
-              if (!referencedKeys.has(storageKey) && !referencedKeys.has(screenshotKey)) {
+              if (!referencedKeys.has(storageKey)) {
                 try {
                   await unlink(filePath);
                   stats.orphanedFilesDeleted++;
@@ -100,7 +128,6 @@ export async function GET(request: Request) {
     }
 
     await scanDirectory(uploadsDir);
-    await scanDirectory(screenshotsDir);
 
     // ==========================================
     // Step 4: Clean up orphaned ListingImage records (no actual file)
@@ -125,7 +152,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     const elapsed = Date.now() - startTime;
-    console.error("File cleanup error:", error);
+    logError(error, { component: "cron:cleanup-files", stats, elapsedMs: elapsed });
 
     return NextResponse.json(
       {

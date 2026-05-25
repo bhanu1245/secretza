@@ -326,6 +326,30 @@ export async function monitorApiHealth(): Promise<ApiDependencyHealth[]> {
     });
   }
 
+  // Check Redis connectivity
+  if (process.env.REDIS_URL) {
+    try {
+      const start = Date.now();
+      // Dynamic import to avoid bundling ioredis when not used
+      const Redis = (await import("ioredis")).default;
+      const redis = new Redis(process.env.REDIS_URL, { lazyConnect: true, connectTimeout: 2000 });
+      await redis.ping();
+      redis.disconnect();
+      const latency = Date.now() - start;
+      results.push({
+        name: "redis",
+        status: latency < 500 ? "healthy" : "degraded",
+        latencyMs: latency,
+      });
+    } catch (err) {
+      results.push({
+        name: "redis",
+        status: "unhealthy",
+        error: err instanceof Error ? err.message : "Connection failed",
+      });
+    }
+  }
+
   return results;
 }
 

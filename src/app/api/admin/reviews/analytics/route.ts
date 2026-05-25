@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
+import { logError } from "@/lib/monitoring";
 
 // GET /api/admin/reviews/analytics?days=30
 export async function GET(request: Request) {
@@ -155,7 +156,7 @@ export async function GET(request: Request) {
       })),
     });
   } catch (error) {
-    console.error("Review analytics error:", error);
+    logError(error, { component: "route:api/admin/reviews/analytics" });
     return NextResponse.json(
       { error: "Failed to fetch review analytics" },
       { status: 500 }

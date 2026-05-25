@@ -35,6 +35,8 @@ interface ManualPaymentPageProps {
 interface PricingTier {
   label: string;
   amount: number;
+  durationMinutes?: number;
+  durationDays?: number;
 }
 
 interface PreviousSubmission {
@@ -53,34 +55,33 @@ interface PreviousSubmission {
 // ==========================================
 // Constants
 // ==========================================
-const pricingTiers: Record<string, PricingTier[]> = {
+// Fallback tiers used before API loads
+const FALLBACK_TIERS: Record<string, PricingTier[]> = {
   boost: [
-    { label: "1 Hour Boost", amount: 99 },
-    { label: "6 Hour Boost", amount: 199 },
-    { label: "24 Hour Boost", amount: 499 },
+    { label: "1 Hour Boost", amount: 99, durationMinutes: 60 },
+    { label: "6 Hour Boost", amount: 199, durationMinutes: 360 },
+    { label: "24 Hour Boost", amount: 499, durationMinutes: 1440 },
   ],
   feature: [
-    { label: "3 Day Featured", amount: 149 },
-    { label: "7 Day Featured", amount: 399 },
-    { label: "14 Day Featured", amount: 799 },
+    { label: "3 Day Featured", amount: 149, durationDays: 3 },
+    { label: "7 Day Featured", amount: 399, durationDays: 7 },
+    { label: "14 Day Featured", amount: 799, durationDays: 14 },
   ],
   premium: [
-    { label: "30 Day Premium", amount: 999 },
+    { label: "30 Day Premium", amount: 999, durationDays: 30 },
   ],
 };
 
-const UPI_ID = "secretza@ybl";
-const UPI_CONFIG = {
-  upiId: "secretza@ybl",
-  phone: "+919876543210",
-  instructions: [
-    "Open any UPI app (Google Pay, PhonePe, Paytm, etc.)",
-    "Scan the QR code or send payment to the UPI ID",
-    "Enter the exact amount shown",
-    "After payment, note down the 12-digit UTR number",
-    "Come back here and submit the UTR with screenshot",
-  ],
-};
+// Default fallback (used before API loads)
+const FALLBACK_UPI_ID = "secretza@ybl";
+const FALLBACK_WHATSAPP = "+919876543210";
+const FALLBACK_INSTRUCTIONS = [
+  "Open any UPI app (Google Pay, PhonePe, Paytm, etc.)",
+  "Scan the QR code or send payment to the UPI ID",
+  "Enter the exact amount shown",
+  "After payment, note down the 12-digit UTR number",
+  "Come back here and submit the UTR with screenshot",
+];
 
 const MAX_SCREENSHOT_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -153,7 +154,13 @@ export default function ManualPaymentPage({
   const goBack = useNavigationStore((s) => s.goBack);
 
   // State
-  const tiers = pricingTiers[paymentType] || [];
+  const dynamicTiers = paymentConfig
+    ? (paymentConfig.boostTiers && paymentType === "boost" ? paymentConfig.boostTiers
+      : paymentConfig.featuredTiers && paymentType === "feature" ? paymentConfig.featuredTiers
+        : paymentConfig.premiumTiers && paymentType === "premium" ? paymentConfig.premiumTiers
+          : null)
+    : null;
+  const tiers = dynamicTiers || FALLBACK_TIERS[paymentType] || [];
   const [selectedTierIndex, setSelectedTierIndex] = useState(0);
   const selectedAmount = tiers[selectedTierIndex]?.amount ?? 99;
 
@@ -173,12 +180,26 @@ export default function ManualPaymentPage({
   const [previousSubmissions, setPreviousSubmissions] = useState<PreviousSubmission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
+  // Dynamic payment settings from API
+  const [paymentConfig, setPaymentConfig] = useState<{
+    upiId: string;
+    whatsappNumber: string;
+    instructions: string[];
+    qrImageUrl: string | null;
+    boostTiers?: PricingTier[];
+    featuredTiers?: PricingTier[];
+    premiumTiers?: PricingTier[];
+  } | null>(null);
+
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Derived
   const isFormValid = utrNumber.length === 12 && !submitting;
   const PaymentTypeIcon = paymentTypeIcons[paymentType] || Zap;
+  const upiId = paymentConfig?.upiId || FALLBACK_UPI_ID;
+  const whatsAppNumber = paymentConfig?.whatsappNumber || FALLBACK_WHATSAPP;
+  const instructions = paymentConfig?.instructions || FALLBACK_INSTRUCTIONS;
 
   // ========================
   // Auth guard
@@ -190,6 +211,28 @@ export default function ManualPaymentPage({
       goBack();
     }
   }, [isAuthenticated, user, setAuthModalOpen, setAuthModalTab, goBack]);
+
+  // ========================
+  // Fetch payment settings (UPI ID, WhatsApp, instructions)
+  // ========================
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchSettings() {
+      try {
+        const res = await fetch("/api/payment-settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) {
+            setPaymentConfig(data);
+          }
+        }
+      } catch {
+        // Use fallback defaults
+      }
+    }
+    fetchSettings();
+    return () => { cancelled = true; };
+  }, []);
 
   // ========================
   // Fetch QR code
@@ -269,14 +312,14 @@ export default function ManualPaymentPage({
   // ========================
   const handleCopyUPI = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(UPI_ID);
+      await navigator.clipboard.writeText(upiId);
       setCopied(true);
-      toast.success("UPI ID copied!", { description: UPI_ID });
+      toast.success("UPI ID copied!", { description: upiId });
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("Failed to copy", { description: "Please copy the UPI ID manually." });
     }
-  }, []);
+  }, [upiId]);
 
   const handleFileSelect = useCallback((file: File) => {
     if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
@@ -562,7 +605,7 @@ export default function ManualPaymentPage({
               <h3 className="text-sm font-semibold text-[#F5F5F7] mb-3">UPI ID</h3>
               <div className="flex items-center gap-3">
                 <div className="flex-1 px-4 py-2.5 rounded-lg bg-[#1E1E2A] border border-[rgba(255,255,255,0.08)] font-mono text-sm text-[#F5F5F7]">
-                  {UPI_ID}
+                  {upiId}
                 </div>
                 <button
                   onClick={handleCopyUPI}
@@ -585,7 +628,7 @@ export default function ManualPaymentPage({
                 How to Pay
               </h3>
               <ol className="space-y-3">
-                {UPI_CONFIG.instructions.map((instruction, idx) => (
+                {instructions.map((instruction, idx) => (
                   <li key={idx} className="flex gap-3">
                     <span className="flex items-center justify-center size-6 rounded-full bg-[#7C3AED]/15 text-[#8B5CF6] text-xs font-bold shrink-0">
                       {idx + 1}
@@ -600,7 +643,7 @@ export default function ManualPaymentPage({
 
             {/* WhatsApp Contact */}
             <a
-              href={`https://wa.me/919876543210?text=${encodeURIComponent(`Hi, I made a payment for ${paymentTypeLabels[paymentType].toLowerCase()}. Amount: ₹${selectedAmount}. Please confirm.`)}`}
+              href={`https://wa.me/${whatsAppNumber.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hi, I made a payment for ${paymentTypeLabels[paymentType].toLowerCase()}. Amount: ₹${selectedAmount}. Please confirm.`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-[#25D366]/15 border border-[#25D366]/30 text-[#25D366] text-sm font-medium hover:bg-[#25D366]/25 hover:border-[#25D366]/50 transition-all duration-200"

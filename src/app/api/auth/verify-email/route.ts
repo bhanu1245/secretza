@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { rateLimit, RATE_LIMITS, getClientIp } from "@/lib/rate-limit";
+import { logError } from "@/lib/monitoring";
 
 const HTML_TEMPLATE = (title: string, body: string) => `
 <!DOCTYPE html>
@@ -93,6 +95,22 @@ const HTML_TEMPLATE = (title: string, body: string) => `
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting: prevent brute-force verification token guessing
+    const ip = getClientIp(request);
+    const rl = await rateLimit(`verify-email:${ip}`, RATE_LIMITS.forgotPassword);
+    if (!rl.success) {
+      return new NextResponse(
+        "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Rate Limited</title></head><body style=\"text-align:center;padding:48px;font-family:sans-serif\"><h2>Too Many Requests</h2><p>Please wait before trying again.</p></body></html>",
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)),
+          },
+        },
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const token = searchParams.get("token");
 
@@ -195,7 +213,7 @@ export async function GET(request: NextRequest) {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   } catch (error) {
-    console.error("Verify email error:", error);
+    logError(error, { component: "auth:verify-email", action: "verify" });
     const body = `
       <div class="container">
         <div class="logo">

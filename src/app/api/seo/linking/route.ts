@@ -7,6 +7,7 @@ import {
   getSiloLinks,
   getBreadcrumbLinks,
 } from '@/lib/internal-linking';
+import { logError } from '@/lib/monitoring';
 
 /**
  * GET /api/seo/linking - Get internal linking suggestions
@@ -88,7 +89,7 @@ export async function GET(request: NextRequest) {
       autoLinks: getAutoInternalLinks(effectivePageType, effectiveSlug, limit),
     });
   } catch (error) {
-    console.error('Internal linking API error:', error);
+    logError(error, { component: "route:api/seo/linking" });
     return NextResponse.json(
       { error: 'Failed to generate linking data' },
       { status: 500 },

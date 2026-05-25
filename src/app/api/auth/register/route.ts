@@ -3,7 +3,8 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { generateToken } from "@/lib/auth-helpers";
 import { sendVerificationEmail } from "@/lib/email";
-import { rateLimit, RATE_LIMITS, getClientIp } from "@/lib/rate-limit";
+import { rateLimit, RATE_LIMITS, getClientIp, recordFailure } from "@/lib/rate-limit";
+import { logError } from "@/lib/monitoring";
 
 // Validation helpers
 function validateName(name: unknown): string | null {
@@ -27,6 +28,9 @@ function validatePassword(password: unknown): string | null {
   if (typeof password !== "string" || password.length < 8) {
     return "Password must be at least 8 characters long.";
   }
+  if (password.length > 128) {
+    return "Password must be at most 128 characters.";
+  }
   if (!/[A-Z]/.test(password)) {
     return "Password must contain at least one uppercase letter.";
   }
@@ -40,7 +44,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting by IP
     const ip = getClientIp(request);
-    const rl = rateLimit(`register:${ip}`, RATE_LIMITS.register);
+    const rl = await rateLimit(`register:${ip}`, RATE_LIMITS.register);
 
     if (!rl.success) {
       return NextResponse.json(
@@ -83,6 +87,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
+      recordFailure(`register:${ip}`);
       return NextResponse.json(
         { errors: ["An account with this email already exists."] },
         { status: 409 }
@@ -135,7 +140,8 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Registration error:", error);
+    logError(error, { component: "route:api/auth/register" });
+    // recordFailure for registration failures is handled by rate limiting above
     return NextResponse.json(
       { errors: ["An unexpected error occurred. Please try again."] },
       { status: 500 }

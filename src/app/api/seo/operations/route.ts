@@ -20,7 +20,10 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
-    await requireMinRole('admin');
+    const admin = await requireMinRole('admin');
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { searchParams } = request.nextUrl;
     const days = Math.min(parseInt(searchParams.get('days') || '30', 10), 90);
@@ -51,7 +54,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireMinRole('admin');
+    const admin = await requireMinRole('admin');
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const body = await request.json();
     const { action } = body as { action?: string };

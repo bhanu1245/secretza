@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { logAdminAction, extractIpAddress } from "@/lib/audit-logger";
+import { logError } from "@/lib/monitoring";
 
 // POST /api/admin/reviews/[id]/moderate
 // Body: { action: "approve"|"reject"|"flag"|"feature"|"unfeature", flaggedReason?, adminNote? }
@@ -129,6 +131,16 @@ export async function POST(
       },
     });
 
+    // Audit log the moderation action
+    logAdminAction(
+      moderatorId,
+      `review_${action}`,
+      "Review",
+      id,
+      { action, previousStatus: review.status, flaggedReason, adminNote },
+      extractIpAddress(request)
+    );
+
     return NextResponse.json({
       message,
       review: {
@@ -140,7 +152,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("Review moderate error:", error);
+    logError(error, { component: "route:api/admin/reviews/[id]/moderate" });
     return NextResponse.json(
       { error: "Failed to moderate review" },
       { status: 500 }

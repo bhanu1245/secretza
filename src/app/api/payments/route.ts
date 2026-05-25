@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { logPaymentAudit } from "@/lib/payment-audit";
+import { getClientIp } from "@/lib/rate-limit";
+import { logError } from "@/lib/monitoring";
+import { getValidAmounts } from "@/lib/payment-settings";
 
 /**
  * Payment hooks endpoint for external payment gateway callbacks
- * 
- * In production, integrate with Stripe/PayPal/webhook handlers here.
- * This serves as the hook integration layer.
  */
 export async function POST(request: Request) {
   try {
@@ -20,10 +21,8 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { type, listingId, userId, amount, gatewayTxId, couponCode } = body;
+    const { type, listingId, amount, gatewayTxId, couponCode } = body;
 
-    // Security: Always use the authenticated user's ID — ignore any userId from the request body
-    // to prevent users from creating payments under other users' accounts.
     const authenticatedUserId = session.user.id;
 
     if (!type) {
@@ -49,18 +48,51 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create payment record — userId is always from the session, never from the body
+    // Validate amount against dynamic PaymentSettings tiers
+    if (type !== "renewal") {
+      const validAmounts = await getValidAmounts(type as "boost" | "feature" | "premium");
+      if (validAmounts.length > 0 && !validAmounts.includes(amount)) {
+        return NextResponse.json(
+          { error: `Invalid amount for ${type}. Must be one of: ₹${validAmounts.join(", ₹")}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate listing ownership when listingId is provided
+    if (listingId) {
+      const listing = await db.listing.findUnique({
+        where: { id: listingId },
+        select: { userId: true },
+      });
+      if (!listing) {
+        return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+      }
+      if (listing.userId !== authenticatedUserId) {
+        return NextResponse.json({ error: "You do not own this listing" }, { status: 403 });
+      }
+    }
+
     const payment = await db.payment.create({
       data: {
         userId: authenticatedUserId,
         listingId: listingId || null,
         amount: amount || 0,
-        currency: "USD",
+        currency: "INR",
         status: "pending",
         method: type,
         gatewayTxId: gatewayTxId || null,
         couponCode: couponCode || null,
       },
+    });
+
+    const ip = getClientIp(request);
+    await logPaymentAudit({
+      paymentId: payment.id,
+      action: "created",
+      oldValue: null,
+      newValue: { type, amount, currency: "INR", method: type, listingId, couponCode },
+      ipAddress: ip,
     });
 
     return NextResponse.json({
@@ -75,7 +107,7 @@ export async function POST(request: Request) {
       message: "Payment record created. Awaiting gateway confirmation.",
     });
   } catch (error) {
-    console.error("Payment hook error:", error);
+    logError(error, { component: "route:api/payments" });
     return NextResponse.json(
       { error: "Payment processing failed" },
       { status: 500 }
@@ -85,7 +117,6 @@ export async function POST(request: Request) {
 
 /**
  * GET: Retrieve payment history for the authenticated user only
- * Security: Requires authentication and enforces userId === session.user.id
  */
 export async function GET(request: Request) {
   try {
@@ -97,8 +128,6 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
 
-    // Security: Only allow users to view their own payment history.
-    // Reject if a userId is provided that doesn't match the session.
     if (userId && userId !== session.user.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -127,7 +156,7 @@ export async function GET(request: Request) {
       total: payments.length,
     });
   } catch (error) {
-    console.error("Payment history error:", error);
+    logError(error, { component: "route:api/payments" });
     return NextResponse.json(
       { error: "Failed to fetch payment history" },
       { status: 500 }

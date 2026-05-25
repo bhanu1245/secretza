@@ -4,6 +4,7 @@ import { scoreAllPages } from '@/lib/indexation-scorer';
 import { getCrawlStats } from '@/lib/crawl-analytics';
 import { db } from '@/lib/db';
 import { indiaCities, indiaStates } from '@/lib/india-geo-data';
+import { logError } from '@/lib/monitoring';
 
 const CATEGORIES = [
   'escorts', 'massage', 'dating', 'trans', 'male-escorts',
@@ -280,7 +281,7 @@ export async function GET(request: NextRequest) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    console.error('SEO dashboard error:', error);
+    logError(error, { component: "route:api/seo/dashboard" });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to load SEO dashboard' },
       { status: 500 }

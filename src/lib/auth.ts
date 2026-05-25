@@ -6,7 +6,26 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { sendLoginAlert } from "@/lib/email";
-import { rateLimit, RATE_LIMITS, getClientIp } from "@/lib/rate-limit";
+import { rateLimit, RATE_LIMITS, getClientIp, recordFailure, clearFailures } from "@/lib/rate-limit";
+
+// ---------------------------------------------------------------------------
+// Short-lived cache for user suspension/role checks in JWT callback
+// Avoids a DB query on every single API request while still catching
+// suspension within 2 minutes (vs. the old 1-hour interval).
+// ---------------------------------------------------------------------------
+const userStatusCache = new Map<string, { data: { role: string; isVerified: boolean; isSuspended: boolean; isPremium: boolean; premiumExpiry: Date | null; sessionVersion: number }; ts: number }>();
+const USER_STATUS_TTL = 2 * 60 * 1000; // 2 minutes
+
+function getCachedUserStatus(userId: string) {
+  const entry = userStatusCache.get(userId);
+  if (entry && Date.now() - entry.ts < USER_STATUS_TTL) return entry.data;
+  userStatusCache.delete(userId);
+  return null;
+}
+
+function setCachedUserStatus(userId: string, data: { role: string; isVerified: boolean; isSuspended: boolean; isPremium: boolean; premiumExpiry: Date | null; sessionVersion: number }) {
+  userStatusCache.set(userId, { data, ts: Date.now() });
+}
 
 // Extend NextAuth types to include our custom fields
 declare module "next-auth" {
@@ -90,7 +109,7 @@ export const authOptions: NextAuthOptions = {
             else if (typeof rip === "string") ip = rip.trim();
           }
         }
-        const rl = rateLimit(`login:${ip}`, RATE_LIMITS.login);
+        const rl = await rateLimit(`login:${ip}`, RATE_LIMITS.login);
         if (!rl.success) {
           throw new Error("Too many login attempts. Please try again later.");
         }
@@ -104,6 +123,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user || !user.passwordHash) {
+          recordFailure(ip);
           throw new Error("Invalid email or password");
         }
 
@@ -117,8 +137,12 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (!isPasswordValid) {
+          recordFailure(ip);
           throw new Error("Invalid email or password");
         }
+
+        // Clear failure tracking on successful login
+        clearFailures(ip);
 
         // Update lastLoginAt
         await db.user.update({
@@ -158,11 +182,15 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      allowDangerousEmailAccountLinking: false,
-    }),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            allowDangerousEmailAccountLinking: false,
+          }),
+        ]
+      : []),
   ],
   callbacks: {
     async jwt({ token, user, account, trigger, session }) {
@@ -213,20 +241,20 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      // Periodic refresh every hour to catch suspension/verification/sessionVersion changes
-      if (!token.iat || (Date.now() / 1000) - (token.iat as number) > 3600) {
-        const dbUser = await db.user.findUnique({
-          where: { id: token.id },
-          select: { role: true, isVerified: true, isSuspended: true, isPremium: true, premiumExpiry: true, sessionVersion: true },
-        });
-        if (dbUser) {
-          token.role = dbUser.role;
-          token.isVerified = dbUser.isVerified;
-          token.isSuspended = dbUser.isSuspended;
-          token.isPremium = dbUser.isPremium;
-          token.premiumExpiry = dbUser.premiumExpiry;
-          // If sessionVersion changed, invalidate the session
-          if (token.sessionVersion !== undefined && dbUser.sessionVersion !== token.sessionVersion) {
+      // Real-time suspension/role check with 2-minute cache.
+      // This replaces the old hourly periodic refresh to ensure suspended users
+      // are locked out within 2 minutes instead of 1 hour.
+      if (token.id) {
+        const cached = getCachedUserStatus(token.id);
+        if (cached) {
+          // Use cached data to update token
+          token.role = cached.role;
+          token.isVerified = cached.isVerified;
+          token.isPremium = cached.isPremium;
+          token.premiumExpiry = cached.premiumExpiry;
+          token.isSuspended = cached.isSuspended;
+
+          if (token.sessionVersion !== undefined && cached.sessionVersion !== token.sessionVersion) {
             token.id = undefined;
             token.role = undefined;
             token.isVerified = undefined;
@@ -236,7 +264,41 @@ export const authOptions: NextAuthOptions = {
             token.provider = undefined;
             token.sessionVersion = undefined;
           } else {
-            token.sessionVersion = dbUser.sessionVersion;
+            token.sessionVersion = cached.sessionVersion;
+          }
+        } else {
+          // Cache miss — query DB
+          const suspensionCheck = await db.user.findUnique({
+            where: { id: token.id },
+            select: {
+              role: true,
+              isVerified: true,
+              isSuspended: true,
+              isPremium: true,
+              premiumExpiry: true,
+              sessionVersion: true,
+            },
+          });
+          if (suspensionCheck) {
+            setCachedUserStatus(token.id, suspensionCheck);
+            token.role = suspensionCheck.role;
+            token.isVerified = suspensionCheck.isVerified;
+            token.isPremium = suspensionCheck.isPremium;
+            token.premiumExpiry = suspensionCheck.premiumExpiry;
+            token.isSuspended = suspensionCheck.isSuspended;
+
+            if (token.sessionVersion !== undefined && suspensionCheck.sessionVersion !== token.sessionVersion) {
+              token.id = undefined;
+              token.role = undefined;
+              token.isVerified = undefined;
+              token.isSuspended = undefined;
+              token.isPremium = undefined;
+              token.premiumExpiry = undefined;
+              token.provider = undefined;
+              token.sessionVersion = undefined;
+            } else {
+              token.sessionVersion = suspensionCheck.sessionVersion;
+            }
           }
         }
       }

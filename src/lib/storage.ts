@@ -243,13 +243,19 @@ export class StorageService {
   }
 
   private async deleteLocal(key: string): Promise<void> {
-    const filePath = path.join(this.localBasePath, key);
-    if (existsSync(filePath)) {
-      await unlink(filePath);
+    // Prevent path traversal: resolved path must stay within localBasePath
+    const resolved = path.resolve(this.localBasePath, key);
+    const base = path.resolve(this.localBasePath);
+    if (!resolved.startsWith(base + path.sep) && resolved !== base) {
+      throw new Error(`Path traversal detected: key "${key}" resolves outside uploads directory`);
+    }
+
+    if (existsSync(resolved)) {
+      await unlink(resolved);
 
       // Best-effort: remove empty parent directories up to localBasePath
       try {
-        await this.cleanEmptyDirs(path.dirname(filePath));
+        await this.cleanEmptyDirs(path.dirname(resolved));
       } catch {
         // Non-critical — ignore cleanup errors
       }

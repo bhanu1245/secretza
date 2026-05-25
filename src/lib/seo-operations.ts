@@ -5,7 +5,7 @@
 // orphan page detection, crawl health reports, and sitemap statistics.
 
 import { db } from '@/lib/db';
-import { generateSitemapChunks } from '@/lib/sitemap-helpers';
+import { indiaCities, indiaStates } from '@/lib/india-geo-data';
 
 // ==========================================
 // Types
@@ -60,6 +60,85 @@ export interface PingResult {
 // ==========================================
 
 const SITEMAP_URL = 'https://secretza.com/sitemap.xml';
+const MAX_URLS_PER_SITEMAP = 5000;
+
+interface SitemapChunk {
+  id: string;
+  section: string;
+  count: number;
+}
+
+async function generateSitemapChunks(): Promise<SitemapChunk[]> {
+  const chunks: SitemapChunk[] = [];
+
+  // Chunk 1: Static pages
+  chunks.push({ id: 'static', section: 'Static', count: 2 });
+
+  // Chunk 2: Categories
+  const catCount = await db.category.count({ where: { isActive: true } });
+  chunks.push({ id: 'categories', section: 'Categories', count: catCount });
+  if (catCount > MAX_URLS_PER_SITEMAP) {
+    chunks.push({
+      id: 'categories-2',
+      section: 'Categories (continued)',
+      count: Math.max(0, catCount - MAX_URLS_PER_SITEMAP),
+    });
+  }
+
+  // Chunk 3: Cities (tier 1-3)
+  const cityPages = indiaCities.filter((c) => c.tier <= 3);
+  const cityChunks = Math.ceil(cityPages.length / MAX_URLS_PER_SITEMAP);
+  for (let i = 0; i < cityChunks; i++) {
+    chunks.push({
+      id: `cities-${i + 1}`,
+      section: `Cities (${cityPages.length} total)`,
+      count: Math.min(MAX_URLS_PER_SITEMAP, cityPages.length - i * MAX_URLS_PER_SITEMAP),
+    });
+  }
+
+  // Chunk 4: States
+  chunks.push({ id: 'states', section: 'States', count: indiaStates.length });
+
+  // Chunk 5+: Category+City combos
+  const categories = await db.category.findMany({ where: { isActive: true }, select: { slug: true } });
+  const topCities = indiaCities.filter((c) => c.tier <= 2).slice(0, 50);
+  let catCityCount = 0;
+  let catCityChunk = 0;
+  for (const cat of categories) {
+    for (const city of topCities) {
+      catCityCount++;
+      if (catCityCount > MAX_URLS_PER_SITEMAP) {
+        chunks.push({
+          id: `catcity-${catCityChunk + 1}`,
+          section: `Category+City (${catCityCount - 1} pages)`,
+          count: MAX_URLS_PER_SITEMAP,
+        });
+        catCityCount = 0;
+        catCityChunk++;
+      }
+    }
+  }
+  if (catCityCount > 0) {
+    chunks.push({
+      id: `catcity-${catCityChunk + 1}`,
+      section: `Category+City (${catCityCount} pages)`,
+      count: catCityCount,
+    });
+  }
+
+  // Chunk: Listings
+  const listingCount = await db.listing.count({ where: { status: 'approved' } });
+  const listingChunks = Math.ceil(listingCount / MAX_URLS_PER_SITEMAP);
+  for (let i = 0; i < listingChunks; i++) {
+    chunks.push({
+      id: `listings-${i + 1}`,
+      section: `Listings (${listingCount} total)`,
+      count: Math.min(MAX_URLS_PER_SITEMAP, listingCount - i * MAX_URLS_PER_SITEMAP),
+    });
+  }
+
+  return chunks;
+}
 
 async function pingEngine(url: string, engineName: string): Promise<PingResult[typeof engineName extends 'google' ? 'google' : 'bing']> {
   try {

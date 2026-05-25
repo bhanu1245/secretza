@@ -5,6 +5,8 @@ import {
   findExpiredListings,
   getNextBumpBatch,
 } from "@/lib/ranking-engine";
+import { timingSafeEqual } from "crypto";
+import { logError } from "@/lib/monitoring";
 
 /**
  * Cron endpoint: Refresh all listing rankings
@@ -20,9 +22,15 @@ import {
  */
 export async function GET(request: Request) {
   try {
-    // --- Authentication: require cron secret header ---
+    // --- Authentication: require cron secret header (constant-time comparison) ---
     const cronSecret = request.headers.get("x-cron-secret");
-    if (!cronSecret || cronSecret !== process.env.CRON_SECRET) {
+    const expectedSecret = process.env.CRON_SECRET;
+    if (!cronSecret || !expectedSecret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const a = Buffer.from(cronSecret, "utf-8");
+    const b = Buffer.from(expectedSecret, "utf-8");
+    if (a.length !== b.length || !timingSafeEqual(a, b)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -143,7 +151,7 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Ranking refresh error:", error);
+    logError(error, { component: "route:api/cron/refresh-ranking" });
     return NextResponse.json(
       { error: "Ranking refresh failed" },
       { status: 500 }

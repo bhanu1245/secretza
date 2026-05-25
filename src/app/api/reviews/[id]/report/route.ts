@@ -2,8 +2,20 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { rateLimit, RATE_LIMITS, getRateLimitHeaders } from "@/lib/rate-limit";
+import { logError } from "@/lib/monitoring";
 
 // POST /api/reviews/[id]/report — report a review
+
+const VALID_REPORT_REASONS = new Set([
+  "spam",
+  "inappropriate",
+  "fake",
+  "offensive",
+  "misleading",
+  "other",
+]);
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -12,6 +24,15 @@ export async function POST(
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    // Rate limiting per user for review reports
+    const rl = await rateLimit(`review-report:${session.user.id}`, RATE_LIMITS.api);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many report requests. Please try again later.", resetAt: rl.resetAt },
+        { status: 429, headers: getRateLimitHeaders(rl) }
+      );
     }
 
     const { id } = await params;
@@ -26,6 +47,24 @@ export async function POST(
         { error: "reason is required" },
         { status: 400 }
       );
+    }
+
+    // Validate reason against whitelist
+    if (typeof reason !== "string" || !VALID_REPORT_REASONS.has(reason)) {
+      return NextResponse.json(
+        { error: `Invalid reason. Must be one of: ${Array.from(VALID_REPORT_REASONS).join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    // Validate description length
+    if (description !== undefined && description !== null) {
+      if (typeof description !== "string" || description.length > 1000) {
+        return NextResponse.json(
+          { error: "Description must be at most 1000 characters" },
+          { status: 400 }
+        );
+      }
     }
 
     const review = await db.review.findUnique({
@@ -110,7 +149,7 @@ export async function POST(
       { status: 201 }
     );
   } catch (error: unknown) {
-    console.error("Review report error:", error);
+    logError(error, { component: "route:api/reviews/[id]/report" });
 
     // Handle Prisma unique constraint violation (race condition)
     if (

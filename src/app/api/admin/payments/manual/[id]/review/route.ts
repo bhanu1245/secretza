@@ -7,6 +7,7 @@ import {
   getFeatureExpiry,
 } from "@/lib/ranking-engine";
 import { createNotification } from "@/lib/notifications";
+import { logError } from "@/lib/monitoring";
 
 // Valid review actions
 const VALID_ACTIONS = ["approve", "reject", "request_proof", "duplicate"] as const;
@@ -42,7 +43,7 @@ export async function POST(
   { params }: RouteParams
 ) {
   try {
-    const admin = await requireMinRole("moderator");
+    const admin = await requireMinRole("admin");
     if (!admin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -112,24 +113,26 @@ export async function POST(
         break;
     }
 
-    // --- Update submission ---
-    const updatedSubmission = await db.manualPaymentSubmission.update({
-      where: { id },
-      data: {
-        status: newStatus,
-        adminNotes: adminNotes || null,
-        reviewedBy: admin.id,
-        reviewedAt: new Date(),
-      },
-    });
-
-    // --- If approved, activate the corresponding feature ---
+    // --- Update submission (and activate features atomically if approved) ---
+    let updatedSubmission;
     if (reviewAction === "approve") {
-      try {
+      await db.$transaction(async (tx) => {
+        // Update submission status
+        updatedSubmission = await tx.manualPaymentSubmission.update({
+          where: { id },
+          data: {
+            status: newStatus,
+            adminNotes: adminNotes || null,
+            reviewedBy: admin.id,
+            reviewedAt: new Date(),
+          },
+        });
+
+        // Activate the corresponding feature
         if (submission.paymentType === "boost") {
           // Activate boost on listing
           if (submission.listingId) {
-            const listing = await db.listing.findUnique({
+            const listing = await tx.listing.findUnique({
               where: { id: submission.listingId },
             });
             if (listing) {
@@ -144,7 +147,7 @@ export async function POST(
               };
               const newPriorityScore = computePriorityScore(rankedListing);
 
-              await db.listing.update({
+              await tx.listing.update({
                 where: { id: submission.listingId },
                 data: {
                   isBoosted: true,
@@ -158,7 +161,7 @@ export async function POST(
         } else if (submission.paymentType === "feature") {
           // Activate featured status on listing
           if (submission.listingId) {
-            const listing = await db.listing.findUnique({
+            const listing = await tx.listing.findUnique({
               where: { id: submission.listingId },
             });
             if (listing) {
@@ -173,7 +176,7 @@ export async function POST(
               };
               const newPriorityScore = computePriorityScore(rankedListing);
 
-              await db.listing.update({
+              await tx.listing.update({
                 where: { id: submission.listingId },
                 data: {
                   isFeatured: true,
@@ -186,7 +189,7 @@ export async function POST(
         } else if (submission.paymentType === "premium") {
           // Activate premium for user
           const premiumExpiry = getFeatureExpiry(PREMIUM_DURATION_DAYS);
-          await db.user.update({
+          await tx.user.update({
             where: { id: submission.userId },
             data: {
               isPremium: true,
@@ -196,7 +199,7 @@ export async function POST(
         }
 
         // Create a Payment record with status "completed"
-        await db.payment.create({
+        await tx.payment.create({
           data: {
             userId: submission.userId,
             listingId: submission.listingId || null,
@@ -207,23 +210,18 @@ export async function POST(
             gatewayTxId: submission.utrNumber,
           },
         });
-      } catch (featureError) {
-        console.error("Feature activation error during approval:", featureError);
-        // Roll back submission status
-        await db.manualPaymentSubmission.update({
-          where: { id },
-          data: {
-            status: "pending",
-            adminNotes: "Auto-reverted: feature activation failed",
-            reviewedBy: null,
-            reviewedAt: null,
-          },
-        });
-        return NextResponse.json(
-          { error: "Failed to activate feature. Submission reverted to pending." },
-          { status: 500 }
-        );
-      }
+      });
+    } else {
+      // Non-approve actions: just update submission status
+      updatedSubmission = await db.manualPaymentSubmission.update({
+        where: { id },
+        data: {
+          status: newStatus,
+          adminNotes: adminNotes || null,
+          reviewedBy: admin.id,
+          reviewedAt: new Date(),
+        },
+      });
     }
 
     // --- Audit log ---
@@ -296,7 +294,7 @@ export async function POST(
               : "Submission marked as duplicate.",
     });
   } catch (error) {
-    console.error("Manual payment review error:", error);
+    logError(error, { component: "route:api/admin/payments/manual/[id]/review" });
     return NextResponse.json(
       { error: "Failed to review payment submission" },
       { status: 500 }

@@ -38,6 +38,9 @@ import AdminPanel from "@/components/secretza/admin/AdminPanel";
 // Payment
 import ManualPaymentPage from "@/components/secretza/payment/ManualPaymentPage";
 
+// Geo Explorer
+import IndiaGeoExplorer from "@/components/secretza/geo/IndiaGeoExplorer";
+
 // ==========================================
 // View Transitions
 // ==========================================
@@ -358,6 +361,13 @@ export default function Home() {
             )}
 
             {nav.view === "pricing" && <PricingPage />}
+
+            {/* Geo Explorer */}
+            {(nav.view === "geo-india" ||
+              nav.view === "geo-state" ||
+              nav.view === "geo-city" ||
+              nav.view === "geo-district" ||
+              nav.view === "geo-locality") && <IndiaGeoExplorer />}
           </motion.div>
         </AnimatePresence>
       </main>

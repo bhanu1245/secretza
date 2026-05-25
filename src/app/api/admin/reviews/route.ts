@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
+import { logError } from "@/lib/monitoring";
 
 // GET /api/admin/reviews?status=pending&page=1&limit=20&listingId=xxx&userId=xxx
 export async function GET(request: Request) {
@@ -107,7 +108,7 @@ export async function GET(request: Request) {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error("Admin reviews list error:", error);
+    logError(error, { component: "route:api/admin/reviews" });
     return NextResponse.json(
       { error: "Failed to fetch reviews" },
       { status: 500 }

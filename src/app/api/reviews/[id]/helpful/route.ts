@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { rateLimit, RATE_LIMITS, getRateLimitHeaders } from "@/lib/rate-limit";
+import { logError } from "@/lib/monitoring";
 
 // POST /api/reviews/[id]/helpful — toggle helpful (once per user)
 export async function POST(
@@ -12,6 +14,15 @@ export async function POST(
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    // Rate limiting per user for helpful votes
+    const rl = await rateLimit(`review-helpful:${session.user.id}`, RATE_LIMITS.api);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later.", resetAt: rl.resetAt },
+        { status: 429, headers: getRateLimitHeaders(rl) }
+      );
     }
 
     const { id } = await params;
@@ -89,7 +100,7 @@ export async function POST(
       helpfulCount: review.helpfulCount + 1,
     });
   } catch (error: unknown) {
-    console.error("Review helpful error:", error);
+    logError(error, { component: "route:api/reviews/[id]/helpful" });
 
     // Handle Prisma unique constraint violation (race condition)
     if (

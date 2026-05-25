@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
 import { Prisma } from "@prisma/client";
+import { logError } from "@/lib/monitoring";
 
 /**
  * GET /api/admin/payments/manual
@@ -9,7 +10,7 @@ import { Prisma } from "@prisma/client";
  */
 export async function GET(request: Request) {
   try {
-    const admin = await requireMinRole("moderator");
+    const admin = await requireMinRole("admin");
     if (!admin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -110,7 +111,7 @@ export async function GET(request: Request) {
       statusCounts: countsByStatus,
     });
   } catch (error) {
-    console.error("Admin manual payments fetch error:", error);
+    logError(error, { component: "route:api/admin/payments/manual" });
     return NextResponse.json(
       { error: "Failed to fetch manual payment submissions" },
       { status: 500 }

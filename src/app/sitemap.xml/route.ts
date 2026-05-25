@@ -9,6 +9,7 @@ import {
   generateSitemapChunks,
   buildSitemapIndexXml,
 } from '@/lib/sitemap-helpers';
+import { logError } from '@/lib/monitoring';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600; // Rebuild index every hour
@@ -27,7 +28,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('[Sitemap Index] Generation error:', error);
+    logError(error, { component: "route:sitemap.xml" });
     return new NextResponse(
       '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>',
       {

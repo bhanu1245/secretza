@@ -19,7 +19,7 @@ function safeJsonParse(str: unknown, fallback: unknown): unknown {
 export async function GET(request: Request) {
   // Rate limiting for public GET endpoint
   const ip = getClientIp(request);
-  const rl = rateLimit(`api:public:listings:${ip}`, RATE_LIMITS.api);
+  const rl = await rateLimit(`api:public:listings:${ip}`, RATE_LIMITS.api);
   if (!rl.success) {
     return NextResponse.json(
       { error: "Too many requests" },
@@ -78,6 +78,9 @@ export async function GET(request: Request) {
       break;
     case "price_high":
       orderBy = { price: "desc" };
+      break;
+    case "featured":
+      orderBy = [{ isFeatured: "desc" }, { priorityScore: "desc" }] as any;
       break;
     default:
       // Default: order by stored priorityScore (fast DB-level sort)
@@ -256,6 +259,15 @@ export async function POST(request: Request) {
       );
     }
 
+    // Rate limiting per user for listing creation
+    const rl = await rateLimit(`create-listing:${session.user.id}`, { maxRequests: 10, windowSeconds: 60 * 60 });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many listing creation requests. Please try again later.", resetAt: rl.resetAt },
+        { status: 429, headers: getRateLimitHeaders(rl) }
+      );
+    }
+
     // Verification guard: must be verified to create listings
     if (!session.user.isVerified) {
       return NextResponse.json(
@@ -289,6 +301,15 @@ export async function POST(request: Request) {
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
+    if (title.length > 100) {
+      return NextResponse.json({ error: "Title must be at most 100 characters" }, { status: 400 });
+    }
+    if (!description || typeof description !== 'string' || description.trim().length < 20) {
+      return NextResponse.json({ error: "Description must be at least 20 characters" }, { status: 400 });
+    }
+    if (description.length > 2000) {
+      return NextResponse.json({ error: "Description must be at most 2000 characters" }, { status: 400 });
+    }
     if (!categorySlug || typeof categorySlug !== 'string') {
       return NextResponse.json({ error: "Category is required" }, { status: 400 });
     }
@@ -297,6 +318,57 @@ export async function POST(request: Request) {
     }
     if (price !== undefined && (typeof price !== 'number' || price < 0)) {
       return NextResponse.json({ error: "Price must be a non-negative number" }, { status: 400 });
+    }
+    if (price !== undefined && price > 99999999) {
+      return NextResponse.json({ error: "Price exceeds maximum allowed value" }, { status: 400 });
+    }
+
+    // Validate currency (whitelist of ISO 4217 codes commonly used)
+    const VALID_CURRENCIES = new Set(["USD", "INR", "EUR", "GBP", "CAD", "AUD", "SGD", "AED", "JPY", "CNY", "BRL", "MXN", "ZAR", "KRW"]);
+    if (currency !== undefined && !VALID_CURRENCIES.has(currency)) {
+      return NextResponse.json(
+        { error: `Invalid currency. Supported: ${Array.from(VALID_CURRENCIES).join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    // Validate tags array
+    if (tags !== undefined) {
+      if (!Array.isArray(tags) || tags.length > 10) {
+        return NextResponse.json({ error: "Tags must be an array of at most 10 items" }, { status: 400 });
+      }
+      for (const tag of tags) {
+        if (typeof tag !== "string" || tag.trim().length === 0 || tag.length > 30) {
+          return NextResponse.json({ error: "Each tag must be a non-empty string of at most 30 characters" }, { status: 400 });
+        }
+      }
+    }
+
+    // Validate contact field lengths
+    if (contactEmail !== undefined && contactEmail !== null) {
+      if (typeof contactEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+        return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+      }
+    }
+    if (contactTelegram !== undefined && contactTelegram !== null) {
+      if (typeof contactTelegram !== "string" || contactTelegram.length > 100) {
+        return NextResponse.json({ error: "Telegram handle must be at most 100 characters" }, { status: 400 });
+      }
+    }
+    if (contactInstagram !== undefined && contactInstagram !== null) {
+      if (typeof contactInstagram !== "string" || contactInstagram.length > 100) {
+        return NextResponse.json({ error: "Instagram handle must be at most 100 characters" }, { status: 400 });
+      }
+    }
+    if (contactWebsite !== undefined && contactWebsite !== null) {
+      if (typeof contactWebsite !== "string" || contactWebsite.length > 500) {
+        return NextResponse.json({ error: "Website URL must be at most 500 characters" }, { status: 400 });
+      }
+    }
+    if (contactText !== undefined && contactText !== null) {
+      if (typeof contactText !== "string" || contactText.length > 500) {
+        return NextResponse.json({ error: "Contact text must be at most 500 characters" }, { status: 400 });
+      }
     }
 
     // Generate slug

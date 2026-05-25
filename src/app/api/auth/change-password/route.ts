@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth-helpers";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { rateLimit, RATE_LIMITS, recordFailure } from "@/lib/rate-limit";
+import { logError } from "@/lib/monitoring";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting
-    const rl = rateLimit(`change-password:${session.id}`, RATE_LIMITS.resetPassword);
+    const rl = await rateLimit(`change-password:${session.id}`, RATE_LIMITS.resetPassword);
     if (!rl.success) {
       return NextResponse.json(
         { error: "Too many password change attempts. Please try again later." },
@@ -45,6 +46,9 @@ export async function POST(request: NextRequest) {
     if (newPassword.length < 8) {
       errors.push("Password must be at least 8 characters long.");
     }
+    if (newPassword.length > 128) {
+      errors.push("Password must be at most 128 characters.");
+    }
     if (!/[A-Z]/.test(newPassword)) {
       errors.push("Password must contain at least one uppercase letter.");
     }
@@ -69,6 +73,7 @@ export async function POST(request: NextRequest) {
 
     const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isValid) {
+      recordFailure(`change-password:${session.id}`);
       return NextResponse.json({ error: "Current password is incorrect." }, { status: 400 });
     }
 
@@ -83,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: "Password changed successfully." });
   } catch (error) {
-    console.error("Change password error:", error);
+    logError(error, { component: "route:api/auth/change-password" });
     return NextResponse.json({ error: "An unexpected error occurred." }, { status: 500 });
   }
 }

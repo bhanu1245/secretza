@@ -21,6 +21,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { logError } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -232,8 +233,7 @@ export function AdminReviewQueue() {
       }
       setTotal(data.total || 0);
     } catch (error) {
-      console.error("Failed to load reviews:", error);
-      toast.error("Failed to load reviews");
+      logError(error, { component: "AdminReviewPanel" });
     } finally {
       setLoading(false);
     }
@@ -260,7 +260,7 @@ export function AdminReviewQueue() {
       setReviews((prev) => [...prev, ...(data.reviews || [])]);
       setTotal(data.total || 0);
     } catch (error) {
-      console.error("Failed to load more reviews:", error);
+      logError(error, { component: "AdminReviewPanel" });
       toast.error("Failed to load more reviews");
       setPage(page); // Revert page on error
     }
@@ -312,7 +312,7 @@ export function AdminReviewQueue() {
       const toastInfo = getActionToast(action);
       toast.success(toastInfo.title, { description: toastInfo.description });
     } catch (error) {
-      console.error("Moderation failed:", error);
+      logError(error, { component: "AdminReviewPanel" });
       toast.error(
         error instanceof Error ? error.message : "Moderation action failed"
       );
@@ -741,7 +741,7 @@ export function AdminReviewAnalytics() {
       const data = await res.json();
       setAnalytics(data);
     } catch (error) {
-      console.error("Failed to load review analytics:", error);
+      logError(error, { component: "AdminReviewPanel" });
       toast.error("Failed to load review analytics");
     } finally {
       setLoading(false);

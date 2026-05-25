@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { logError } from "@/lib/monitoring";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -53,7 +54,7 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Mark notification read error:", error);
+    logError(error, { component: "route:api/notifications/[id]/read" });
     return NextResponse.json(
       { error: "Failed to mark notification as read" },
       { status: 500 }

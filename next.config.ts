@@ -12,4 +12,5 @@ const nextConfig: NextConfig = {
 export default withSentryConfig(nextConfig, {
   silent: true,
   hideSourceMaps: true,
+  tunnelRoute: "/api/sentry-tunnel",
 });

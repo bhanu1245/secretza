@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { createStorageService } from "@/lib/storage";
+import { logError } from "@/lib/monitoring";
 import {
   computePriorityScore,
   getRankLabel,
@@ -172,6 +174,43 @@ export async function PUT(
       imageIds,
     } = body;
 
+    // Validate content fields if provided
+    if (title !== undefined) {
+      if (!title || typeof title !== "string" || title.trim().length === 0) {
+        return NextResponse.json({ error: "Title is required" }, { status: 400 });
+      }
+      if (title.length > 100) {
+        return NextResponse.json({ error: "Title must be at most 100 characters" }, { status: 400 });
+      }
+    }
+
+    if (description !== undefined) {
+      if (typeof description !== "string" || description.trim().length < 20) {
+        return NextResponse.json({ error: "Description must be at least 20 characters" }, { status: 400 });
+      }
+      if (description.length > 2000) {
+        return NextResponse.json({ error: "Description must be at most 2000 characters" }, { status: 400 });
+      }
+    }
+
+    if (tags !== undefined) {
+      if (!Array.isArray(tags) || tags.length > 10) {
+        return NextResponse.json({ error: "Tags must be an array of at most 10 items" }, { status: 400 });
+      }
+      for (const tag of tags) {
+        if (typeof tag !== "string" || tag.trim().length === 0 || tag.length > 30) {
+          return NextResponse.json({ error: "Each tag must be a non-empty string of at most 30 characters" }, { status: 400 });
+        }
+      }
+    }
+
+    // Validate contact fields if provided
+    if (contactEmail !== undefined && contactEmail !== null) {
+      if (typeof contactEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+        return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+      }
+    }
+
     // Validate location fields only if they are provided (partial update support)
     let categoryId = existing.categoryId;
     let countryId = existing.countryId;
@@ -212,9 +251,8 @@ export async function PUT(
             );
           }
           stateId = state.id;
-        } else {
-          stateId = null;
         }
+        // else: keep existing stateId (don't set to null)
       }
 
       if (citySlug !== undefined) {
@@ -291,7 +329,7 @@ export async function PUT(
       listing: { id: updated.id, slug: updated.slug, status: updated.status },
     });
   } catch (error) {
-    console.error("[PUT /api/listings/:id] Failed to update:", error);
+    logError(error, { component: "route:api/listings/[id]" });
     return NextResponse.json(
       { error: "Failed to update listing" },
       { status: 500 }
@@ -313,9 +351,22 @@ export async function DELETE(
     }
 
     // Verify listing belongs to the current user
-    const existing = await db.listing.findUnique({ where: { id } });
+    const existing = await db.listing.findUnique({
+      where: { id },
+      include: {
+        listingImages: { select: { storageKey: true } },
+      },
+    });
     if (!existing || existing.userId !== session.user.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    // Best-effort cleanup of storage files before deletion
+    if (existing.listingImages.length > 0) {
+      const storage = createStorageService();
+      await Promise.allSettled(
+        existing.listingImages.map((img) => storage.delete(img.storageKey))
+      );
     }
 
     await db.listing.delete({
@@ -327,7 +378,7 @@ export async function DELETE(
       message: "Listing deleted successfully",
     });
   } catch (error) {
-    console.error(error);
+    logError(error, { component: "route:api/listings/[id]" });
 
     return NextResponse.json(
       { error: "Failed to delete listing" },

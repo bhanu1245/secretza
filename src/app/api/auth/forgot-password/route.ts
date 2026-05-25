@@ -3,12 +3,13 @@ import { db } from "@/lib/db";
 import { generateToken } from "@/lib/auth-helpers";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { rateLimit, RATE_LIMITS, getClientIp } from "@/lib/rate-limit";
+import { logError } from "@/lib/monitoring";
 
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting by IP
     const ip = getClientIp(request);
-    const rl = rateLimit(`forgot-password:${ip}`, RATE_LIMITS.forgotPassword);
+    const rl = await rateLimit(`forgot-password:${ip}`, RATE_LIMITS.forgotPassword);
     if (!rl.success) {
       return NextResponse.json(
         { message: "If an account exists, a reset link has been sent." },
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Forgot password error:", error);
+    logError(error, { component: "route:api/auth/forgot-password" });
     return NextResponse.json(
       { errors: ["An unexpected error occurred. Please try again."] },
       { status: 500 }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth-helpers";
+import { rateLimit, getRateLimitHeaders } from "@/lib/rate-limit";
+import { logError } from "@/lib/monitoring";
 
 export async function GET() {
   try {
@@ -49,7 +51,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("Get profile error:", error);
+    logError(error, { component: "route:api/user/profile" });
     return NextResponse.json({ error: "Failed to fetch profile." }, { status: 500 });
   }
 }
@@ -59,6 +61,15 @@ export async function PATCH(request: NextRequest) {
     const user = await requireAuth();
     if (!user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    // Rate limiting per user for profile updates
+    const rl = await rateLimit(`update-profile:${user.id}`, { maxRequests: 10, windowSeconds: 60 * 60 });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many profile update requests. Please try again later.", resetAt: rl.resetAt },
+        { status: 429, headers: getRateLimitHeaders(rl) }
+      );
     }
 
     const body = await request.json();
@@ -108,7 +119,7 @@ export async function PATCH(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Update profile error:", error);
+    logError(error, { component: "route:api/user/profile" });
     return NextResponse.json({ error: "Failed to update profile." }, { status: 500 });
   }
 }

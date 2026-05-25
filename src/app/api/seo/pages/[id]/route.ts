@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
+import { logError } from "@/lib/monitoring";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -55,7 +56,7 @@ export async function GET(request: Request, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error("SEO page get error:", error);
+    logError(error, { component: "route:api/seo/pages/[id]" });
     return NextResponse.json(
       { error: "Failed to fetch SEO page" },
       { status: 500 }
@@ -137,7 +138,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error("SEO page update error:", error);
+    logError(error, { component: "route:api/seo/pages/[id]" });
     return NextResponse.json(
       { error: "Failed to update SEO page" },
       { status: 500 }
@@ -175,7 +176,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       message: `SEO page deleted along with ${existing._count.faqs} FAQ(s)`,
     });
   } catch (error) {
-    console.error("SEO page delete error:", error);
+    logError(error, { component: "route:api/seo/pages/[id]" });
     return NextResponse.json(
       { error: "Failed to delete SEO page" },
       { status: 500 }

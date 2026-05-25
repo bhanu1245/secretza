@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { logError } from "@/lib/monitoring";
 
 // GET /api/reviews/[id]
 export async function GET(
@@ -55,7 +56,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Review detail error:", error);
+    logError(error, { component: "route:api/reviews/[id]" });
     return NextResponse.json(
       { error: "Failed to fetch review" },
       { status: 500 }
@@ -161,7 +162,7 @@ export async function PATCH(
       },
     });
   } catch (error) {
-    console.error("Review update error:", error);
+    logError(error, { component: "route:api/reviews/[id]" });
     return NextResponse.json(
       { error: "Failed to update review" },
       { status: 500 }
@@ -204,7 +205,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Review deleted successfully" });
   } catch (error) {
-    console.error("Review delete error:", error);
+    logError(error, { component: "route:api/reviews/[id]" });
     return NextResponse.json(
       { error: "Failed to delete review" },
       { status: 500 }

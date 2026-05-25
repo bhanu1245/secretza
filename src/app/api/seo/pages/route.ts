@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
 import { Prisma } from "@prisma/client";
+import { logError } from "@/lib/monitoring";
 
 /**
  * GET /api/seo/pages
@@ -70,7 +71,7 @@ export async function GET(request: Request) {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error("SEO pages list error:", error);
+    logError(error, { component: "route:api/seo/pages" });
     return NextResponse.json(
       { error: "Failed to fetch SEO pages" },
       { status: 500 }
@@ -184,7 +185,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("SEO page create/update error:", error);
+    logError(error, { component: "route:api/seo/pages" });
     return NextResponse.json(
       { error: "Failed to create/update SEO page" },
       { status: 500 }

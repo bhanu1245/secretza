@@ -42,11 +42,13 @@ export const metadata: Metadata = {
     description: "Discover premium adult classifieds worldwide. Complete privacy. Verified listings.",
     siteName: "Secretza",
     type: "website",
+    images: [{ url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://secretza.com"}/logo.svg`, width: 1200, height: 630, alt: "Secretza" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Secretza - Premium Adult Classifieds",
     description: "Discover premium adult classifieds worldwide. Complete privacy.",
+    images: [`${process.env.NEXT_PUBLIC_SITE_URL || "https://secretza.com"}/logo.svg`],
   },
   robots: {
     index: true,

@@ -4,7 +4,10 @@ import { getCrawlStats } from '@/lib/crawl-analytics';
 
 export async function GET(request: NextRequest) {
   try {
-    await requireMinRole('admin');
+    const admin = await requireMinRole('admin');
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { searchParams } = request.nextUrl;
     const days = Math.min(parseInt(searchParams.get('days') || '30', 10), 90);

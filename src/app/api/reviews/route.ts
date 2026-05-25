@@ -4,13 +4,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 import { rateLimit, RATE_LIMITS, getClientIp, getRateLimitHeaders } from "@/lib/rate-limit";
+import { logError } from "@/lib/monitoring";
 
 // GET /api/reviews?listingId=xxx&page=1&limit=10&sort=newest
 export async function GET(request: Request) {
   try {
     // Rate limiting for public GET endpoint
     const ip = getClientIp(request);
-    const rl = rateLimit(`api:public:reviews:${ip}`, RATE_LIMITS.api);
+    const rl = await rateLimit(`api:public:reviews:${ip}`, RATE_LIMITS.api);
     if (!rl.success) {
       return NextResponse.json(
         { error: "Too many requests" },
@@ -127,7 +128,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Reviews list error:", error);
+    logError(error, { component: "route:api/reviews" });
     return NextResponse.json(
       { error: "Failed to fetch reviews" },
       { status: 500 }
@@ -141,6 +142,15 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    // Rate limiting per user for review creation
+    const rl = await rateLimit(`review:${session.user.id}`, RATE_LIMITS.api);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many review requests. Please try again later.", resetAt: rl.resetAt },
+        { status: 429, headers: getRateLimitHeaders(rl) }
+      );
     }
 
     const body = await request.json();
@@ -281,7 +291,7 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Review create error:", error);
+    logError(error, { component: "route:api/reviews" });
     return NextResponse.json(
       { error: "Failed to create review" },
       { status: 500 }

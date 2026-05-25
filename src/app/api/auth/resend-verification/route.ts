@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/auth-helpers";
 import { generateToken } from "@/lib/auth-helpers";
 import { sendVerificationEmail } from "@/lib/email";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { logError } from "@/lib/monitoring";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting
-    const rl = rateLimit(`resend-verify:${session.id}`, RATE_LIMITS.resendVerification);
+    const rl = await rateLimit(`resend-verify:${session.id}`, RATE_LIMITS.resendVerification);
     if (!rl.success) {
       return NextResponse.json(
         { error: "Too many verification email requests. Please try again later." },
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
       message: "Verification email sent. Please check your inbox.",
     });
   } catch (error) {
-    console.error("Resend verification error:", error);
+    logError(error, { component: "route:api/auth/resend-verification" });
     return NextResponse.json(
       { error: "An unexpected error occurred. Please try again." },
       { status: 500 }
