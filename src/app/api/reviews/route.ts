@@ -3,10 +3,21 @@ import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
+import { rateLimit, RATE_LIMITS, getClientIp, getRateLimitHeaders } from "@/lib/rate-limit";
 
 // GET /api/reviews?listingId=xxx&page=1&limit=10&sort=newest
 export async function GET(request: Request) {
   try {
+    // Rate limiting for public GET endpoint
+    const ip = getClientIp(request);
+    const rl = rateLimit(`api:public:reviews:${ip}`, RATE_LIMITS.api);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: getRateLimitHeaders(rl) }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const listingId = searchParams.get("listingId");
 

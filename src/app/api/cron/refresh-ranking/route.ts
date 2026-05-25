@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   try {
     // --- Authentication: require cron secret header ---
     const cronSecret = request.headers.get("x-cron-secret");
-    if (!cronSecret || cronSecret !== (process.env.CRON_SECRET || "secretza-cron-2024")) {
+    if (!cronSecret || cronSecret !== process.env.CRON_SECRET) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

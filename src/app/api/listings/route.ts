@@ -9,6 +9,7 @@ import {
   isBoostActive,
   isFeaturedActive,
 } from "@/lib/ranking-engine";
+import { rateLimit, RATE_LIMITS, getClientIp, getRateLimitHeaders } from "@/lib/rate-limit";
 
 function safeJsonParse(str: unknown, fallback: unknown): unknown {
   if (typeof str !== 'string') return fallback;
@@ -16,6 +17,16 @@ function safeJsonParse(str: unknown, fallback: unknown): unknown {
 }
 
 export async function GET(request: Request) {
+  // Rate limiting for public GET endpoint
+  const ip = getClientIp(request);
+  const rl = rateLimit(`api:public:listings:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: getRateLimitHeaders(rl) }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const keyword = searchParams.get("keyword") || undefined;
   const category = searchParams.get("category") || undefined;

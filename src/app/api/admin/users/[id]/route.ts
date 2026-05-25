@@ -128,7 +128,7 @@ export async function PATCH(
 
     switch (action) {
       case "suspend":
-        updateData = { isSuspended: true };
+        updateData = { isSuspended: true, sessionVersion: { increment: 1 } };
         message = "User suspended successfully";
         break;
       case "unsuspend":

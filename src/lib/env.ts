@@ -88,6 +88,10 @@ const envSchema = z.object({
   BING_SITE_VERIFICATION: z.string().optional(),
   YANDEX_SITE_VERIFICATION: z.string().optional(),
 
+  // ---- Sentry (optional) ----
+  SENTRY_DSN: z.string().optional(),
+  NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
+
   // ---- Cron (optional) ----
   CRON_SECRET: z.string().optional(),
 
