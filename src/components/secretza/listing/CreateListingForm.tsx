@@ -35,11 +35,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  categories,
-  countries,
-  pricingPackages,
-} from "@/lib/mock-data";
+import { useCategories, useLocations, useCountryDetail } from "@/hooks/useApiData";
+import { pricingPackages } from "@/lib/config";
 import { useAuthStore } from "@/store/useAppStore";
 import ImageUploader, { type UploadedImage } from "@/components/secretza/upload/ImageUploader";
 import { toast } from "sonner";
@@ -116,8 +113,17 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
   const isEditing = editMode && !!editListingId;
   const [isLoadingListing, setIsLoadingListing] = useState(false);
 
-  // Real uploaded images state (replaces mock count)
+  // Real uploaded images state
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+
+  // Fetch categories, locations, and country detail from API
+  // MUST be called unconditionally (before any early returns) per React hooks rules
+  const { categories: apiCategories } = useCategories();
+  const { countries: apiCountries } = useLocations();
+  const { country: countryDetail } = useCountryDetail(formData.countrySlug);
+
+  const categories = apiCategories;
+  const countries = apiCountries;
 
   // Draft debounce timer ref
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -328,6 +334,9 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
     );
   }
 
+  const categories = apiCategories;
+  const countries = apiCountries;
+
   // Verified guard: block unverified users
   if (!user.isVerified) {
     return (
@@ -343,7 +352,7 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
   }
 
   // Derived geo data
-  const selectedCountry = countries.find((c) => c.slug === formData.countrySlug);
+  const selectedCountry = countryDetail || countries.find((c) => c.slug === formData.countrySlug);
   const selectedState = selectedCountry?.states?.find(
     (s) => s.slug === formData.stateSlug
   );
@@ -405,20 +414,38 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
     setSubmitError(null);
 
     try {
-      // Collect successfully uploaded image IDs
+      // Collect successfully uploaded images (exclude those still uploading or errored)
       const successfulImages = uploadedImages.filter(
-        (img) => !img.isUploading && !img.error && !img.id.startsWith("temp-")
+        (img) => !img.isUploading && !img.error
       );
 
-      // Build image data for the legacy images field (backward compat)
+      // Build legacy images field (backward compat)
       const imageData = successfulImages.map((img, idx) => ({
         url: img.url,
         alt: `Listing image ${idx + 1}`,
         isPrimary: idx === 0,
       }));
 
-      // Collect image IDs for association with listing
-      const imageIds = successfulImages.map((img) => img.id);
+      // For NEW listings: send upload results so the API can create ListingImage records
+      // For EDIT listings: send imageIds to re-associate existing images
+      const uploadResults = isEditing
+        ? undefined
+        : successfulImages
+            .filter((img) => img.uploadResult)
+            .map((img) => img.uploadResult!);
+      const imageIds = isEditing
+        ? successfulImages.map((img) => img.id)
+        : undefined;
+
+      // Prevent submission if uploads are still in progress
+      const stillUploading = uploadedImages.some((img) => img.isUploading);
+      if (stillUploading) {
+        setSubmitError("Please wait for all images to finish uploading.");
+        toast.error("Upload in progress", {
+          description: "Please wait for all images to finish uploading.",
+        });
+        return;
+      }
 
       const submitUrl = isEditing && editListingId
         ? `/api/listings/${editListingId}`
@@ -445,6 +472,7 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
           contactWebsite: formData.website || undefined,
           contactText: formData.customContact || undefined,
           images: imageData,
+          uploadResults,
           imageIds,
         }),
       });

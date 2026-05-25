@@ -2,18 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { Listing, Category, Country, State, City } from "@/lib/types";
-import {
-  mockListings,
-  categories as mockCategories,
-  countries as mockCountries,
-  trendingCities as mockTrendingCities,
-  featuredListings as mockFeaturedListings,
-  latestListings as mockLatestListings,
-} from "@/lib/mock-data";
 
 // ==========================================
 // useListings — Fetches listings from /api/listings
-// Falls back to mock data for instant initial render.
 // ==========================================
 export function useListings(options?: {
   featured?: boolean;
@@ -26,13 +17,9 @@ export function useListings(options?: {
   limit?: number;
   page?: number;
 }) {
-  const [listings, setListings] = useState<Listing[]>(() => {
-    if (options?.featured) return mockFeaturedListings;
-    if (options?.sortBy === "newest") return mockLatestListings;
-    return mockListings;
-  });
-  const [total, setTotal] = useState(listings.length);
-  const [loading, setLoading] = useState(false);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
   const isFirstMount = useRef(true);
 
   // Serialize options for stable dependency
@@ -50,25 +37,8 @@ export function useListings(options?: {
     if (options?.limit) params.set("limit", String(options.limit));
     if (options?.page) params.set("page", String(options.page));
 
-    // On first mount, fetch silently (mock data is showing)
-    // On subsequent changes, show loading indicator
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-      fetch(`/api/listings?${params}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setListings(data.listings || []);
-          setTotal(data.total || 0);
-        })
-        .catch(() => {
-          // Keep mock data on error
-        });
-      return;
-    }
-
     // Debounce for search/filter changes
     const timer = setTimeout(() => {
-      setLoading(true);
       fetch(`/api/listings?${params}`)
         .then((res) => res.json())
         .then((data) => {
@@ -89,11 +59,10 @@ export function useListings(options?: {
 
 // ==========================================
 // useCategories — Fetches categories from /api/categories
-// Falls back to mock data for instant initial render.
 // ==========================================
 export function useCategories() {
-  const [categories, setCategories] = useState<Category[]>(mockCategories);
-  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -104,7 +73,7 @@ export function useCategories() {
         }
       })
       .catch(() => {
-        // Keep mock data on error
+        // Keep empty on error
       })
       .finally(() => setLoading(false));
   }, []);
@@ -114,11 +83,10 @@ export function useCategories() {
 
 // ==========================================
 // useLocations — Fetches flat country list from /api/locations
-// Falls back to mock data for instant initial render.
 // ==========================================
 export function useLocations() {
-  const [countries, setCountries] = useState<Country[]>(mockCountries);
-  const [loading, setLoading] = useState(false);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/locations")
@@ -129,7 +97,7 @@ export function useLocations() {
         }
       })
       .catch(() => {
-        // Keep mock data on error
+        // Keep empty on error
       })
       .finally(() => setLoading(false));
   }, []);
@@ -153,9 +121,7 @@ export function useCountryDetail(countrySlug?: string) {
       .then((res) => res.json())
       .then((data) => setFetchedCountry(data.country || null))
       .catch(() => {
-        // Fallback: find country in mock data
-        const mockCountry = mockCountries.find((c) => c.slug === countrySlug);
-        setFetchedCountry(mockCountry || null);
+        setFetchedCountry(null);
       })
       .finally(() => setLoading(false));
   }, [countrySlug]);
@@ -168,13 +134,12 @@ export function useCountryDetail(countrySlug?: string) {
 
 // ==========================================
 // useTrendingCities — Fetches featured cities by iterating all countries
-// Falls back to mock trending cities for instant initial render.
 // ==========================================
 export function useTrendingCities() {
   const [cities, setCities] = useState<
     (City & { state: State; country: Country })[]
-  >(mockTrendingCities);
-  const [loading, setLoading] = useState(false);
+  >([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Fetch all countries, then fetch each country's detail for featured cities
@@ -225,16 +190,41 @@ export function useTrendingCities() {
             }
           }
         }
-        // Only update if we got results from the API
-        if (allFeatured.length > 0) {
-          setCities(allFeatured);
-        }
+        setCities(allFeatured);
       })
       .catch(() => {
-        // Keep mock data on error
+        // Keep empty on error
       })
       .finally(() => setLoading(false));
   }, []);
 
   return { cities, loading };
+}
+
+// ==========================================
+// useListing — Fetch a single listing by ID
+// ==========================================
+export function useListing(id: string | null) {
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!id) {
+      // Use microtask to avoid synchronous setState in effect
+      Promise.resolve().then(() => setListing(null));
+      return;
+    }
+    // Use microtask to avoid synchronous setState in effect
+    Promise.resolve().then(() => setLoading(true));
+    fetch(`/api/listings/${id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Not found");
+        return res.json();
+      })
+      .then((data) => setListing(data))
+      .catch(() => setListing(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  return { listing, loading };
 }

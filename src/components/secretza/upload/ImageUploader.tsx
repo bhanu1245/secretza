@@ -33,6 +33,15 @@ export interface UploadedImage {
   sortOrder: number;
   width?: number;
   height?: number;
+  /** Server upload result — populated after successful upload */
+  uploadResult?: {
+    id: string;
+    url: string;
+    storageKey: string;
+    fileName: string;
+    sizeBytes: number;
+    mimeType: string;
+  };
 }
 
 interface ImageUploaderProps {
@@ -93,6 +102,44 @@ function generateThumbnail(file: File): Promise<string> {
 
     img.src = URL.createObjectURL(file);
   });
+}
+
+// ── Upload Function ─────────────────────────────────────────────────────
+// Calls POST /api/upload to save the file to disk.
+// Returns the server response with the real URL and metadata.
+async function uploadFileToServer(
+  file: File,
+  width: number,
+  height: number
+): Promise<{
+  id: string;
+  url: string;
+  storageKey: string;
+  fileName: string;
+  sizeBytes: number;
+  mimeType: string;
+  width: number;
+  height: number;
+}> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Upload failed" }));
+    throw new Error(err.error || "Upload failed");
+  }
+
+  const data = await res.json();
+  return {
+    ...data,
+    width,
+    height,
+  };
 }
 
 // ── Component ────────────────────────────────────────────────────────────
@@ -157,19 +204,20 @@ export default function ImageUploader({
 
       if (filesToProcess.length === 0) return;
 
-      // Create temporary UploadedImage entries (immediately visible)
-      const newImages: UploadedImage[] = await Promise.all(
+      // Step 1: Create temporary UploadedImage entries (immediately visible)
+      // These show the preview while uploading
+      const tempImages: UploadedImage[] = await Promise.all(
         filesToProcess.map(async (file, idx) => {
           const objectUrl = URL.createObjectURL(file);
           const dims = await readFileDimensions(file);
           const thumb = await generateThumbnail(file);
 
           return {
-            id: `temp-${Date.now()}-${idx}`,
+            id: `uploading-${Date.now()}-${idx}`,
             file,
             url: objectUrl,
             thumbnailUrl: thumb || undefined,
-            isUploading: false,
+            isUploading: true,
             sortOrder: images.length + idx,
             width: dims.width,
             height: dims.height,
@@ -177,7 +225,48 @@ export default function ImageUploader({
         })
       );
 
-      onImagesChange((prev) => [...prev, ...newImages]);
+      onImagesChange((prev) => [...prev, ...tempImages]);
+
+      // Step 2: Upload each file to the server in background
+      // Update the image state when each upload completes
+      for (let i = 0; i < filesToProcess.length; i++) {
+        const file = filesToProcess[i];
+        const tempId = tempImages[i].id;
+        const dims = tempImages[i];
+
+        try {
+          const result = await uploadFileToServer(file, dims.width || 0, dims.height || 0);
+
+          // Replace the temporary entry with the uploaded one
+          onImagesChange((prev) =>
+            prev.map((img) =>
+              img.id === tempId
+                ? {
+                    ...img,
+                    id: result.id,
+                    isUploading: false,
+                    url: result.url,
+                    uploadResult: result,
+                  }
+                : img
+            )
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Upload failed";
+          // Mark as failed
+          onImagesChange((prev) =>
+            prev.map((img) =>
+              img.id === tempId
+                ? {
+                    ...img,
+                    isUploading: false,
+                    error: message,
+                  }
+                : img
+            )
+          );
+        }
+      }
     },
     [images.length, maxImages, onImagesChange]
   );
@@ -324,6 +413,7 @@ export default function ImageUploader({
 
   const sortedImages = [...images].sort((a, b) => a.sortOrder - b.sortOrder);
   const reachedLimit = images.length >= maxImages;
+  const uploadingCount = images.filter((i) => i.isUploading).length;
 
   return (
     <div className="flex flex-col gap-5">
@@ -536,6 +626,9 @@ export default function ImageUploader({
         <p className="text-center text-xs text-[#A1A1AA]/50">
           {images.length}/{maxImages} &middot; Drag thumbnails to reorder
           &middot; Star to set primary
+          {uploadingCount > 0 && (
+            <span className="text-violet"> &middot; {uploadingCount} uploading</span>
+          )}
         </p>
       )}
     </div>

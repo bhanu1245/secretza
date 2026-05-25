@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { categories, countries } from "@/lib/mock-data";
+import { useCategories, useLocations } from "@/hooks/useApiData";
 import { useNavigationStore, useSearchStore } from "@/store/useAppStore";
 
 const containerVariants = {
@@ -41,6 +41,10 @@ export default function HeroSection() {
   const [countrySlug, setCountrySlug] = useState<string>("all");
   const navigate = useNavigationStore((s) => s.navigate);
   const setFilters = useSearchStore((s) => s.setFilters);
+
+  // Fetch categories and countries from API
+  const { categories } = useCategories();
+  const { countries } = useLocations();
 
   const handleSearch = () => {
     setFilters({

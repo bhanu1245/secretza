@@ -43,7 +43,7 @@ import { Separator } from "@/components/ui/separator";
 import { useNavigationStore, useAuthStore, useUIStore } from "@/store/useAppStore";
 import { signOut } from "next-auth/react";
 import { toast } from "sonner";
-import { categories } from "@/lib/mock-data";
+import { useCategories } from "@/hooks/useApiData";
 
 export default function Header() {
   const navigate = useNavigationStore((s) => s.navigate);
@@ -52,6 +52,9 @@ export default function Header() {
   const { isMobileMenuOpen, setMobileMenuOpen } = useUIStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+
+  // Fetch categories from API (replaces mock-data import)
+  const { categories } = useCategories();
 
   const isAdminOrMod = user?.role === "admin" || user?.role === "moderator";
   const dashboardView = isAdminOrMod ? "admin" : "dashboard";

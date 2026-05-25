@@ -266,7 +266,7 @@ export async function POST(request: Request) {
       contactText,
       images,
       imageIds,
-      userId,
+      uploadResults,
     } = body;
 
     // Generate slug
@@ -343,7 +343,26 @@ export async function POST(request: Request) {
       },
     });
 
-    // Associate uploaded images with the new listing (if imageIds provided)
+    // Create ListingImage records from upload results (new flow)
+    if (Array.isArray(uploadResults) && uploadResults.length > 0) {
+      await db.listingImage.createMany({
+        data: uploadResults.map((img: Record<string, unknown>, idx: number) => ({
+          listingId: listing.id,
+          url: img.url as string,
+          thumbnailUrl: img.url as string,
+          mediumUrl: img.url as string,
+          storageKey: img.storageKey as string || `uploads/${(img.fileName as string) || "unknown"}`,
+          mimeType: img.mimeType as string || "image/jpeg",
+          width: (img.width as number) || 0,
+          height: (img.height as number) || 0,
+          sizeBytes: (img.sizeBytes as number) || 0,
+          sortOrder: idx,
+          moderationStatus: "pending",
+        })),
+      });
+    }
+
+    // Legacy: Associate pre-existing uploaded images (edit mode)
     if (Array.isArray(imageIds) && imageIds.length > 0) {
       await db.listingImage.updateMany({
         where: { id: { in: imageIds } },

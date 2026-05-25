@@ -3,7 +3,8 @@
 import React, { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigationStore, useUIStore, useAuthStore } from "@/store/useAppStore";
-import { mockListings, getCategoryBySlug, pricingPackages } from "@/lib/mock-data";
+import { useListing, useListings, useCategories } from "@/hooks/useApiData";
+import { pricingPackages } from "@/lib/config";
 
 // Layout
 import Header from "@/components/secretza/layout/Header";
@@ -73,12 +74,17 @@ function HomePage() {
 }
 
 // ==========================================
-// Category Page
+// Category Page — Fetches real data from API
 // ==========================================
 function CategoryPage({ slug }: { slug: string }) {
-  const category = getCategoryBySlug(slug);
-  const categoryListings = mockListings.filter((l) => l.category.slug === slug);
   const navigate = useNavigationStore((s) => s.navigate);
+  const { categories } = useCategories();
+  const { listings: categoryListings, loading, total } = useListings({
+    category: slug,
+    limit: 24,
+  });
+
+  const category = categories.find((c) => c.slug === slug);
 
   if (!category) {
     return (
@@ -102,11 +108,16 @@ function CategoryPage({ slug }: { slug: string }) {
         <p className="text-muted-foreground mt-2">{category.description || `Browse ${category.listingCount.toLocaleString()} ${category.name.toLowerCase()} listings worldwide`}</p>
         <div className="mt-3 flex items-center gap-3">
           <span className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: category.color }}>
-            {category.listingCount.toLocaleString()} Listings
+            {total} Listings
           </span>
         </div>
       </div>
-      {categoryListings.length > 0 ? (
+      {loading ? (
+        <div className="text-center py-16">
+          <div className="animate-spin size-8 border-2 border-violet/30 border-t-violet rounded-full mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading listings...</p>
+        </div>
+      ) : categoryListings.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {categoryListings.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
@@ -122,7 +133,7 @@ function CategoryPage({ slug }: { slug: string }) {
 }
 
 // ==========================================
-// Pricing Page
+// Pricing Page — Uses pricingPackages from config
 // ==========================================
 function PricingPage() {
   const navigate = useNavigationStore((s) => s.navigate);
@@ -215,9 +226,11 @@ export default function Home() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  const selectedListing = selectedListingId
-    ? mockListings.find((l) => l.id === selectedListingId)
-    : null;
+  // Fetch the selected listing from the API (fixes BUG #2)
+  const { listing: selectedListing, loading: listingLoading } = useListing(selectedListingId);
+
+  // Fetch listings for the "Browse Listings" grid (fixes BUG #4)
+  const { listings: browseListings, loading: browseLoading } = useListings({ limit: 8 });
 
   // Redirect unauthenticated users away from protected views (after render, not during)
   useEffect(() => {
@@ -310,11 +323,18 @@ export default function Home() {
                   ← Back
                 </button>
                 <p className="text-muted-foreground">Select a listing to view details</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-8">
-                  {mockListings.slice(0, 8).map((listing) => (
-                    <ListingCard key={listing.id} listing={listing} />
-                  ))}
-                </div>
+                {browseLoading ? (
+                  <div className="text-center py-16">
+                    <div className="animate-spin size-8 border-2 border-violet/30 border-t-violet rounded-full mx-auto mb-4" />
+                    <p className="text-muted-foreground">Loading listings...</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-8">
+                    {browseListings.map((listing) => (
+                      <ListingCard key={listing.id} listing={listing} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
