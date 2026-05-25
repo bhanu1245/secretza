@@ -334,9 +334,6 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
     );
   }
 
-  const categories = apiCategories;
-  const countries = apiCountries;
-
   // Verified guard: block unverified users
   if (!user.isVerified) {
     return (

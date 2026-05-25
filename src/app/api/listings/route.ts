@@ -70,7 +70,7 @@ export async function GET(request: Request) {
       break;
   }
 
-  const [listings, total, reviewStats] = await Promise.all([
+  const [listings, total] = await Promise.all([
     db.listing.findMany({
       where,
       orderBy,

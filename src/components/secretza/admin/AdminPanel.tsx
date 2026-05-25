@@ -428,7 +428,7 @@ function AdminDashboardPage() {
                   <tr key={listing.id} className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)] transition-colors">
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <img src={listing.images[0]?.url} alt="" className="w-8 h-8 rounded-md object-cover" />
+                        <img src={listing.listingImages?.[0]?.url} alt="" className="w-8 h-8 rounded-md object-cover" />
                         <span className="text-sm text-[#F5F5F7] truncate max-w-[200px]">{listing.title}</span>
                       </div>
                     </td>
@@ -784,7 +784,7 @@ function AdminListingsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <img src={listing.images[0]?.url} alt="" className="w-8 h-8 rounded-md object-cover flex-shrink-0" />
+                        <img src={listing.listingImages?.[0]?.url} alt="" className="w-8 h-8 rounded-md object-cover flex-shrink-0" />
                         <span className="text-sm text-[#F5F5F7] truncate max-w-[200px]">{listing.title}</span>
                       </div>
                     </td>
@@ -1145,7 +1145,7 @@ function AdminModerationPage() {
                         {/* Listing Preview */}
                         <div className="flex items-start gap-4 flex-1 min-w-0">
                           <img
-                            src={item.listing.images[0]?.url}
+                            src={item.listing.listingImages?.[0]?.url}
                             alt=""
                             className="w-20 h-24 rounded-lg object-cover flex-shrink-0"
                           />
