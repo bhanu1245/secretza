@@ -344,65 +344,69 @@ export async function POST(request: Request) {
       );
     }
 
-    const listing = await db.listing.create({
-      data: {
-        title,
-        slug,
-        description,
-        categorySlug,
-        countrySlug,
-        stateSlug,
-        citySlug,
-        tags: JSON.stringify(tags || []),
-        price,
-        currency: currency || "USD",
-        contactEmail,
-        contactTelegram,
-        contactInstagram,
-        contactWebsite,
-        contactText,
-        images: JSON.stringify(images || []),
-        status: "pending",
-        lastBumpedAt: new Date(), // Set initial bump time
-        priorityScore: 35, // Starting score: recency bonus only
-        userId: session.user.id, // Use authenticated user's ID
-        categoryId: category.id,
-        countryId: country.id,
-        stateId: state.id,
-        cityId: city.id,
-      },
-    });
-
-    // Create ListingImage records from upload results (new flow)
-    if (Array.isArray(uploadResults) && uploadResults.length > 0) {
-      await db.listingImage.createMany({
-        data: uploadResults.map((img: Record<string, unknown>, idx: number) => ({
-          listingId: listing.id,
-          url: img.url as string,
-          thumbnailUrl: img.url as string,
-          mediumUrl: img.url as string,
-          storageKey: img.storageKey as string || `uploads/${(img.fileName as string) || "unknown"}`,
-          mimeType: img.mimeType as string || "image/jpeg",
-          width: (img.width as number) || 0,
-          height: (img.height as number) || 0,
-          sizeBytes: (img.sizeBytes as number) || 0,
-          sortOrder: idx,
-          moderationStatus: "pending",
-        })),
-      });
-    }
-
-    // Legacy: Associate pre-existing uploaded images (edit mode)
-    // Security: Only attach images that are not already claimed by another listing
-    if (Array.isArray(imageIds) && imageIds.length > 0) {
-      await db.listingImage.updateMany({
-        where: {
-          id: { in: imageIds },
-          listingId: null, // Only attach unattached images
+    // Create listing + images atomically in a transaction
+    const listing = await db.$transaction(async (tx) => {
+      const newListing = await tx.listing.create({
+        data: {
+          title,
+          slug,
+          description,
+          categorySlug,
+          countrySlug,
+          stateSlug,
+          citySlug,
+          tags: JSON.stringify(tags || []),
+          price,
+          currency: currency || "USD",
+          contactEmail,
+          contactTelegram,
+          contactInstagram,
+          contactWebsite,
+          contactText,
+          images: JSON.stringify(images || []),
+          status: "pending",
+          lastBumpedAt: new Date(),
+          priorityScore: 35,
+          userId: session.user.id,
+          categoryId: category.id,
+          countryId: country.id,
+          stateId: state.id,
+          cityId: city.id,
         },
-        data: { listingId: listing.id },
       });
-    }
+
+      // Create ListingImage records from upload results (new flow)
+      if (Array.isArray(uploadResults) && uploadResults.length > 0) {
+        await tx.listingImage.createMany({
+          data: uploadResults.map((img: Record<string, unknown>, idx: number) => ({
+            listingId: newListing.id,
+            url: img.url as string,
+            thumbnailUrl: img.url as string,
+            mediumUrl: img.url as string,
+            storageKey: img.storageKey as string || `uploads/${(img.fileName as string) || "unknown"}`,
+            mimeType: img.mimeType as string || "image/jpeg",
+            width: (img.width as number) || 0,
+            height: (img.height as number) || 0,
+            sizeBytes: (img.sizeBytes as number) || 0,
+            sortOrder: idx,
+            moderationStatus: "pending",
+          })),
+        });
+      }
+
+      // Legacy: Associate pre-existing uploaded images (edit mode)
+      if (Array.isArray(imageIds) && imageIds.length > 0) {
+        await tx.listingImage.updateMany({
+          where: {
+            id: { in: imageIds },
+            listingId: null,
+          },
+          data: { listingId: newListing.id },
+        });
+      }
+
+      return newListing;
+    });
 
     return NextResponse.json(
       { listing: { id: listing.id, slug: listing.slug, status: listing.status } },

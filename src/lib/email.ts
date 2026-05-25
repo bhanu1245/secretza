@@ -11,6 +11,16 @@ interface EmailProvider {
   send(payload: EmailPayload): Promise<{ success: boolean; error?: string }>;
 }
 
+// HTML-escape user-supplied values to prevent XSS in email clients
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // Console provider (dev mode)
 class ConsoleEmailProvider implements EmailProvider {
   async send(payload: EmailPayload): Promise<{ success: boolean; error?: string }> {
@@ -79,6 +89,7 @@ export function getEmailProvider(): EmailProvider {
 export function verificationEmailTemplate(name: string, token: string): string {
   const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
   const url = `${baseUrl}/api/auth/verify-email?token=${token}`;
+  const safeName = escapeHtml(name);
 
   return `
     <div style="max-width: 480px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
@@ -90,7 +101,7 @@ export function verificationEmailTemplate(name: string, token: string): string {
           <h1 style="color: #F5F5F7; font-size: 24px; margin: 0;">Verify Your Email</h1>
         </div>
         <p style="color: #A1A1AA; font-size: 16px; line-height: 1.5; margin-bottom: 24px;">
-          Hi ${name},<br><br>
+          Hi ${safeName},<br><br>
           Welcome to Secretza! Please verify your email address to get started.
         </p>
         <a href="${url}" style="display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #7C3AED, #8B5CF6); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
@@ -107,6 +118,7 @@ export function verificationEmailTemplate(name: string, token: string): string {
 export function passwordResetEmailTemplate(name: string, token: string): string {
   const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
   const url = `${baseUrl}/api/auth/reset-password?token=${token}`;
+  const safeName = escapeHtml(name);
 
   return `
     <div style="max-width: 480px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
@@ -118,7 +130,7 @@ export function passwordResetEmailTemplate(name: string, token: string): string 
           <h1 style="color: #F5F5F7; font-size: 24px; margin: 0;">Reset Your Password</h1>
         </div>
         <p style="color: #A1A1AA; font-size: 16px; line-height: 1.5; margin-bottom: 24px;">
-          Hi ${name},<br><br>
+          Hi ${safeName},<br><br>
           We received a request to reset your password. Click the button below to set a new password.
         </p>
         <a href="${url}" style="display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #7C3AED, #8B5CF6); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
@@ -133,6 +145,10 @@ export function passwordResetEmailTemplate(name: string, token: string): string 
 }
 
 export function loginAlertEmailTemplate(name: string, ip: string, time: string): string {
+  const safeName = escapeHtml(name);
+  const safeIp = escapeHtml(ip);
+  const safeTime = escapeHtml(time);
+
   return `
     <div style="max-width: 480px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
       <div style="background: #0B0B0F; padding: 40px; border-radius: 16px;">
@@ -143,10 +159,10 @@ export function loginAlertEmailTemplate(name: string, ip: string, time: string):
           <h1 style="color: #F5F5F7; font-size: 24px; margin: 0;">New Login Detected</h1>
         </div>
         <p style="color: #A1A1AA; font-size: 16px; line-height: 1.5;">
-          Hi ${name},<br><br>
+          Hi ${safeName},<br><br>
           A new login was detected on your Secretza account:<br><br>
-          <strong style="color: #F5F5F7;">IP Address:</strong> ${ip}<br>
-          <strong style="color: #F5F5F7;">Time:</strong> ${time}<br><br>
+          <strong style="color: #F5F5F7;">IP Address:</strong> ${safeIp}<br>
+          <strong style="color: #F5F5F7;">Time:</strong> ${safeTime}<br><br>
           If this was you, no action is needed. If you don't recognize this activity, please secure your account immediately.
         </p>
       </div>

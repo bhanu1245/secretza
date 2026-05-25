@@ -222,13 +222,18 @@ export class StorageService {
   // ==========================================
 
   private async uploadLocal(key: string, buffer: Buffer, _contentType: string): Promise<UploadResult> {
-    const filePath = path.join(this.localBasePath, key);
+    // Prevent path traversal: resolved path must stay within localBasePath
+    const resolved = path.resolve(this.localBasePath, key);
+    const base = path.resolve(this.localBasePath);
+    if (!resolved.startsWith(base + path.sep) && resolved !== base) {
+      throw new Error(`Path traversal detected: key "${key}" resolves outside uploads directory`);
+    }
 
     // Ensure the parent directory tree exists
-    const dir = path.dirname(filePath);
+    const dir = path.dirname(resolved);
     await mkdir(dir, { recursive: true });
 
-    await writeFile(filePath, buffer);
+    await writeFile(resolved, buffer);
 
     return {
       key,

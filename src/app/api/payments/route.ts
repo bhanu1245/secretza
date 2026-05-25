@@ -41,6 +41,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate amount: must be a positive number, capped at 99999
+    if (typeof amount !== "number" || amount <= 0 || amount > 99999) {
+      return NextResponse.json(
+        { error: "Invalid payment amount. Must be a positive number up to 99999." },
+        { status: 400 }
+      );
+    }
+
     // Create payment record — userId is always from the session, never from the body
     const payment = await db.payment.create({
       data: {

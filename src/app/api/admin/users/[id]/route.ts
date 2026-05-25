@@ -152,6 +152,13 @@ export async function PATCH(
             { status: 400 }
           );
         }
+        // Prevent admin from demoting themselves
+        if (id === admin.id) {
+          return NextResponse.json(
+            { error: "Cannot modify your own role" },
+            { status: 403 }
+          );
+        }
         updateData = { role };
         message = `User role updated to ${role}`;
         break;
