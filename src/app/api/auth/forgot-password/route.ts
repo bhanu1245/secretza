@@ -1,0 +1,65 @@
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { generateToken } from "@/lib/auth-helpers";
+import { sendPasswordResetEmail } from "@/lib/email";
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { email } = body;
+
+    if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        { message: "If an account exists, a reset link has been sent." },
+        { status: 200 }
+      );
+    }
+
+    // Look up user
+    const user = await db.user.findUnique({
+      where: { email },
+    });
+
+    // Security: don't reveal if email exists
+    if (!user) {
+      return NextResponse.json(
+        { message: "If an account exists, a reset link has been sent." },
+        { status: 200 }
+      );
+    }
+
+    // If user has no password (OAuth user), return specific message
+    if (!user.passwordHash) {
+      return NextResponse.json(
+        { errors: ["This account uses social login. Please sign in with your provider."] },
+        { status: 400 }
+      );
+    }
+
+    // Generate reset token
+    const resetToken = generateToken(32);
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await db.verificationToken.create({
+      data: {
+        identifier: `reset:${email}`,
+        token: resetToken,
+        expires,
+      },
+    });
+
+    // Send password reset email
+    await sendPasswordResetEmail(user.email, user.name || "User", resetToken);
+
+    return NextResponse.json(
+      { message: "If an account exists, a reset link has been sent." },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return NextResponse.json(
+      { errors: ["An unexpected error occurred. Please try again."] },
+      { status: 500 }
+    );
+  }
+}

@@ -1,0 +1,116 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { requireMinRole } from "@/lib/auth-helpers";
+import { Prisma } from "@prisma/client";
+
+export async function GET(request: Request) {
+  try {
+    const admin = await requireMinRole("admin");
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get("status") || undefined;
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+
+    const where: Prisma.ListingWhereInput = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    const [listings, total] = await Promise.all([
+      db.listing.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              image: true,
+              role: true,
+              isVerified: true,
+              isSuspended: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              icon: true,
+            },
+          },
+          country: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          state: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          city: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          _count: {
+            select: {
+              reports: true,
+            },
+          },
+        },
+      }),
+      db.listing.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      listings: listings.map((l) => ({
+        id: l.id,
+        title: l.title,
+        slug: l.slug,
+        description: l.description,
+        status: l.status,
+        price: l.price,
+        currency: l.currency,
+        isFeatured: l.isFeatured,
+        isBoosted: l.isBoosted,
+        priorityScore: l.priorityScore,
+        viewCount: l.viewCount,
+        reportCount: l._count.reports,
+        riskScore: l.riskScore,
+        expiresAt: l.expiresAt?.toISOString() ?? null,
+        featuredUntil: l.featuredUntil?.toISOString() ?? null,
+        boostUntil: l.boostUntil?.toISOString() ?? null,
+        createdAt: l.createdAt.toISOString(),
+        updatedAt: l.updatedAt.toISOString(),
+        user: l.user,
+        category: l.category,
+        country: l.country,
+        state: l.state,
+        city: l.city,
+      })),
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    console.error("Admin listings error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch listings" },
+      { status: 500 }
+    );
+  }
+}
