@@ -201,7 +201,7 @@ export default function ManualPaymentPage({
       setQrLoading(true);
       try {
         const res = await fetch(
-          `/api/payments/manual/qr?amount=${selectedAmount}&paymentType=${paymentType}&XTransformPort=3000`
+          `/api/payments/manual/qr?amount=${selectedAmount}&paymentType=${paymentType}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -242,7 +242,7 @@ export default function ManualPaymentPage({
     async function fetchSubmissions() {
       setLoadingSubmissions(true);
       try {
-        const res = await fetch("/api/payments/manual?XTransformPort=3000");
+        const res = await fetch("/api/payments/manual");
         if (res.ok) {
           const data = await res.json();
           if (!cancelled && data.submissions) {
@@ -352,7 +352,7 @@ export default function ManualPaymentPage({
       if (notes.trim()) formData.append("notes", notes.trim());
       if (screenshotFile) formData.append("screenshot", screenshotFile);
 
-      const res = await fetch("/api/payments/manual?XTransformPort=3000", {
+      const res = await fetch("/api/payments/manual", {
         method: "POST",
         body: formData,
       });

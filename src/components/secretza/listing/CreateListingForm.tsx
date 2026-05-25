@@ -133,7 +133,7 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
     async function fetchListing() {
       setIsLoadingListing(true);
       try {
-        const res = await fetch(`/api/listings/${editListingId}?XTransformPort=3000`);
+        const res = await fetch(`/api/listings/${editListingId}`);
         if (res.ok) {
           const data = await res.json();
           // Populate form fields from the fetched listing
@@ -421,8 +421,8 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
       const imageIds = successfulImages.map((img) => img.id);
 
       const submitUrl = isEditing && editListingId
-        ? `/api/listings/${editListingId}?XTransformPort=3000`
-        : "/api/listings?XTransformPort=3000";
+        ? `/api/listings/${editListingId}`
+        : "/api/listings";
       const submitMethod = isEditing ? "PUT" : "POST";
 
       const res = await fetch(submitUrl, {

@@ -594,7 +594,7 @@ const handleDelete = async (id: string) => {
   if (!confirmed) return;
 
   try {
-    const response = await fetch(`/api/listings/${id}?XTransformPort=3000`, {
+    const response = await fetch(`/api/listings/${id}`, {
       method: "DELETE",
     });
 
@@ -1001,7 +1001,7 @@ function VerificationBanner() {
   const handleResend = async () => {
     setResending(true);
     try {
-      const res = await fetch("/api/auth/resend-verification?XTransformPort=3000", {
+      const res = await fetch("/api/auth/resend-verification", {
         method: "POST",
       });
       const data = await res.json();
@@ -1112,7 +1112,7 @@ function NotificationBell() {
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/notifications?XTransformPort=3000&limit=30");
+      const res = await fetch("/api/notifications?limit=30");
       if (res.ok) {
         const data = await res.json();
         setNotifications(data.notifications || []);
@@ -1141,7 +1141,7 @@ function NotificationBell() {
 
   const markAsRead = useCallback(async (id: string) => {
     try {
-      await fetch(`/api/notifications/${id}/read?XTransformPort=3000`, { method: "POST" });
+      await fetch(`/api/notifications/${id}/read`, { method: "POST" });
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
       );
@@ -1153,7 +1153,7 @@ function NotificationBell() {
 
   const markAllAsRead = useCallback(async () => {
     try {
-      await fetch("/api/notifications/read-all?XTransformPort=3000", { method: "POST" });
+      await fetch("/api/notifications/read-all", { method: "POST" });
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
       toast.success("All notifications marked as read");
@@ -1351,7 +1351,7 @@ export default function Dashboard() {
     const userId = user.id;
     async function fetchUserListings() {
       try {
-        const res = await fetch(`/api/listings?XTransformPort=3000&userId=${userId}`);
+        const res = await fetch(`/api/listings?userId=${userId}`);
         if (res.ok) {
           const data = await res.json();
           setUserListings(data.listings || []);

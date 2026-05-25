@@ -356,7 +356,7 @@ function RegisterForm() {
     setIsLoading(true);
     try {
       // Register via API
-      const res = await fetch("/api/auth/register?XTransformPort=3000", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -595,7 +595,7 @@ function ForgotPasswordForm() {
   const onSubmit = async (data: ForgotPasswordFormData) => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/auth/forgot-password?XTransformPort=3000", {
+      const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: data.email }),

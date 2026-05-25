@@ -23,6 +23,15 @@ export async function GET(request: Request) {
   const sortBy = searchParams.get("sortBy") || "ranking";
   const userId = searchParams.get("userId") || undefined;
 
+  // Require authentication when querying by userId — prevents unauthenticated
+  // users from enumerating another user's listings (including private statuses).
+  if (userId) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id || session.user.id !== userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   const where: Prisma.ListingWhereInput = userId
     ? { userId }
     : { status: "approved" };

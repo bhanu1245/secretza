@@ -232,7 +232,7 @@ function AdminDashboardPage() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const response = await fetch("/api/admin/stats?XTransformPort=3000");
+        const response = await fetch("/api/admin/stats");
         const data = await response.json();
         if (data && !data.error) {
           setStats(data);
@@ -253,7 +253,7 @@ function AdminDashboardPage() {
   useEffect(() => {
     const loadListings = async () => {
       try {
-        const response = await fetch("/api/admin/listings?XTransformPort=3000");
+        const response = await fetch("/api/admin/listings");
         const data = await response.json();
         setListings(data.listings || []);
       } catch (error) {
@@ -269,7 +269,7 @@ function AdminDashboardPage() {
   useEffect(() => {
     const loadPending = async () => {
       try {
-        const response = await fetch("/api/admin/listings?XTransformPort=3000&status=pending&limit=5");
+        const response = await fetch("/api/admin/listings?status=pending&limit=5");
         const data = await response.json();
         setPendingItems(data.listings || []);
       } catch {
@@ -459,7 +459,7 @@ function AdminUsersPage() {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const response = await fetch("/api/admin/users?XTransformPort=3000&limit=50");
+        const response = await fetch("/api/admin/users?limit=50");
         const data = await response.json();
         if (data && !data.error) {
           setUsersTotal(data.total || 0);
@@ -659,7 +659,7 @@ function AdminListingsPage() {
   useEffect(() => {
   const loadListings = async () => {
     try {
-      const response = await fetch("/api/admin/listings?XTransformPort=3000");
+      const response = await fetch("/api/admin/listings");
       const data = await response.json();
 
       console.log("Admin listings:", data);
@@ -864,7 +864,7 @@ function ImageModerationPanel() {
   const fetchImages = useCallback(async (status: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/upload/moderate?status=${status}&limit=50&XTransformPort=3000`);
+      const res = await fetch(`/api/upload/moderate?status=${status}&limit=50`);
       if (res.ok) {
         const data = await res.json();
         setImages(data.images || []);
@@ -883,7 +883,7 @@ function ImageModerationPanel() {
   const handleModerate = async (imageId: string, action: "approve" | "reject" | "flag") => {
     setProcessingId(imageId);
     try {
-      const res = await fetch(`/api/upload/moderate?XTransformPort=3000`, {
+      const res = await fetch("/api/upload/moderate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageId, action }),
@@ -1028,7 +1028,7 @@ function AdminModerationPage() {
   useEffect(() => {
   const loadItems = async () => {
     try {
-      const response = await fetch("/api/admin/listings?status=pending&XTransformPort=3000");
+      const response = await fetch("/api/admin/listings?status=pending");
       const data = await response.json();
 
       const moderationItems = (data.listings || []).map((listing: any) => ({
@@ -1402,8 +1402,6 @@ function ManualPaymentQueue() {
       if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
       params.set("page", page.toString());
       params.set("limit", "20");
-      params.set("XTransformPort", "3000");
-
       const res = await fetch(`/api/admin/payments/manual?${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -1426,7 +1424,7 @@ function ManualPaymentQueue() {
   const handleAction = async (submissionId: string, action: string, notes?: string) => {
     setActionLoading(submissionId);
     try {
-      const res = await fetch(`/api/admin/payments/manual/${submissionId}/review?XTransformPort=3000`, {
+      const res = await fetch(`/api/admin/payments/manual/${submissionId}/review`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, adminNotes: notes || null }),

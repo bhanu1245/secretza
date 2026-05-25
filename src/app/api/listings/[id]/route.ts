@@ -248,6 +248,18 @@ export async function DELETE(
   try {
     const { id } = await params;
 
+    // Auth guard: must be authenticated
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify listing belongs to the current user
+    const existing = await db.listing.findUnique({ where: { id } });
+    if (!existing || existing.userId !== session.user.id) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     await db.listing.delete({
       where: { id },
     });
