@@ -20,13 +20,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   nav: { view: "home", params: {} },
   history: [],
 
-  dashboardPage:
-  typeof window !== "undefined"
-    ? (localStorage.getItem("dashboardPage") as
-        | "overview"
-        | "listings"
-        | "settings") || "overview"
-    : "overview",
+  dashboardPage: "overview" as "overview" | "listings" | "settings",
 
 setDashboardPage: (page) => {
   localStorage.setItem("dashboardPage", page);

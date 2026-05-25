@@ -594,7 +594,7 @@ const handleDelete = async (id: string) => {
   if (!confirmed) return;
 
   try {
-    const response = await fetch(`/api/listings/${id}`, {
+    const response = await fetch(`/api/listings/${id}?XTransformPort=3000`, {
       method: "DELETE",
     });
 
@@ -1320,6 +1320,9 @@ export default function Dashboard() {
     return "overview";
   });
 
+  // Ref to guard against stale nav.params.tab overwriting user's manual page choice
+  const hasProcessedNavTab = useRef(false);
+
   // Sync local page state to Zustand store for cross-component consistency
   const setDashboardPage = useNavigationStore((s) => s.setDashboardPage);
   useEffect(() => {
@@ -1330,11 +1333,13 @@ export default function Dashboard() {
   // Handle navigation params from external components (e.g., Header "My Listings" button)
   const nav = useNavigationStore((s) => s.nav);
   useEffect(() => {
+    if (hasProcessedNavTab.current) return;
     const tab = nav.params?.tab as string | undefined;
     if (tab && ["overview", "listings", "settings"].includes(tab)) {
       setCurrentPage(tab as DashboardPage);
+      hasProcessedNavTab.current = true;
     }
-  }, []);
+  }, [nav.params?.tab]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Fetch real user listings
@@ -1346,7 +1351,7 @@ export default function Dashboard() {
     const userId = user.id;
     async function fetchUserListings() {
       try {
-        const res = await fetch(`/api/listings?xTransformPort=3000&userId=${userId}`);
+        const res = await fetch(`/api/listings?XTransformPort=3000&userId=${userId}`);
         if (res.ok) {
           const data = await res.json();
           setUserListings(data.listings || []);

@@ -1,6 +1,6 @@
 'use client';
 
-import React from "react";
+import React, { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigationStore, useUIStore, useAuthStore } from "@/store/useAppStore";
 import { mockListings, getCategoryBySlug, pricingPackages } from "@/lib/mock-data";
@@ -219,10 +219,23 @@ export default function Home() {
     ? mockListings.find((l) => l.id === selectedListingId)
     : null;
 
+  // Redirect unauthenticated users away from protected views (after render, not during)
+  useEffect(() => {
+    if (nav.view === "dashboard" && !isAuthenticated) {
+      navigate("home");
+    }
+  }, [nav.view, isAuthenticated, navigate]);
+
+  // Redirect unauthenticated users away from admin view
+  useEffect(() => {
+    if (nav.view === "admin" && (!isAuthenticated || !user || (user.role !== "admin" && user.role !== "moderator"))) {
+      navigate(isAuthenticated ? "dashboard" : "home");
+    }
+  }, [nav.view, isAuthenticated, user, navigate]);
+
   // Full-page views (no header/footer)
   if (nav.view === "dashboard") {
     if (!isAuthenticated) {
-      navigate("home");
       return null;
     }
     return (
@@ -235,8 +248,6 @@ export default function Home() {
 
   if (nav.view === "admin") {
     if (!isAuthenticated || !user || (user.role !== "admin" && user.role !== "moderator")) {
-      // Regular users blocked from admin
-      navigate(isAuthenticated ? "dashboard" : "home");
       return null;
     }
     return (

@@ -1054,7 +1054,7 @@ export default function SeoDashboard() {
 
   const fetchDashboard = useCallback(
     (showToast = false) => {
-      fetch(`/api/seo/dashboard?days=${days}`)
+      fetch(`/api/seo/dashboard?days=${days}&XTransformPort=3000`)
         .then((res) => {
           if (!res.ok) throw new Error('Failed to fetch');
           return res.json();

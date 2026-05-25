@@ -283,11 +283,11 @@ function AdminDashboardPage() {
 
   const statsCards = stats
     ? [
-        { label: "Total Users", value: formatNumber(stats.totalUsers), change: "+12.5%", icon: Users, color: "#7C3AED", bg: "rgba(124,58,237,0.1)" },
-        { label: "Total Listings", value: formatNumber(stats.totalListings), change: "+8.2%", icon: FileText, color: "#3B82F6", bg: "rgba(59,130,246,0.1)" },
-        { label: "Active Listings", value: formatNumber(stats.activeListings), change: "+5.1%", icon: TrendingUp, color: "#10B981", bg: "rgba(16,185,129,0.1)" },
-        { label: "Pending Review", value: stats.pendingReview.toString(), change: "+3", icon: Clock, color: "#F59E0B", bg: "rgba(245,158,11,0.1)" },
-        { label: "Total Revenue", value: `$${formatNumber(stats.totalRevenue)}`, change: "+18.3%", icon: DollarSign, color: "#10B981", bg: "rgba(16,185,129,0.1)" },
+        { label: "Total Users", value: formatNumber(stats.totalUsers), icon: Users, color: "#7C3AED", bg: "rgba(124,58,237,0.1)" },
+        { label: "Total Listings", value: formatNumber(stats.totalListings), icon: FileText, color: "#3B82F6", bg: "rgba(59,130,246,0.1)" },
+        { label: "Active Listings", value: formatNumber(stats.activeListings), icon: TrendingUp, color: "#10B981", bg: "rgba(16,185,129,0.1)" },
+        { label: "Pending Review", value: stats.pendingReview.toString(), icon: Clock, color: "#F59E0B", bg: "rgba(245,158,11,0.1)" },
+        { label: "Total Revenue", value: `$${formatNumber(stats.totalRevenue)}`, icon: DollarSign, color: "#10B981", bg: "rgba(16,185,129,0.1)" },
       ]
     : [];
 
@@ -319,14 +319,10 @@ function AdminDashboardPage() {
           statsCards.map((stat) => (
           <Card key={stat.label} className="bg-[#15151D] border-[rgba(255,255,255,0.08)] hover:border-[rgba(124,58,237,0.2)] transition-all">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-end mb-2">
                 <div className="p-2 rounded-lg" style={{ backgroundColor: stat.bg }}>
                   <stat.icon className="size-4" style={{ color: stat.color }} />
                 </div>
-                <span className="text-[10px] font-medium text-emerald-400 flex items-center gap-0.5">
-                  <ArrowUpRight className="size-3" />
-                  {stat.change}
-                </span>
               </div>
               <p className="text-xl font-bold text-[#F5F5F7]">{stat.value}</p>
               <p className="text-[10px] text-[#A1A1AA] mt-0.5">{stat.label}</p>
@@ -663,7 +659,7 @@ function AdminListingsPage() {
   useEffect(() => {
   const loadListings = async () => {
     try {
-      const response = await fetch("/api/admin/listings");
+      const response = await fetch("/api/admin/listings?XTransformPort=3000");
       const data = await response.json();
 
       console.log("Admin listings:", data);
@@ -1032,7 +1028,7 @@ function AdminModerationPage() {
   useEffect(() => {
   const loadItems = async () => {
     try {
-      const response = await fetch("/api/admin/listings?status=pending");
+      const response = await fetch("/api/admin/listings?status=pending&XTransformPort=3000");
       const data = await response.json();
 
       const moderationItems = (data.listings || []).map((listing: any) => ({

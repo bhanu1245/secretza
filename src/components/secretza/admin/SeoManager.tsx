@@ -165,6 +165,7 @@ export default function SeoManager() {
       if (isPublishedFilter !== null) params.set('isPublished', String(isPublishedFilter));
       params.set('page', String(currentPage));
       params.set('limit', String(limit));
+      params.set('XTransformPort', '3000');
 
       const res = await fetch(`/api/seo/pages?${params.toString()}`);
       if (res.ok) {
@@ -204,7 +205,7 @@ export default function SeoManager() {
     if (!editPage) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/seo/pages/${editPage.id}`, {
+      const res = await fetch(`/api/seo/pages/${editPage.id}?XTransformPort=3000`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm),
@@ -226,7 +227,7 @@ export default function SeoManager() {
 
   const handleQuickNoindex = async (page: SeoPage) => {
     try {
-      const res = await fetch(`/api/seo/pages/${page.id}`, {
+      const res = await fetch(`/api/seo/pages/${page.id}?XTransformPort=3000`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ noindex: !page.noindex }),
@@ -247,7 +248,7 @@ export default function SeoManager() {
     setFaqPage(page);
     setLoadingFaqs(true);
     try {
-      const res = await fetch(`/api/seo/pages/${page.id}`);
+      const res = await fetch(`/api/seo/pages/${page.id}?XTransformPort=3000`);
       if (res.ok) {
         const data = await res.json();
         setFaqs((data.faqs || []).sort((a: SeoFaq, b: SeoFaq) => a.sortOrder - b.sortOrder));
@@ -280,7 +281,7 @@ export default function SeoManager() {
     setSavingFaq(true);
     try {
       if (isAddFaq && faqPage) {
-        const res = await fetch('/api/seo/faqs', {
+        const res = await fetch('/api/seo/faqs?XTransformPort=3000', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -299,7 +300,7 @@ export default function SeoManager() {
           toast.error(err.error || 'Failed to create FAQ');
         }
       } else if (editFaq) {
-        const res = await fetch('/api/seo/faqs', {
+        const res = await fetch('/api/seo/faqs?XTransformPort=3000', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -336,13 +337,13 @@ export default function SeoManager() {
     const swapOrder = sorted[swapIdx].sortOrder;
 
     try {
-      const res = await fetch('/api/seo/faqs', {
+      const res = await fetch('/api/seo/faqs?XTransformPort=3000', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: faq.id, question: faq.question, answer: faq.answer, sortOrder: swapOrder, isActive: faq.isActive }),
       });
       if (res.ok) {
-        const res2 = await fetch('/api/seo/faqs', {
+        const res2 = await fetch('/api/seo/faqs?XTransformPort=3000', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: sorted[swapIdx].id, question: sorted[swapIdx].question, answer: sorted[swapIdx].answer, sortOrder: currentOrder, isActive: sorted[swapIdx].isActive }),
@@ -363,7 +364,7 @@ export default function SeoManager() {
     if (!deleteTarget || deleteTarget.type !== 'page') return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/seo/pages/${deleteTarget.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/seo/pages/${deleteTarget.id}?XTransformPort=3000`, { method: 'DELETE' });
       if (res.ok) {
         toast.success('SEO page deleted');
         setDeleteTarget(null);
@@ -382,7 +383,7 @@ export default function SeoManager() {
     if (!deleteTarget || deleteTarget.type !== 'faq') return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/seo/faqs?id=${deleteTarget.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/seo/faqs?id=${deleteTarget.id}&XTransformPort=3000`, { method: 'DELETE' });
       if (res.ok) {
         toast.success('FAQ deleted');
         setDeleteTarget(null);
@@ -406,7 +407,7 @@ export default function SeoManager() {
       const cities = ['mumbai', 'delhi', 'bangalore', 'hyderabad', 'chennai', 'kolkata', 'pune', 'ahmedabad', 'jaipur', 'lucknow'];
       let created = 0;
       for (const city of cities) {
-        const res = await fetch('/api/seo/pages', {
+        const res = await fetch('/api/seo/pages?XTransformPort=3000', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -435,7 +436,7 @@ export default function SeoManager() {
   const loadCityIntro = async (slug: string) => {
     setCityIntroModal({ city: slug.charAt(0).toUpperCase() + slug.slice(1), slug, content: '' });
     try {
-      const res = await fetch(`/api/seo/pages?pageType=city&search=${slug}&limit=1`);
+      const res = await fetch(`/api/seo/pages?pageType=city&search=${slug}&limit=1&XTransformPort=3000`);
       if (res.ok) {
         const data = await res.json();
         if (data.pages?.[0]?.introContent) {
@@ -456,7 +457,7 @@ export default function SeoManager() {
         metaDescription: `Discover verified adult services in ${cityIntroModal.city}. Browse premium listings with real photos and reviews on Secretza.`,
         introContent: cityIntroModal.content,
       };
-      const res = await fetch('/api/seo/pages', {
+      const res = await fetch('/api/seo/pages?XTransformPort=3000', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

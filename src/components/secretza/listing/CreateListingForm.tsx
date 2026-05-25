@@ -133,7 +133,7 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
     async function fetchListing() {
       setIsLoadingListing(true);
       try {
-        const res = await fetch(`/api/listings/${editListingId}`);
+        const res = await fetch(`/api/listings/${editListingId}?XTransformPort=3000`);
         if (res.ok) {
           const data = await res.json();
           // Populate form fields from the fetched listing
@@ -233,6 +233,8 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
 
   // ── Draft Persistence: Restore on mount ──────────────────────────────
   useEffect(() => {
+    // Never restore a draft when editing — the fetched listing data takes priority
+    if (isEditing) return;
     if (draftRestoredRef.current) return;
 
     try {
