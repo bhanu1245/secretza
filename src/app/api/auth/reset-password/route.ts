@@ -387,7 +387,10 @@ export async function POST(request: NextRequest) {
     await db.$transaction([
       db.user.update({
         where: { id: user.id },
-        data: { passwordHash },
+        data: {
+          passwordHash,
+          sessionVersion: { increment: 1 },
+        },
       }),
       db.verificationToken.delete({
         where: { token },

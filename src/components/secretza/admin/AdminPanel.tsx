@@ -761,6 +761,15 @@ function AdminListingsPage() {
     }
   };
 
+  const handleBulkAction = async (action: "approve" | "reject" | "feature") => {
+    const count = selected.size;
+    for (const id of selected) {
+      await handleListingAction(id, action);
+    }
+    setSelected(new Set());
+    toast.success(`${count} listings ${action === "delete" ? "deleted" : `${action}d`}`);
+  };
+
   const filteredListings = listings.filter(
     (l) => statusFilter === "all" || l.status === statusFilter
   );
@@ -819,13 +828,13 @@ function AdminListingsPage() {
         {selected.size > 0 && (
           <div className="flex items-center gap-2 sm:ml-auto">
             <span className="text-xs text-[#A1A1AA]">{selected.size} selected</span>
-            <Button size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">
+            <Button size="sm" onClick={() => handleBulkAction("approve")} className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">
               <CheckCircle className="size-3 mr-1" /> Approve
             </Button>
-            <Button size="sm" className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg">
+            <Button size="sm" onClick={() => handleBulkAction("reject")} className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg">
               <XCircle className="size-3 mr-1" /> Reject
             </Button>
-            <Button size="sm" className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-lg">
+            <Button size="sm" onClick={() => handleBulkAction("feature")} className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-lg">
               <Star className="size-3 mr-1" /> Feature
             </Button>
           </div>

@@ -75,7 +75,10 @@ export async function POST(request: NextRequest) {
     const newPasswordHash = await bcrypt.hash(newPassword, 12);
     await db.user.update({
       where: { id: session.id },
-      data: { passwordHash: newPasswordHash },
+      data: {
+        passwordHash: newPasswordHash,
+        sessionVersion: { increment: 1 },
+      },
     });
 
     return NextResponse.json({ message: "Password changed successfully." });

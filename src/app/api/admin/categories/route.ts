@@ -22,39 +22,29 @@ export async function GET() {
       },
     });
 
-    // Build tree structure (only root categories)
-    const tree = categories
-      .filter((c) => !c.parentId)
-      .map((c) => ({
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-        description: c.description,
-        icon: c.icon,
-        color: c.color,
-        order: c.order,
-        isActive: c.isActive,
-        isFeatured: c.isFeatured,
-        listingCount: c._count.listings,
-        parentId: c.parentId,
-        seoTitle: c.seoTitle,
-        seoDescription: c.seoDescription,
-        children: c.children.map((child) => ({
-          id: child.id,
-          name: child.name,
-          slug: child.slug,
-          description: child.description,
-          icon: child.icon,
-          color: child.color,
-          order: child.order,
-          isActive: child.isActive,
-          isFeatured: child.isFeatured,
-          listingCount: child._count.listings,
-          parentId: child.parentId,
-          seoTitle: child.seoTitle,
-          seoDescription: child.seoDescription,
-        })),
-      }));
+    // Recursive function to build tree with unlimited depth
+    const buildTree = (parentId: string | null): any[] => {
+      return categories
+        .filter((c) => c.parentId === parentId)
+        .map((c) => ({
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          description: c.description,
+          icon: c.icon,
+          color: c.color,
+          order: c.order,
+          isActive: c.isActive,
+          isFeatured: c.isFeatured,
+          listingCount: c._count.listings,
+          parentId: c.parentId,
+          seoTitle: c.seoTitle,
+          seoDescription: c.seoDescription,
+          children: buildTree(c.id),
+        }));
+    };
+
+    const tree = buildTree(null);
 
     return NextResponse.json({ categories: tree });
   } catch (error) {

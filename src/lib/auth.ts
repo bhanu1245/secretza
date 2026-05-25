@@ -22,6 +22,7 @@ declare module "next-auth" {
       isPremium: boolean;
       premiumExpiry?: Date | null;
       provider: string;
+      sessionVersion?: number;
     };
   }
 
@@ -32,6 +33,7 @@ declare module "next-auth" {
     isPremium?: boolean;
     premiumExpiry?: Date | null;
     provider?: string;
+    sessionVersion?: number;
   }
 }
 
@@ -44,6 +46,7 @@ declare module "next-auth/jwt" {
     isPremium?: boolean;
     premiumExpiry?: Date | null;
     provider?: string;
+    sessionVersion?: number;
   }
 }
 
@@ -151,6 +154,7 @@ export const authOptions: NextAuthOptions = {
           isPremium: user.isPremium,
           premiumExpiry: user.premiumExpiry,
           provider: user.provider,
+          sessionVersion: user.sessionVersion,
         };
       },
     }),
@@ -171,6 +175,7 @@ export const authOptions: NextAuthOptions = {
         token.isPremium = user.isPremium;
         token.premiumExpiry = user.premiumExpiry;
         token.provider = user.provider;
+        token.sessionVersion = user.sessionVersion;
       }
 
       // If this is an OAuth account (e.g., Google), update user image
@@ -195,6 +200,7 @@ export const authOptions: NextAuthOptions = {
             isSuspended: true,
             isPremium: true,
             premiumExpiry: true,
+            sessionVersion: true,
           },
         });
         if (dbUser) {
@@ -203,14 +209,15 @@ export const authOptions: NextAuthOptions = {
           token.isSuspended = dbUser.isSuspended;
           token.isPremium = dbUser.isPremium;
           token.premiumExpiry = dbUser.premiumExpiry;
+          token.sessionVersion = dbUser.sessionVersion;
         }
       }
 
-      // Periodic refresh every hour to catch suspension/verification changes
+      // Periodic refresh every hour to catch suspension/verification/sessionVersion changes
       if (!token.iat || (Date.now() / 1000) - (token.iat as number) > 3600) {
         const dbUser = await db.user.findUnique({
           where: { id: token.id },
-          select: { role: true, isVerified: true, isSuspended: true, isPremium: true, premiumExpiry: true },
+          select: { role: true, isVerified: true, isSuspended: true, isPremium: true, premiumExpiry: true, sessionVersion: true },
         });
         if (dbUser) {
           token.role = dbUser.role;
@@ -218,6 +225,19 @@ export const authOptions: NextAuthOptions = {
           token.isSuspended = dbUser.isSuspended;
           token.isPremium = dbUser.isPremium;
           token.premiumExpiry = dbUser.premiumExpiry;
+          // If sessionVersion changed, invalidate the session
+          if (token.sessionVersion !== undefined && dbUser.sessionVersion !== token.sessionVersion) {
+            token.id = undefined;
+            token.role = undefined;
+            token.isVerified = undefined;
+            token.isSuspended = undefined;
+            token.isPremium = undefined;
+            token.premiumExpiry = undefined;
+            token.provider = undefined;
+            token.sessionVersion = undefined;
+          } else {
+            token.sessionVersion = dbUser.sessionVersion;
+          }
         }
       }
 
@@ -232,6 +252,7 @@ export const authOptions: NextAuthOptions = {
         session.user.isPremium = token.isPremium || false;
         session.user.premiumExpiry = token.premiumExpiry || null;
         session.user.provider = token.provider || "email";
+        session.user.sessionVersion = token.sessionVersion;
       }
       return session;
     },

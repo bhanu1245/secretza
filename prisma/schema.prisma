@@ -53,6 +53,7 @@ model User {
   isSuspended            Boolean                   @default(false)
   isPremium              Boolean                   @default(false)
   premiumExpiry          DateTime?
+  sessionVersion         Int                       @default(0)
   provider               String                    @default("email")
   providerId             String?
   lastLoginAt            DateTime?
@@ -139,11 +140,29 @@ model City {
   updatedAt    DateTime  @updatedAt
   state        State     @relation(fields: [stateId], references: [id], onDelete: Cascade)
   listings     Listing[]
+  districts    District[]
 
   @@unique([slug, stateId])
   @@index([stateId, isActive])
   @@index([isActive, listingCount(sort: Desc)])
   @@index([isFeatured, isActive])
+}
+
+model District {
+  id           String    @id @default(cuid())
+  name         String
+  slug         String
+  cityId       String
+  isActive     Boolean   @default(true)
+  listingCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  city         City      @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  listings     Listing[]
+
+  @@unique([slug, cityId])
+  @@index([cityId, isActive])
+  @@index([isActive, listingCount(sort: Desc)])
 }
 
 model Listing {
@@ -182,7 +201,9 @@ model Listing {
   countryId        String
   stateId          String
   cityId           String
+  districtId       String?
   city             City           @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  district         District?      @relation(fields: [districtId], references: [id], onDelete: Cascade)
   state            State          @relation(fields: [stateId], references: [id], onDelete: Cascade)
   country          Country        @relation(fields: [countryId], references: [id], onDelete: Cascade)
   category         Category       @relation(fields: [categoryId], references: [id])
