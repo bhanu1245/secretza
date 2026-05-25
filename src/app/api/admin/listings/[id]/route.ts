@@ -32,7 +32,7 @@ export async function PATCH(
     }
 
     let updated;
-    let auditAction: "listing_approve" | "listing_reject" | "listing_feature" | "settings_change" = "listing_approve";
+    let auditAction: "listing_approve" | "listing_reject" | "listing_feature" | "listing_delete" | "settings_change" = "listing_approve";
 
     switch (action) {
       case "approve":
@@ -73,6 +73,12 @@ export async function PATCH(
         auditAction = "settings_change";
         break;
 
+      case "delete": {
+        await db.listing.delete({ where: { id } });
+        auditAction = "listing_delete";
+        break;
+      }
+
       default:
         return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
@@ -87,17 +93,7 @@ export async function PATCH(
       extractIpAddress(request)
     );
 
-    // Delete listing
     if (action === "delete") {
-      await db.listing.delete({ where: { id } });
-      logAdminAction(
-        admin.id,
-        "listing_delete",
-        "Listing",
-        id,
-        { listingTitle: listing.title, previousStatus: listing.status },
-        extractIpAddress(request)
-      );
       return NextResponse.json({ success: true, message: "Listing deleted" });
     }
 

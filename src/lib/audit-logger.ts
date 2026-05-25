@@ -19,6 +19,7 @@ export type AdminActionType =
   | "listing_approve"
   | "listing_reject"
   | "listing_feature"
+  | "listing_delete"
   | "payment_review"
   | "seo_update"
   | "settings_change"
@@ -44,6 +45,7 @@ const VALID_ACTIONS: ReadonlySet<string> = new Set<AdminActionType>([
   "listing_approve",
   "listing_reject",
   "listing_feature",
+  "listing_delete",
   "payment_review",
   "seo_update",
   "settings_change",

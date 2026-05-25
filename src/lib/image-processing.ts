@@ -55,7 +55,7 @@ export interface ImageValidation {
  * Detect the actual MIME type of a buffer by inspecting its leading bytes.
  * This is more reliable than trusting the file extension.
  */
-function detectMimeType(buffer: Buffer): string | null {
+export function detectMimeType(buffer: Buffer): string | null {
   if (buffer.length < 12) return null;
 
   // PNG: 89 50 4E 47 0D 0A 1A 0A

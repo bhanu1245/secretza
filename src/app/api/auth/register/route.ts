@@ -3,12 +3,15 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { generateToken } from "@/lib/auth-helpers";
 import { sendVerificationEmail } from "@/lib/email";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { rateLimit, RATE_LIMITS, getClientIp } from "@/lib/rate-limit";
 
 // Validation helpers
 function validateName(name: unknown): string | null {
   if (typeof name !== "string" || name.trim().length < 2) {
     return "Name must be at least 2 characters long.";
+  }
+  if (name.trim().length > 100) {
+    return "Name must be less than 100 characters.";
   }
   return null;
 }
@@ -36,8 +39,7 @@ function validatePassword(password: unknown): string | null {
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting by IP
-    const forwarded = request.headers.get("x-forwarded-for");
-    const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
+    const ip = getClientIp(request);
     const rl = rateLimit(`register:${ip}`, RATE_LIMITS.register);
 
     if (!rl.success) {

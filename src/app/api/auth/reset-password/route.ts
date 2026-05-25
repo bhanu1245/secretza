@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { rateLimit, RATE_LIMITS, getClientIp } from "@/lib/rate-limit";
 
 const HTML_TEMPLATE = (title: string, body: string) => `
 <!DOCTYPE html>
@@ -121,10 +122,161 @@ const HTML_TEMPLATE = (title: string, body: string) => `
 
 // GET: Show reset password form
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const token = searchParams.get("token");
+  try {
+    const { searchParams } = new URL(request.url);
+    const token = searchParams.get("token");
 
-  if (!token) {
+    if (!token) {
+      const body = `
+        <div class="container">
+          <div class="logo">
+            <div class="logo-icon"><span>S</span></div>
+            <h1>Secretza</h1>
+          </div>
+          <div class="card error-page">
+            <div class="icon">&#x26A0;&#xFE0F;</div>
+            <h2 class="error-text">Invalid Request</h2>
+            <p>No reset token provided. Please request a new password reset link.</p>
+            <a href="/">Back to Secretza</a>
+          </div>
+        </div>`;
+      return new NextResponse(HTML_TEMPLATE("Invalid Request — Secretza", body), {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
+
+    // Look up token
+    const verificationToken = await db.verificationToken.findUnique({
+      where: { token },
+    });
+
+    if (!verificationToken || verificationToken.expires < new Date()) {
+      const body = `
+        <div class="container">
+          <div class="logo">
+            <div class="logo-icon"><span>S</span></div>
+            <h1>Secretza</h1>
+          </div>
+          <div class="card error-page">
+            <div class="icon">&#x1F512;</div>
+            <h2 class="error-text">Link Expired or Invalid</h2>
+            <p>This password reset link is invalid or has expired. Please request a new one.</p>
+            <a href="/">Back to Secretza</a>
+          </div>
+        </div>`;
+      return new NextResponse(HTML_TEMPLATE("Link Expired — Secretza", body), {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
+
+    // Valid token — show reset form
+    // NOTE: Token is JSON.stringified to prevent XSS via token injection
+    const safeToken = JSON.stringify(token);
+    const formBody = `
+      <div class="container">
+        <div class="logo">
+          <div class="logo-icon"><span>S</span></div>
+          <h1>Secretza</h1>
+        </div>
+        <div class="card">
+          <h2>Reset Your Password</h2>
+          <p>Enter your new password below. Make sure it's at least 8 characters with an uppercase letter and a number.</p>
+          <form id="resetForm">
+            <div class="form-group">
+              <label for="newPassword">New Password</label>
+              <input type="password" id="newPassword" name="newPassword" required minlength="8" placeholder="Enter new password" />
+            </div>
+            <div class="form-group">
+              <label for="confirmPassword">Confirm Password</label>
+              <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8" placeholder="Confirm new password" />
+            </div>
+            <button type="submit" class="btn">Reset Password</button>
+            <div id="message" style="margin-top: 16px;"></div>
+          </form>
+        </div>
+      </div>
+      <script>
+        document.getElementById('resetForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          var msg = document.getElementById('message');
+          var password = document.getElementById('newPassword').value;
+          var confirm = document.getElementById('confirmPassword').value;
+
+          if (password !== confirm) {
+            var p = document.createElement('p');
+            p.className = 'error-text';
+            p.textContent = 'Passwords do not match.';
+            msg.innerHTML = '';
+            msg.appendChild(p);
+            return;
+          }
+          if (password.length < 8) {
+            var p2 = document.createElement('p');
+            p2.className = 'error-text';
+            p2.textContent = 'Password must be at least 8 characters.';
+            msg.innerHTML = '';
+            msg.appendChild(p2);
+            return;
+          }
+          if (!/[A-Z]/.test(password)) {
+            var p3 = document.createElement('p');
+            p3.className = 'error-text';
+            p3.textContent = 'Password must contain an uppercase letter.';
+            msg.innerHTML = '';
+            msg.appendChild(p3);
+            return;
+          }
+          if (!/[0-9]/.test(password)) {
+            var p4 = document.createElement('p');
+            p4.className = 'error-text';
+            p4.textContent = 'Password must contain a number.';
+            msg.innerHTML = '';
+            msg.appendChild(p4);
+            return;
+          }
+
+          try {
+            var res = await fetch('/api/auth/reset-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: ${safeToken}, newPassword: password }),
+            });
+            var data = await res.json();
+            if (res.ok) {
+              msg.innerHTML = '';
+              var sp = document.createElement('p');
+              sp.className = 'success-text';
+              sp.textContent = data.message || 'Password reset successfully!';
+              msg.appendChild(sp);
+              var link = document.createElement('a');
+              link.href = '/';
+              link.textContent = 'Return to Secretza';
+              link.style.marginTop = '8px';
+              link.style.display = 'block';
+              msg.appendChild(link);
+              document.getElementById('resetForm').style.display = 'none';
+            } else {
+              msg.innerHTML = '';
+              var ep = document.createElement('p');
+              ep.className = 'error-text';
+              ep.textContent = (data.errors && data.errors[0]) || data.error || 'Something went wrong.';
+              msg.appendChild(ep);
+            }
+          } catch {
+            msg.innerHTML = '';
+            var np = document.createElement('p');
+            np.className = 'error-text';
+            np.textContent = 'Network error. Please try again.';
+            msg.appendChild(np);
+          }
+        });
+      </script>`;
+
+    return new NextResponse(HTML_TEMPLATE("Reset Password — Secretza", formBody), {
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  } catch (error) {
+    console.error("Reset password GET error:", error);
     const body = `
       <div class="container">
         <div class="logo">
@@ -133,115 +285,30 @@ export async function GET(request: NextRequest) {
         </div>
         <div class="card error-page">
           <div class="icon">&#x26A0;&#xFE0F;</div>
-          <h2 class="error-text">Invalid Request</h2>
-          <p>No reset token provided. Please request a new password reset link.</p>
+          <h2 class="error-text">Error</h2>
+          <p>An unexpected error occurred. Please try again later.</p>
           <a href="/">Back to Secretza</a>
         </div>
       </div>`;
-    return new NextResponse(HTML_TEMPLATE("Invalid Request — Secretza", body), {
+    return new NextResponse(HTML_TEMPLATE("Error — Secretza", body), {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   }
-
-  // Look up token
-  const verificationToken = await db.verificationToken.findUnique({
-    where: { token },
-  });
-
-  if (!verificationToken || verificationToken.expires < new Date()) {
-    const body = `
-      <div class="container">
-        <div class="logo">
-          <div class="logo-icon"><span>S</span></div>
-          <h1>Secretza</h1>
-        </div>
-        <div class="card error-page">
-          <div class="icon">&#x1F512;</div>
-          <h2 class="error-text">Link Expired or Invalid</h2>
-          <p>This password reset link is invalid or has expired. Please request a new one.</p>
-          <a href="/">Back to Secretza</a>
-        </div>
-      </div>`;
-    return new NextResponse(HTML_TEMPLATE("Link Expired — Secretza", body), {
-      headers: { "Content-Type": "text/html; charset=utf-8" },
-    });
-  }
-
-  // Valid token — show reset form
-  const formBody = `
-    <div class="container">
-      <div class="logo">
-        <div class="logo-icon"><span>S</span></div>
-        <h1>Secretza</h1>
-      </div>
-      <div class="card">
-        <h2>Reset Your Password</h2>
-        <p>Enter your new password below. Make sure it's at least 8 characters with an uppercase letter and a number.</p>
-        <form id="resetForm">
-          <div class="form-group">
-            <label for="newPassword">New Password</label>
-            <input type="password" id="newPassword" name="newPassword" required minlength="8" placeholder="Enter new password" />
-          </div>
-          <div class="form-group">
-            <label for="confirmPassword">Confirm Password</label>
-            <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8" placeholder="Confirm new password" />
-          </div>
-          <button type="submit" class="btn">Reset Password</button>
-          <div id="message" style="margin-top: 16px;"></div>
-        </form>
-      </div>
-    </div>
-    <script>
-      document.getElementById('resetForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const msg = document.getElementById('message');
-        const password = document.getElementById('newPassword').value;
-        const confirm = document.getElementById('confirmPassword').value;
-
-        if (password !== confirm) {
-          msg.innerHTML = '<p class="error-text">Passwords do not match.</p>';
-          return;
-        }
-        if (password.length < 8) {
-          msg.innerHTML = '<p class="error-text">Password must be at least 8 characters.</p>';
-          return;
-        }
-        if (!/[A-Z]/.test(password)) {
-          msg.innerHTML = '<p class="error-text">Password must contain an uppercase letter.</p>';
-          return;
-        }
-        if (!/[0-9]/.test(password)) {
-          msg.innerHTML = '<p class="error-text">Password must contain a number.</p>';
-          return;
-        }
-
-        try {
-          const res = await fetch('/api/auth/reset-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: '${token}', newPassword: password }),
-          });
-          const data = await res.json();
-          if (res.ok) {
-            msg.innerHTML = '<p class="success-text">' + (data.message || 'Password reset successfully!') + '</p><p style="margin-top:8px;"><a href="/">Return to Secretza</a></p>';
-            document.getElementById('resetForm').style.display = 'none';
-          } else {
-            msg.innerHTML = '<p class="error-text">' + (data.errors?.[0] || data.error || 'Something went wrong.') + '</p>';
-          }
-        } catch {
-          msg.innerHTML = '<p class="error-text">Network error. Please try again.</p>';
-        }
-      });
-    </script>`;
-
-  return new NextResponse(HTML_TEMPLATE("Reset Password — Secretza", formBody), {
-    headers: { "Content-Type": "text/html; charset=utf-8" },
-  });
 }
 
 // POST: Process password reset
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const ip = getClientIp(request);
+    const rl = rateLimit(`reset-password:${ip}`, RATE_LIMITS.resetPassword);
+    if (!rl.success) {
+      return NextResponse.json(
+        { errors: ["Too many attempts. Please try again later."] },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+      );
+    }
+
     const body = await request.json();
     const { token, newPassword } = body;
 
@@ -314,6 +381,9 @@ export async function POST(request: NextRequest) {
     const passwordHash = await bcrypt.hash(newPassword, saltRounds);
 
     // Update user password and delete the verification token
+    // NOTE: JWT-based sessions cannot be immediately invalidated server-side.
+    // The periodic refresh in the jwt callback (every hour) will pick up any
+    // suspension changes, but existing sessions remain valid until JWT expiry.
     await db.$transaction([
       db.user.update({
         where: { id: user.id },

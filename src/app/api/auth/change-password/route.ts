@@ -33,9 +33,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate new password
+    // Validate new password type first
+    if (typeof newPassword !== "string") {
+      return NextResponse.json(
+        { errors: ["New password is required."] },
+        { status: 400 }
+      );
+    }
+    
     const errors: string[] = [];
-    if (typeof newPassword !== "string" || newPassword.length < 8) {
+    if (newPassword.length < 8) {
       errors.push("Password must be at least 8 characters long.");
     }
     if (!/[A-Z]/.test(newPassword)) {

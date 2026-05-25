@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   PenLine,
   ChevronDown,
@@ -42,27 +42,12 @@ export default function ReviewList({ listingId }: ReviewListProps) {
   const [hasMore, setHasMore] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
-  // Stats derived from reviews
-  const stats = useMemo(() => {
-    if (reviews.length === 0) {
-      return {
-        average: 0,
-        total: 0,
-        distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
-      };
-    }
-
-    const total = reviews.length;
-    const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
-    const average = sum / total;
-
-    const distribution: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    for (const r of reviews) {
-      distribution[r.rating] = (distribution[r.rating] || 0) + 1;
-    }
-
-    return { average, total, distribution };
-  }, [reviews]);
+  // Stats from API summary (accurate across ALL reviews, not just loaded page)
+  const [stats, setStats] = useState({
+    average: 0,
+    total: 0,
+    distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } as Record<number, number>,
+  });
 
   const fetchReviews = useCallback(
     async (append = false) => {
@@ -88,6 +73,15 @@ export default function ReviewList({ listingId }: ReviewListProps) {
           : Array.isArray(data)
             ? data
             : [];
+
+        // Use API-provided summary stats (computed from ALL reviews, not just this page)
+        if (data.reviewSummary) {
+          setStats({
+            average: data.reviewSummary.averageRating ?? 0,
+            total: data.reviewSummary.count ?? 0,
+            distribution: data.reviewSummary.ratingDistribution ?? { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+          });
+        }
 
         if (append) {
           setReviews((prev) => [...prev, ...newReviews]);

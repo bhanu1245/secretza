@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import type { UserRole } from "@/lib/types";
@@ -49,12 +50,7 @@ export async function requireMinRole(minRole: UserRole): Promise<SessionUser | n
   return user;
 }
 
-// Generate a random verification token
+// Generate a random verification token (cryptographically secure)
 export function generateToken(length = 32): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
+  return crypto.randomBytes(length).toString("base64url").slice(0, length);
 }

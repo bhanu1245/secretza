@@ -6,6 +6,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { sendLoginAlert } from "@/lib/email";
+import { rateLimit, RATE_LIMITS, getClientIp } from "@/lib/rate-limit";
 
 // Extend NextAuth types to include our custom fields
 declare module "next-auth" {
@@ -72,6 +73,25 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials, req) {
+        // Rate limiting
+        let ip = "unknown";
+        const headers = req?.headers;
+        if (headers) {
+          if (typeof headers.get === "function") {
+            ip = (headers.get("x-forwarded-for")?.split(",")[0]?.trim()) || (headers.get("x-real-ip")?.trim()) || "unknown";
+          } else if (typeof headers === "object") {
+            const fwd = headers["x-forwarded-for"];
+            const rip = headers["x-real-ip"];
+            if (typeof fwd === "string") ip = fwd.split(",")[0].trim();
+            else if (Array.isArray(fwd)) ip = fwd[0].trim();
+            else if (typeof rip === "string") ip = rip.trim();
+          }
+        }
+        const rl = rateLimit(`login:${ip}`, RATE_LIMITS.login);
+        if (!rl.success) {
+          throw new Error("Too many login attempts. Please try again later.");
+        }
+
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
         }
@@ -137,7 +157,7 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      allowDangerousEmailAccountLinking: true,
+      allowDangerousEmailAccountLinking: false,
     }),
   ],
   callbacks: {
@@ -176,6 +196,21 @@ export const authOptions: NextAuthOptions = {
             isPremium: true,
             premiumExpiry: true,
           },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+          token.isVerified = dbUser.isVerified;
+          token.isSuspended = dbUser.isSuspended;
+          token.isPremium = dbUser.isPremium;
+          token.premiumExpiry = dbUser.premiumExpiry;
+        }
+      }
+
+      // Periodic refresh every hour to catch suspension/verification changes
+      if (!token.iat || (Date.now() / 1000) - (token.iat as number) > 3600) {
+        const dbUser = await db.user.findUnique({
+          where: { id: token.id },
+          select: { role: true, isVerified: true, isSuspended: true, isPremium: true, premiumExpiry: true },
         });
         if (dbUser) {
           token.role = dbUser.role;

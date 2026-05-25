@@ -9,6 +9,11 @@ import {
   isFeaturedActive,
 } from "@/lib/ranking-engine";
 
+function safeJsonParse(str: unknown, fallback: unknown): unknown {
+  if (typeof str !== 'string') return fallback;
+  try { return JSON.parse(str); } catch { return fallback; }
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -46,6 +51,13 @@ export async function GET(
     return NextResponse.json({ error: "Listing not found" }, { status: 404 });
   }
 
+  // Status-based access control: only owners/admins can see non-approved listings
+  const session = await getServerSession(authOptions);
+  const isOwnerOrAdmin = session?.user?.id && (session.user.id === listing.userId || session.user.role === "admin");
+  if (!isOwnerOrAdmin && listing.status !== "approved") {
+    return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+  }
+
   const rankInput = {
     id: listing.id,
     isFeatured: listing.isFeatured,
@@ -70,7 +82,7 @@ export async function GET(
     country: listing.country,
     state: listing.state,
     city: listing.city,
-    tags: JSON.parse(listing.tags),
+    tags: safeJsonParse(listing.tags, []),
     price: listing.price,
     currency: listing.currency,
     contact: {
@@ -80,7 +92,7 @@ export async function GET(
       website: listing.contactWebsite,
       customText: listing.contactText,
     },
-    images: JSON.parse(listing.images),
+    images: safeJsonParse(listing.images, []),
     listingImages: listing.listingImages.map((img) => ({
       id: img.id,
       url: img.url,
@@ -135,6 +147,14 @@ export async function PUT(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    // Status restriction: don't allow editing suspended/banned listings
+    if (existing.status === "suspended" || existing.status === "banned") {
+      return NextResponse.json(
+        { error: "Cannot edit a suspended or banned listing" },
+        { status: 403 }
+      );
+    }
+
     const {
       title,
       description,
@@ -152,60 +172,94 @@ export async function PUT(
       imageIds,
     } = body;
 
-    // Validate category and country (same as POST)
-    const [category, country] = await Promise.all([
-      db.category.findUnique({ where: { slug: categorySlug } }),
-      db.country.findUnique({ where: { slug: countrySlug } }),
-    ]);
+    // Validate location fields only if they are provided (partial update support)
+    let categoryId = existing.categoryId;
+    let countryId = existing.countryId;
+    let stateId = existing.stateId;
+    let cityId = existing.cityId;
 
-    if (!category || !country) {
+    if (categorySlug !== undefined || countrySlug !== undefined) {
+      const resolvedCategorySlug = categorySlug ?? existing.categorySlug;
+      const resolvedCountrySlug = countrySlug ?? existing.countrySlug;
+      if (!resolvedCategorySlug || !resolvedCountrySlug) {
+        return NextResponse.json(
+          { error: "Category and country are required when updating location" },
+          { status: 400 }
+        );
+      }
+      const [category, country] = await Promise.all([
+        db.category.findUnique({ where: { slug: resolvedCategorySlug } }),
+        db.country.findUnique({ where: { slug: resolvedCountrySlug } }),
+      ]);
+      if (!category || !country) {
+        return NextResponse.json(
+          { error: "Invalid category or country" },
+          { status: 400 }
+        );
+      }
+      categoryId = category.id;
+      countryId = country.id;
+
+      if (stateSlug !== undefined) {
+        if (stateSlug) {
+          const state = await db.state.findFirst({
+            where: { slug: stateSlug, countryId: country.id },
+          });
+          if (!state) {
+            return NextResponse.json(
+              { error: "Invalid state" },
+              { status: 400 }
+            );
+          }
+          stateId = state.id;
+        } else {
+          stateId = null;
+        }
+      }
+
+      if (citySlug !== undefined) {
+        if (citySlug && stateId) {
+          const city = await db.city.findFirst({
+            where: { slug: citySlug, stateId },
+          });
+          if (!city) {
+            return NextResponse.json(
+              { error: "Invalid city" },
+              { status: 400 }
+            );
+          }
+          cityId = city.id;
+        } else {
+          return NextResponse.json(
+            { error: "Valid state is required to set city" },
+            { status: 400 }
+          );
+        }
+      }
+    } else if (stateSlug !== undefined || citySlug !== undefined) {
       return NextResponse.json(
-        { error: "Invalid category or country" },
+        { error: "Category and country are required when updating location" },
         { status: 400 }
       );
     }
 
-    let state: any = null;
-    if (stateSlug) {
-      state = await db.state.findFirst({
-        where: { slug: stateSlug, countryId: country.id },
-      });
-    }
-
-    let city: any = null;
-    if (citySlug && state) {
-      city = await db.city.findFirst({
-        where: { slug: citySlug, stateId: state.id },
-      });
-    }
-
-    if (!city) {
-      return NextResponse.json(
-        { error: "Invalid location or category" },
-        { status: 400 }
-      );
-    }
-
-    // Generate new slug from updated title
-    const slug =
-      (title || existing.title)
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "") +
-      "-" +
-      Date.now();
+    // Only regenerate slug if title actually changed
+    const titleChanged = title !== undefined && title !== existing.title;
+    const slug = titleChanged
+      ? title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now()
+      : existing.slug;
 
     // Update the listing
     const updated = await db.listing.update({
       where: { id },
       data: {
-        title: title ?? existing.title,
+        title: title !== undefined ? title : existing.title,
         slug,
-        description: description ?? existing.description,
-        categorySlug: categorySlug ?? existing.categorySlug,
-        countrySlug: countrySlug ?? existing.countrySlug,
-        stateSlug: stateSlug ?? existing.stateSlug,
-        citySlug: citySlug ?? existing.citySlug,
+        description: description !== undefined ? description : existing.description,
+        categorySlug: categorySlug !== undefined ? categorySlug : existing.categorySlug,
+        countrySlug: countrySlug !== undefined ? countrySlug : existing.countrySlug,
+        stateSlug: stateSlug !== undefined ? stateSlug : existing.stateSlug,
+        citySlug: citySlug !== undefined ? citySlug : existing.citySlug,
         tags: tags !== undefined ? JSON.stringify(tags) : existing.tags,
         contactEmail: contactEmail !== undefined ? contactEmail : existing.contactEmail,
         contactTelegram: contactTelegram !== undefined ? contactTelegram : existing.contactTelegram,
@@ -213,17 +267,21 @@ export async function PUT(
         contactWebsite: contactWebsite !== undefined ? contactWebsite : existing.contactWebsite,
         contactText: contactText !== undefined ? contactText : existing.contactText,
         images: images !== undefined ? JSON.stringify(images) : existing.images,
-        categoryId: category.id,
-        countryId: country.id,
-        stateId: state?.id ?? existing.stateId,
-        cityId: city.id,
+        categoryId,
+        countryId,
+        stateId,
+        cityId,
       },
     });
 
     // Associate new uploaded images with the listing (if imageIds provided)
+    // Security: Only attach images that are not already claimed by another listing
     if (Array.isArray(imageIds) && imageIds.length > 0) {
       await db.listingImage.updateMany({
-        where: { id: { in: imageIds } },
+        where: {
+          id: { in: imageIds },
+          listingId: null, // Only attach unattached images
+        },
         data: { listingId: id },
       });
     }

@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { computePriorityScore, getBoostExpiry } from "@/lib/ranking-engine";
+
+// Whitelist of valid boost durations to prevent pricing exploits
+const VALID_BOOST_DURATIONS = [60, 120, 360]; // minutes
+const BOOST_PRICING: Record<number, number> = {
+  60: 4.99,
+  120: 14.99,
+  360: 39.99,
+};
 
 export async function POST(
   request: Request,
@@ -19,7 +26,15 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    const durationMinutes = body.durationMinutes || 60; // Default: 1 hour
+    const durationMinutes = body.durationMinutes;
+
+    // Validate duration against whitelist to prevent pricing exploits
+    if (!VALID_BOOST_DURATIONS.includes(durationMinutes)) {
+      return NextResponse.json(
+        { error: "Invalid boost duration. Choose from: 60, 120, or 360 minutes." },
+        { status: 400 }
+      );
+    }
 
     // Find listing
     const listing = await db.listing.findUnique({ where: { id } });
@@ -39,42 +54,14 @@ export async function POST(
       );
     }
 
-    const boostUntil = getBoostExpiry(durationMinutes);
-
-    // Update listing with boost
-    const updated = await db.listing.update({
-      where: { id },
-      data: {
-        isBoosted: true,
-        boostUntil,
-        lastBumpedAt: new Date(),
-      },
-    });
-
-    // Recompute priority score
-    const score = computePriorityScore({
-      id: updated.id,
-      isFeatured: updated.isFeatured,
-      isBoosted: true,
-      featuredUntil: updated.featuredUntil,
-      boostUntil: boostUntil.toISOString(),
-      lastBumpedAt: updated.lastBumpedAt,
-      viewCount: updated.viewCount,
-      createdAt: updated.createdAt,
-      status: updated.status,
-    });
-
-    await db.listing.update({
-      where: { id },
-      data: { priorityScore: score },
-    });
-
-    // Create payment record (hook for payment integration)
+    // Payment-first flow: create a pending payment WITHOUT applying the boost.
+    // The boost will be applied only after payment is confirmed through the
+    // manual payment approval flow (e.g., admin approval or gateway webhook).
     const payment = await db.payment.create({
       data: {
         userId: listing.userId,
         listingId: id,
-        amount: durationMinutes <= 60 ? 4.99 : durationMinutes <= 360 ? 14.99 : 39.99,
+        amount: BOOST_PRICING[durationMinutes],
         currency: "USD",
         status: "pending", // Awaiting real payment gateway confirmation
         method: "boost",
@@ -83,11 +70,10 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
+      message: "Boost payment created. Boost will be applied after payment confirmation.",
       listing: {
-        id: updated.id,
-        isBoosted: updated.isBoosted,
-        boostUntil: updated.boostUntil?.toISOString(),
-        priorityScore: score,
+        id: listing.id,
+        requestedBoostMinutes: durationMinutes,
       },
       payment: {
         id: payment.id,

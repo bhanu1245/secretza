@@ -5,6 +5,11 @@ import { requireMinRole } from "@/lib/auth-helpers";
 // GET /api/admin/categories — list all categories (tree structure)
 export async function GET() {
   try {
+    const admin = await requireMinRole("admin");
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const categories = await db.category.findMany({
       orderBy: [{ order: "asc" }, { name: "asc" }],
       include: {

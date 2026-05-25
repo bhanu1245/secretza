@@ -22,9 +22,13 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { type, listingId, userId, amount, gatewayTxId, couponCode } = body;
 
-    if (!userId || !type) {
+    // Security: Always use the authenticated user's ID — ignore any userId from the request body
+    // to prevent users from creating payments under other users' accounts.
+    const authenticatedUserId = session.user.id;
+
+    if (!type) {
       return NextResponse.json(
-        { error: "Missing required fields: userId, type" },
+        { error: "Missing required field: type" },
         { status: 400 }
       );
     }
@@ -37,10 +41,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create payment record
+    // Create payment record — userId is always from the session, never from the body
     const payment = await db.payment.create({
       data: {
-        userId,
+        userId: authenticatedUserId,
         listingId: listingId || null,
         amount: amount || 0,
         currency: "USD",
@@ -72,22 +76,30 @@ export async function POST(request: Request) {
 }
 
 /**
- * GET: Retrieve payment history for a user
+ * GET: Retrieve payment history for the authenticated user only
+ * Security: Requires authentication and enforces userId === session.user.id
  */
 export async function GET(request: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
 
-    if (!userId) {
+    // Security: Only allow users to view their own payment history.
+    // Reject if a userId is provided that doesn't match the session.
+    if (userId && userId !== session.user.id) {
       return NextResponse.json(
-        { error: "userId query parameter is required" },
-        { status: 400 }
+        { error: "Unauthorized" },
+        { status: 403 }
       );
     }
 
     const payments = await db.payment.findMany({
-      where: { userId },
+      where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
       take: 50,
     });

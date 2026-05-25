@@ -78,6 +78,7 @@ import { toast } from "sonner";
 import SeoManager from "@/components/secretza/admin/SeoManager";
 import SeoDashboard from "@/components/secretza/admin/SeoDashboard";
 import { AdminReviewQueue, AdminReviewAnalytics } from "@/components/secretza/admin/AdminReviewPanel";
+import CategoryManager from "@/components/secretza/admin/CategoryManager";
 
 // ==========================================
 // Types
@@ -705,6 +706,7 @@ function AdminUsersPage() {
 function AdminListingsPage() {
   const [statusFilter, setStatusFilter] = useState<ListingStatus | "all">("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
 
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -716,8 +718,6 @@ function AdminListingsPage() {
     try {
       const response = await fetch("/api/admin/listings");
       const data = await response.json();
-
-      console.log("Admin listings:", data);
 
       setListings(data.listings || []);
     } catch (error) {
@@ -937,6 +937,75 @@ function AdminListingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Listing Detail Dialog */}
+      <Dialog
+        open={!!selectedListingId}
+        onOpenChange={(open) => !open && setSelectedListingId(null)}
+      >
+        <DialogContent className="bg-[#15151D] border-[rgba(255,255,255,0.08)] max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-[#F5F5F7]">
+              {listings.find((l) => l.id === selectedListingId)?.title || "Listing Details"}
+            </DialogTitle>
+            <DialogDescription className="text-[#A1A1AA]">
+              Listing ID: {selectedListingId}
+            </DialogDescription>
+          </DialogHeader>
+          {(() => {
+            const listing = listings.find((l) => l.id === selectedListingId);
+            if (!listing) return null;
+            return (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-lg bg-[#1E1E2A] p-3">
+                    <span className="text-[10px] text-[#52525B] uppercase">Status</span>
+                    <p className="text-[#F5F5F7] font-medium capitalize">{listing.status}</p>
+                  </div>
+                  <div className="rounded-lg bg-[#1E1E2A] p-3">
+                    <span className="text-[10px] text-[#52525B] uppercase">Views</span>
+                    <p className="text-[#F5F5F7] font-medium">{listing.viewCount?.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-lg bg-[#1E1E2A] p-3">
+                    <span className="text-[10px] text-[#52525B] uppercase">Category</span>
+                    <p className="text-[#F5F5F7] font-medium">{listing.category?.name}</p>
+                  </div>
+                  <div className="rounded-lg bg-[#1E1E2A] p-3">
+                    <span className="text-[10px] text-[#52525B] uppercase">Location</span>
+                    <p className="text-[#F5F5F7] font-medium">{listing.city?.name}, {listing.country?.code}</p>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-[#1E1E2A] p-3">
+                  <span className="text-[10px] text-[#52525B] uppercase">Description</span>
+                  <p className="text-sm text-[#A1A1AA] mt-1 line-clamp-4">{listing.description || "No description"}</p>
+                </div>
+                <DialogFooter className="gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      handleListingAction(listing.id, "approve");
+                      setSelectedListingId(null);
+                    }}
+                    className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+                  >
+                    <CheckCircle className="size-3 mr-1" /> Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      handleListingAction(listing.id, "reject");
+                      setSelectedListingId(null);
+                    }}
+                    className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                  >
+                    <XCircle className="size-3 mr-1" /> Reject
+                  </Button>
+                </DialogFooter>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -995,7 +1064,7 @@ function ImageModerationPanel() {
         if (selectedImage?.id === imageId) setSelectedImage(null);
       }
     } catch {
-      // silently fail
+      toast.error("Failed to moderate image. Please try again.");
     } finally {
       setProcessingId(null);
     }
@@ -2005,7 +2074,7 @@ export default function AdminPanel() {
       case "settings":
         return <AdminSettingsPage />;
       case "categories":
-        return <PlaceholderPage title="Categories" description="Manage listing categories and subcategories." />;
+        return <CategoryManager />;
       case "geo":
         return <PlaceholderPage title="Geo Management" description="Manage countries, states, and cities." />;
       case "pricing":

@@ -14,6 +14,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(stats);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to fetch crawl stats';
-    return NextResponse.json({ error: message }, { status: 401 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

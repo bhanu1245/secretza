@@ -10,6 +10,11 @@ import {
   isFeaturedActive,
 } from "@/lib/ranking-engine";
 
+function safeJsonParse(str: unknown, fallback: unknown): unknown {
+  if (typeof str !== 'string') return fallback;
+  try { return JSON.parse(str); } catch { return fallback; }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const keyword = searchParams.get("keyword") || undefined;
@@ -17,8 +22,8 @@ export async function GET(request: Request) {
   const country = searchParams.get("country") || undefined;
   const state = searchParams.get("state") || undefined;
   const city = searchParams.get("city") || undefined;
-  const page = parseInt(searchParams.get("page") || "1", 10);
-  const limit = parseInt(searchParams.get("limit") || "20", 10);
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10) || 20));
   const featured = searchParams.get("featured") === "true";
   const sortBy = searchParams.get("sortBy") || "ranking";
   const userId = searchParams.get("userId") || undefined;
@@ -172,7 +177,7 @@ export async function GET(request: Request) {
         isActive: l.city.isActive,
         listingCount: l.city.listingCount,
       },
-      tags: JSON.parse(l.tags),
+      tags: safeJsonParse(l.tags, []),
       price: l.price,
       currency: l.currency,
       contact: {
@@ -182,7 +187,7 @@ export async function GET(request: Request) {
         website: l.contactWebsite,
         customText: l.contactText,
       },
-      images: JSON.parse(l.images),
+      images: safeJsonParse(l.images, []),
       listingImages: l.listingImages.map((img) => ({
         id: img.id,
         url: img.url,
@@ -268,6 +273,20 @@ export async function POST(request: Request) {
       imageIds,
       uploadResults,
     } = body;
+
+    // Input validation: require essential fields
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    }
+    if (!categorySlug || typeof categorySlug !== 'string') {
+      return NextResponse.json({ error: "Category is required" }, { status: 400 });
+    }
+    if (!countrySlug || typeof countrySlug !== 'string') {
+      return NextResponse.json({ error: "Country is required" }, { status: 400 });
+    }
+    if (price !== undefined && (typeof price !== 'number' || price < 0)) {
+      return NextResponse.json({ error: "Price must be a non-negative number" }, { status: 400 });
+    }
 
     // Generate slug
     const slug =
@@ -363,9 +382,13 @@ export async function POST(request: Request) {
     }
 
     // Legacy: Associate pre-existing uploaded images (edit mode)
+    // Security: Only attach images that are not already claimed by another listing
     if (Array.isArray(imageIds) && imageIds.length > 0) {
       await db.listingImage.updateMany({
-        where: { id: { in: imageIds } },
+        where: {
+          id: { in: imageIds },
+          listingId: null, // Only attach unattached images
+        },
         data: { listingId: listing.id },
       });
     }

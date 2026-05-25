@@ -7,6 +7,7 @@ import { createNotification } from "@/lib/notifications";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { existsSync } from "fs";
+import { detectMimeType, ALLOWED_MIME_TYPES, MAX_FILE_SIZE } from "@/lib/image-processing";
 
 // Valid amounts (INR) for each payment type
 const VALID_AMOUNTS: Record<string, number[]> = {
@@ -156,17 +157,20 @@ export async function POST(request: Request) {
     // --- Screenshot validation ---
     let screenshotUrl: string | null = null;
     if (screenshot && screenshot.size > 0) {
-      if (!ALLOWED_IMAGE_TYPES.includes(screenshot.type)) {
+      if (screenshot.size > MAX_FILE_SIZE) {
         return NextResponse.json(
-          {
-            error: "Screenshot must be a JPG, PNG, or WebP image",
-          },
+          { error: "Screenshot must be under 5MB" },
           { status: 400 }
         );
       }
-      if (screenshot.size > MAX_SCREENSHOT_SIZE) {
+
+      const bytes = await screenshot.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+
+      const detectedMime = detectMimeType(buffer);
+      if (!detectedMime || !ALLOWED_MIME_TYPES.includes(detectedMime as typeof ALLOWED_MIME_TYPES[number])) {
         return NextResponse.json(
-          { error: "Screenshot must be under 5MB" },
+          { error: "Invalid image format. Allowed: JPEG, PNG, WebP." },
           { status: 400 }
         );
       }

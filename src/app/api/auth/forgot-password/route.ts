@@ -42,13 +42,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If user has no password (OAuth user), return specific message
+    // Security: don't reveal if email exists or what provider they use
     if (!user.passwordHash) {
       return NextResponse.json(
-        { errors: ["This account uses social login. Please sign in with your provider."] },
-        { status: 400 }
+        { message: "If an account exists, a reset link has been sent." },
+        { status: 200 }
       );
     }
+
+    // Clean up stale reset tokens before creating new one
+    await db.verificationToken.deleteMany({
+      where: { identifier: `reset:${email}` },
+    });
 
     // Generate reset token
     const resetToken = generateToken(32);

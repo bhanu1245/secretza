@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import type { Listing, Category, Country, State, City } from "@/lib/types";
 
 // ==========================================
@@ -20,7 +20,7 @@ export function useListings(options?: {
   const [listings, setListings] = useState<Listing[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const isFirstMount = useRef(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Serialize options for stable dependency
   const key = JSON.stringify(options || {});
@@ -34,19 +34,31 @@ export function useListings(options?: {
     if (options?.city) params.set("city", options.city);
     if (options?.keyword) params.set("keyword", options.keyword);
     if (options?.sortBy) params.set("sortBy", options.sortBy);
-    if (options?.limit) params.set("limit", String(options.limit));
-    if (options?.page) params.set("page", String(options.page));
+    // NaN validation for page/limit
+    const safeLimit = options?.limit != null && !isNaN(options.limit) ? options.limit : null;
+    const safePage = options?.page != null && !isNaN(options.page) ? options.page : null;
+    if (safeLimit) params.set("limit", String(safeLimit));
+    if (safePage) params.set("page", String(safePage));
+
+    // Use microtask to avoid synchronous setState in effect
+    Promise.resolve().then(() => {
+      setLoading(true);
+      setError(null);
+    });
 
     // Debounce for search/filter changes
     const timer = setTimeout(() => {
       fetch(`/api/listings?${params}`)
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
         .then((data) => {
           setListings(data.listings || []);
           setTotal(data.total || 0);
         })
-        .catch(() => {
-          // Keep current data on error
+        .catch((err) => {
+          setError(err?.message || "Failed to fetch listings");
         })
         .finally(() => setLoading(false));
     }, 300);
@@ -54,7 +66,7 @@ export function useListings(options?: {
     return () => clearTimeout(timer);
   }, [key]);
 
-  return { listings, total, loading };
+  return { listings, total, loading, error };
 }
 
 // ==========================================
@@ -63,22 +75,26 @@ export function useListings(options?: {
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/categories")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         if (data.categories && data.categories.length > 0) {
           setCategories(data.categories);
         }
       })
-      .catch(() => {
-        // Keep empty on error
+      .catch((err) => {
+        setError(err?.message || "Failed to fetch categories");
       })
       .finally(() => setLoading(false));
   }, []);
 
-  return { categories, loading };
+  return { categories, loading, error };
 }
 
 // ==========================================
@@ -87,22 +103,26 @@ export function useCategories() {
 export function useLocations() {
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/locations")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         if (data.countries && data.countries.length > 0) {
           setCountries(data.countries);
         }
       })
-      .catch(() => {
-        // Keep empty on error
+      .catch((err) => {
+        setError(err?.message || "Failed to fetch locations");
       })
       .finally(() => setLoading(false));
   }, []);
 
-  return { countries, loading };
+  return { countries, loading, error };
 }
 
 // ==========================================
@@ -114,13 +134,22 @@ export function useCountryDetail(countrySlug?: string) {
     (Country & { states?: (State & { cities?: City[] })[] }) | null
   >(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!countrySlug) return;
+    Promise.resolve().then(() => {
+      setLoading(true);
+      setError(null);
+    });
     fetch(`/api/locations?country=${countrySlug}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => setFetchedCountry(data.country || null))
-      .catch(() => {
+      .catch((err) => {
+        setError(err?.message || "Failed to fetch country detail");
         setFetchedCountry(null);
       })
       .finally(() => setLoading(false));
@@ -129,29 +158,34 @@ export function useCountryDetail(countrySlug?: string) {
   // Derive country: null when no slug is provided
   const country = countrySlug ? fetchedCountry : null;
 
-  return { country, loading };
+  return { country, loading, error };
 }
 
 // ==========================================
-// useTrendingCities — Fetches featured cities by iterating all countries
+// useTrendingCities — Fetches featured cities by iterating top 5 countries only
 // ==========================================
 export function useTrendingCities() {
   const [cities, setCities] = useState<
     (City & { state: State; country: Country })[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch all countries, then fetch each country's detail for featured cities
+    // Fetch all countries, then fetch only top 5 countries' detail for featured cities
     fetch("/api/locations")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
-        const countrySlugs: string[] = (data.countries || []).map(
-          (c: Country) => c.slug
-        );
-        // Fetch each country's detail to collect featured cities
+        // Only fetch details for top 5 countries to avoid N+1 storm
+        const topCountries: string[] = (data.countries || [])
+          .slice(0, 5)
+          .map((c: Country) => c.slug);
+
         return Promise.all(
-          countrySlugs.map((slug: string) =>
+          topCountries.map((slug: string) =>
             fetch(`/api/locations?country=${slug}`)
               .then((r) => r.json())
               .then((d) => d.country)
@@ -192,13 +226,13 @@ export function useTrendingCities() {
         }
         setCities(allFeatured);
       })
-      .catch(() => {
-        // Keep empty on error
+      .catch((err) => {
+        setError(err?.message || "Failed to fetch trending cities");
       })
       .finally(() => setLoading(false));
   }, []);
 
-  return { cities, loading };
+  return { cities, loading, error };
 }
 
 // ==========================================
@@ -207,6 +241,7 @@ export function useTrendingCities() {
 export function useListing(id: string | null) {
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -215,16 +250,22 @@ export function useListing(id: string | null) {
       return;
     }
     // Use microtask to avoid synchronous setState in effect
-    Promise.resolve().then(() => setLoading(true));
+    Promise.resolve().then(() => {
+      setLoading(true);
+      setError(null);
+    });
     fetch(`/api/listings/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("Not found");
         return res.json();
       })
       .then((data) => setListing(data))
-      .catch(() => setListing(null))
+      .catch((err) => {
+        setError(err?.message || "Failed to fetch listing");
+        setListing(null);
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
-  return { listing, loading };
+  return { listing, loading, error };
 }

@@ -396,9 +396,13 @@ export default function ListingDetail({
                     <span className="text-sm font-semibold text-[#F5F5F7]">
                       {listing.user.name}
                     </span>
-                    <BadgeCheck className="size-4 text-emerald-500" />
+                    {listing.user.isVerified && (
+                      <BadgeCheck className="size-4 text-emerald-500" />
+                    )}
                   </div>
-                  <span className="text-xs text-[#A1A1AA]">Verified Advertiser</span>
+                  {listing.user.isVerified && (
+                    <span className="text-xs text-[#A1A1AA]">Verified Advertiser</span>
+                  )}
                 </div>
               </div>
 
