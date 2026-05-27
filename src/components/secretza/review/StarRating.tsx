@@ -62,7 +62,7 @@ export default function StarRating({
     setHoveredStar(null);
   }, []);
 
-  const stars = [];
+  const stars: React.JSX.Element[] = [];
   for (let i = 1; i <= maxRating; i++) {
     // Support half-star display
     const diff = activeStars - i;

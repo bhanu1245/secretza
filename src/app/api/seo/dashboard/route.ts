@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
         db.seoPage.count({
           where: {
             OR: [
-              { introContent: { not: null, not: '' } },
-              { title: { not: null, not: '' } },
+              { introContent: { not: '' } },
+              { title: { not: '' } },
             ],
           },
         }),

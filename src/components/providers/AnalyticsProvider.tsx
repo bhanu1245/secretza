@@ -39,7 +39,7 @@ function loadGA4Script(gaId: string): void {
 
   // Inline gtag definition — must be set before loading the library
   window.gtag = function (...args: unknown[]) {
-    window.dataLayer.push(args);
+    window.dataLayer.push(args as any);
   };
 
   // Initial config
@@ -138,7 +138,7 @@ export function useTrackPageView() {
 
         // Plausible
         if (NEXT_PUBLIC_PLAUSIBLE_DOMAIN && typeof window.plausible === "function") {
-          window.plausible("pageview", { u: path });
+          window.plausible("pageview", { u: path } as any);
         }
       } catch {
         // Never let analytics break the UI
@@ -203,7 +203,7 @@ export default function AnalyticsProvider({ children }: AnalyticsProviderProps) 
 
       // Plausible
       if (NEXT_PUBLIC_PLAUSIBLE_DOMAIN && typeof window.plausible === "function") {
-        window.plausible("pageview", { u: pathname });
+        window.plausible("pageview", { u: pathname } as any);
       }
     }, 50);
 

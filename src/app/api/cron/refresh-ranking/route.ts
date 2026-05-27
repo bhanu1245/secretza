@@ -87,7 +87,7 @@ export async function GET(request: Request) {
     });
 
     // Batch update (SQLite handles sequential updates well)
-    await db.$transaction(scoreUpdates, { timeout: 30000 });
+    await db.$transaction(scoreUpdates);
 
     // ==========================================
     // Step 4: Bump next batch of free listings for rotation

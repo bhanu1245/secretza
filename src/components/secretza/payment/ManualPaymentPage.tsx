@@ -153,6 +153,17 @@ export default function ManualPaymentPage({
   // Navigation
   const goBack = useNavigationStore((s) => s.goBack);
 
+  // Dynamic payment settings from API
+  const [paymentConfig, setPaymentConfig] = useState<{
+    upiId: string;
+    whatsappNumber: string;
+    instructions: string[];
+    qrImageUrl: string | null;
+    boostTiers?: PricingTier[];
+    featuredTiers?: PricingTier[];
+    premiumTiers?: PricingTier[];
+  } | null>(null);
+
   // State
   const dynamicTiers = paymentConfig
     ? (paymentConfig.boostTiers && paymentType === "boost" ? paymentConfig.boostTiers
@@ -179,17 +190,6 @@ export default function ManualPaymentPage({
 
   const [previousSubmissions, setPreviousSubmissions] = useState<PreviousSubmission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
-
-  // Dynamic payment settings from API
-  const [paymentConfig, setPaymentConfig] = useState<{
-    upiId: string;
-    whatsappNumber: string;
-    instructions: string[];
-    qrImageUrl: string | null;
-    boostTiers?: PricingTier[];
-    featuredTiers?: PricingTier[];
-    premiumTiers?: PricingTier[];
-  } | null>(null);
 
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);

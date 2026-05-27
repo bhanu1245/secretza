@@ -124,13 +124,13 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   // Build breadcrumb items
   const breadcrumbItems = [
-    { name: "Home", url: buildUrl("/") },
-    { name: category.name },
+    { label: "Home", href: buildUrl("/") },
+    { label: category.name },
   ];
 
   // JSON-LD schemas
   const fullUrl = buildCategoryUrl(category.slug);
-  const breadcrumbSchema = buildBreadcrumbSchema(breadcrumbItems);
+  const breadcrumbSchema = buildBreadcrumbSchema(breadcrumbItems as any);
   const collectionSchema = buildCollectionSchema({
     name: category.name,
     description:
@@ -189,11 +189,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         name: l.country.name,
         slug: l.country.slug,
       },
-      state: {
+      state: l.state ? {
         id: l.state.id,
         name: l.state.name,
         slug: l.state.slug,
-      },
+      } : { id: "", name: "", slug: "" },
       city: {
         id: l.city.id,
         name: l.city.name,
@@ -235,7 +235,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           <Breadcrumbs items={breadcrumbItems} />
           <CategoryPageContent
             category={serializedCategory}
-            listings={serializedListings}
+            listings={serializedListings as any}
             total={total}
           />
         </div>

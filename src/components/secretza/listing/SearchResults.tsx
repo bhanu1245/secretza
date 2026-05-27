@@ -302,7 +302,7 @@ export default function SearchResults() {
             </SelectTrigger>
             <SelectContent className="border-[rgba(255,255,255,0.08)] bg-surface">
               {sortOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
+                <SelectItem key={opt.value} value={opt.value ?? ""}>
                   {opt.label}
                 </SelectItem>
               ))}
@@ -335,7 +335,7 @@ export default function SearchResults() {
                   setFilters={setFilters}
                   selectedCountry={selectedCountry}
                   selectedState={selectedState}
-                  hasActiveFilters={hasActiveFilters}
+                  hasActiveFilters={!!hasActiveFilters}
                   resetFilters={resetFilters}
                   categories={apiCategories}
                   countries={apiCountries}
@@ -360,7 +360,7 @@ export default function SearchResults() {
             </SelectTrigger>
             <SelectContent className="border-[rgba(255,255,255,0.08)] bg-surface">
               {sortOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
+                <SelectItem key={opt.value} value={opt.value ?? ""}>
                   {opt.label}
                 </SelectItem>
               ))}
@@ -383,7 +383,7 @@ export default function SearchResults() {
                 setFilters={setFilters}
                 selectedCountry={selectedCountry}
                 selectedState={selectedState}
-                hasActiveFilters={hasActiveFilters}
+                hasActiveFilters={!!hasActiveFilters}
                 resetFilters={resetFilters}
                 categories={apiCategories}
                 countries={apiCountries}

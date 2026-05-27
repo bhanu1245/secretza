@@ -266,7 +266,7 @@ export async function middleware(request: NextRequest) {
     ) {
       const headerToken = request.headers.get("x-csrf-token");
       const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
-      if (!validateCsrfToken(headerToken, cookieToken)) {
+      if (!validateCsrfToken(headerToken ?? null, cookieToken ?? null)) {
         return NextResponse.json({ error: "Invalid request" }, { status: 403 });
       }
     }
@@ -279,7 +279,7 @@ export async function middleware(request: NextRequest) {
     if (!recordCrawlEventFn) {
       import("@/lib/crawl-analytics")
         .then(({ recordCrawlEvent }) => {
-          recordCrawlEventFn = recordCrawlEvent;
+          recordCrawlEventFn = recordCrawlEvent as any;
         })
         .catch(() => {});
     }

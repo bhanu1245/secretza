@@ -152,19 +152,19 @@ const cardVariants = {
     transition: {
       delay: i * 0.05,
       duration: 0.4,
-      ease: [0.25, 0.46, 0.45, 0.94],
+      ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
     },
   }),
-};
+} as any;
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 30 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: "easeOut" },
+    transition: { duration: 0.5, ease: "easeOut" as const },
   },
-};
+} as any;
 
 // ==========================================
 // Helper Functions
@@ -1007,7 +1007,7 @@ export default function AuthVerificationDashboard() {
   const [timeAgo, setTimeAgo] = useState<string>("never");
 
   // Time ago updater
-  const timeAgoRef = useRef<ReturnType<typeof setInterval>>();
+  const timeAgoRef = useRef<ReturnType<typeof setInterval>>(undefined!);
   useEffect(() => {
     if (lastRun) {
       timeAgoRef.current = setInterval(() => {

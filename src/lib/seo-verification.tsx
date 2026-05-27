@@ -119,7 +119,7 @@ export async function getVerificationConfig(provider: string): Promise<Verificat
  * Generate ALL verification meta tags for HTML head.
  * Supports Google, Bing, and Yandex simultaneously.
  */
-export async function getAllVerificationMetaTags(): Promise<Promise<React.JSX.Element>[]> {
+export async function getAllVerificationMetaTags(): Promise<React.JSX.Element[]> {
   const configs = await getAllVerificationConfigs();
   const tags: React.JSX.Element[] = [];
 

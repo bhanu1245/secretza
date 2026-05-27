@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     await logPaymentAudit({
       paymentId: payment.id,
       action: "created",
-      oldValue: null,
+      oldValue: null as any,
       newValue: { type, amount, currency: "INR", method: type, listingId, couponCode },
       ipAddress: ip,
     });

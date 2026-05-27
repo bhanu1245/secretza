@@ -299,7 +299,7 @@ export default function ListingDetail({
                     Featured
                   </Badge>
                 )}
-                {listing.user?.isVerified && (
+                {(listing.user as any)?.isVerified && (
                   <Badge className="gap-1 bg-emerald-500/90 text-white border-0">
                     <Shield className="size-3" />
                     Verified
@@ -398,11 +398,11 @@ export default function ListingDetail({
                     <span className="text-sm font-semibold text-[#F5F5F7]">
                       {listing.user.name}
                     </span>
-                    {listing.user.isVerified && (
+                    {(listing.user as any).isVerified && (
                       <BadgeCheck className="size-4 text-emerald-500" />
                     )}
                   </div>
-                  {listing.user.isVerified && (
+                  {(listing.user as any).isVerified && (
                     <span className="text-xs text-[#A1A1AA]">Verified Advertiser</span>
                   )}
                 </div>

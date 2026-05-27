@@ -318,7 +318,7 @@ export async function PUT(
       await db.listingImage.updateMany({
         where: {
           id: { in: imageIds },
-          listingId: null, // Only attach unattached images
+          listingId: null as any, // Only attach unattached images
         },
         data: { listingId: id },
       });

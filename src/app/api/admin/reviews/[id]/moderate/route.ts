@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { logAdminAction, extractIpAddress } from "@/lib/audit-logger";
+import type { AdminActionType } from "@/lib/audit-logger";
 import { logError } from "@/lib/monitoring";
 
 // POST /api/admin/reviews/[id]/moderate
@@ -134,7 +135,7 @@ export async function POST(
     // Audit log the moderation action
     logAdminAction(
       moderatorId,
-      `review_${action}`,
+      `review_${action}` as AdminActionType,
       "Review",
       id,
       { action, previousStatus: review.status, flaggedReason, adminNote },

@@ -79,10 +79,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen`}
       >
         <SessionProvider>
-          <Analytics />
-          <AuthSync />
-          {children}
-          <Toaster />
+          <Analytics>
+            <AuthSync />
+            {children}
+            <Toaster />
+          </Analytics>
         </SessionProvider>
       </body>
     </html>

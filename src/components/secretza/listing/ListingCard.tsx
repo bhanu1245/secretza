@@ -263,7 +263,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
         {/* Verified Badge */}
-        {listing.user?.isVerified && (
+        {(listing.user as any)?.isVerified && (
         <div className="absolute top-2.5 left-2.5 z-10">
           <Badge className="gap-1 bg-emerald-500/90 text-[10px] font-semibold text-white border-0 backdrop-blur-sm">
             <Shield className="size-3" />

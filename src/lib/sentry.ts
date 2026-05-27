@@ -12,7 +12,7 @@ let sentryEnabled = false;
 export function initSentry(): void {
   sentryEnabled = !!process.env.NEXT_PUBLIC_SENTRY_DSN;
   if (sentryEnabled) {
-    // @ts-expect-error — dynamic import to avoid bundling when DSN is not set
+    // dynamic import to avoid bundling when DSN is not set
     import("@sentry/nextjs").then((Sentry) => {
       Sentry.init({
         dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -39,7 +39,7 @@ export function captureException(error: unknown, context?: Record<string, unknow
     logError(error, { module: "sentry" });
     return;
   }
-  // @ts-expect-error — dynamic import
+  // dynamic import
   import("@sentry/nextjs").then((Sentry) => {
     Sentry.captureException(error, { extra: context });
   }).catch(() => {});
@@ -50,7 +50,7 @@ export function captureException(error: unknown, context?: Record<string, unknow
  */
 export function setSentryUser(user: { id: string; email: string; role: string } | null): void {
   if (!sentryEnabled) return;
-  // @ts-expect-error — dynamic import
+  // dynamic import
   import("@sentry/nextjs").then((Sentry) => {
     Sentry.setUser(user ? { id: user.id, email: user.email, role: user.role } : null);
   }).catch(() => {});

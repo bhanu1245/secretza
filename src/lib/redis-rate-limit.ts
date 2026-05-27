@@ -147,7 +147,7 @@ async function redisRateLimit(
 
   try {
     // Pipeline all commands for atomicity and performance
-    const pipeline = (client as unknown as { zadd: (...a: unknown[]) => unknown; zremrangebyscore: (...a: unknown[]) => unknown; zcard: (...a: unknown[]) => unknown; expire: (...a: unknown[]) => unknown; exec: () => Promise<unknown[]> }).pipeline();
+    const pipeline = (client as any).pipeline();
 
     pipeline.zadd(key, now, uniqueId);
     pipeline.zremrangebyscore(key, 0, cutoff);
@@ -225,7 +225,7 @@ async function redisCheckAbuse(
     const burstUniqueId = `${now}:burst:${Math.random().toString(36).slice(2, 8)}`;
 
     // Record + prune + count burst
-    const burstPipeline = (client as unknown as { zadd: (...a: unknown[]) => unknown; zremrangebyscore: (...a: unknown[]) => unknown; zcard: (...a: unknown[]) => unknown; expire: (...a: unknown[]) => unknown; exec: () => Promise<unknown[]> }).pipeline();
+    const burstPipeline = (client as any).pipeline();
     burstPipeline.zadd(burstKey, now, burstUniqueId);
     burstPipeline.zremrangebyscore(burstKey, 0, burstCutoff);
     burstPipeline.zcard(burstKey);
@@ -245,7 +245,7 @@ async function redisCheckAbuse(
     const failMs = opts.failureWindowSeconds * 1000;
     const failCutoff = now - failMs;
 
-    const failPipeline = (client as unknown as { zremrangebyscore: (...a: unknown[]) => unknown; zcard: (...a: unknown[]) => unknown; expire: (...a: unknown[]) => unknown; exec: () => Promise<unknown[]> }).pipeline();
+    const failPipeline = (client as any).pipeline();
     failPipeline.zremrangebyscore(failKey, 0, failCutoff);
     failPipeline.zcard(failKey);
     failPipeline.expire(failKey, opts.failureWindowSeconds);
@@ -285,7 +285,7 @@ async function redisRecordFailure(identifier: string): Promise<void> {
   const uniqueId = `${now}:fail:${Math.random().toString(36).slice(2, 8)}`;
 
   try {
-    const pipeline = (client as unknown as { zadd: (...a: unknown[]) => unknown; zremrangebyscore: (...a: unknown[]) => unknown; expire: (...a: unknown[]) => unknown; exec: () => Promise<unknown[]> }).pipeline();
+    const pipeline = (client as any).pipeline();
     pipeline.zadd(key, now, uniqueId);
     pipeline.zremrangebyscore(key, 0, cutoff);
     pipeline.expire(key, failWindowSeconds);

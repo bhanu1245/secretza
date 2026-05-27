@@ -21,10 +21,10 @@ export interface ListingRankInput {
   status: string;
 }
 
-export interface RankedListing<T extends ListingRankInput> extends T {
+export type RankedListing<T extends ListingRankInput> = T & {
   computedScore: number;
   rankLabel: "boosted" | "featured" | "rotated" | "standard";
-}
+};
 
 // ==========================================
 // Score Constants

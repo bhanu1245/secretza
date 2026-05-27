@@ -45,7 +45,7 @@ declare module "next-auth" {
     };
   }
 
-  interface User extends NextAuthUser {
+  interface User {
     role?: string;
     isVerified?: boolean;
     isSuspended?: boolean;
@@ -213,7 +213,7 @@ export const authOptions: NextAuthOptions = {
             where: { id: user.id },
             data: { image: account.picture },
           });
-          token.picture = account.picture;
+          (token.user as any).image = account.picture;
         }
       }
 

@@ -767,7 +767,7 @@ function AdminListingsPage() {
       await handleListingAction(id, action);
     }
     setSelected(new Set());
-    toast.success(`${count} listings ${action === "delete" ? "deleted" : `${action}d`}`);
+    toast.success(`${count} listings ${action}d`);
   };
 
   const filteredListings = listings.filter(

@@ -44,7 +44,7 @@ export async function generateMetadata({
   const listing = await db.listing.findFirst({
     where: { slug, status: "approved" },
     include: {
-      user: { select: { name: true, avatar: true, isVerified: true } },
+      user: { select: { name: true, image: true, isVerified: true } },
       category: true,
       country: true,
       state: true,
@@ -181,7 +181,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
   ];
 
   // JSON-LD schemas
-  const breadcrumbSchema = buildBreadcrumbSchema(breadcrumbItems);
+  const breadcrumbSchema = buildBreadcrumbSchema(breadcrumbItems as any);
   const listingSchema = buildListingSchema({
     title: listing.title,
     description: listing.description,
@@ -266,7 +266,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
 
       <div className="min-h-screen pt-20 pb-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Breadcrumbs items={breadcrumbItems} />
+          <Breadcrumbs items={breadcrumbItems as any} />
           <ListingPageContent listing={serializedListing} />
         </div>
       </div>

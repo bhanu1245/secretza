@@ -344,7 +344,7 @@ function RegisterForm() {
       email: "",
       password: "",
       confirmPassword: "",
-      terms: false,
+      terms: false as true,
     },
   });
 
@@ -528,7 +528,7 @@ function RegisterForm() {
         <Checkbox
           id="terms"
           checked={terms === true}
-          onCheckedChange={(val) => setValue("terms", val === true)}
+          onCheckedChange={(val) => setValue("terms", (val === true) as true)}
           className="mt-0.5 border-[rgba(255,255,255,0.15)] data-[state=checked]:bg-[#7C3AED] data-[state=checked]:border-[#7C3AED]"
         />
         <label

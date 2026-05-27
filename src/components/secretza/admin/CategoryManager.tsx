@@ -189,7 +189,7 @@ function CategoryRow({
         {/* Color dot */}
         <div
           className="w-3 h-3 rounded-full flex-shrink-0 ring-2 ring-offset-1 ring-offset-[#15151D]"
-          style={{ backgroundColor: category.color, ringColor: category.color }}
+          style={{ backgroundColor: category.color, ['--tw-ring-color' as string]: category.color } as React.CSSProperties}
         />
 
         {/* Folder/category icon */}

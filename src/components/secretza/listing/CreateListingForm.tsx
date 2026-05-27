@@ -365,10 +365,10 @@ export default function CreateListingForm({ editListingId, editMode }: CreateLis
     setFormData((prev) => ({ ...prev, [key]: value }));
     // Reset dependent fields
     if (key === "countrySlug") {
-      setFormData((prev) => ({ ...prev, countrySlug: value, stateSlug: "", citySlug: "" }));
+      setFormData((prev) => ({ ...prev, countrySlug: value as string, stateSlug: "", citySlug: "" }));
     }
     if (key === "stateSlug") {
-      setFormData((prev) => ({ ...prev, stateSlug: value, citySlug: "" }));
+      setFormData((prev) => ({ ...prev, stateSlug: value as string, citySlug: "" }));
     }
   };
 

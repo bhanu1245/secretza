@@ -174,14 +174,14 @@ export async function GET(request: Request) {
         isActive: l.country.isActive,
         listingCount: l.country.listingCount,
       },
-      state: {
+      state: l.state ? {
         id: l.state.id,
         name: l.state.name,
         slug: l.state.slug,
         countryId: l.state.countryId,
         isActive: l.state.isActive,
         listingCount: l.state.listingCount,
-      },
+      } : { id: "", name: "", slug: "", countryId: "", isActive: false, listingCount: 0 },
       city: {
         id: l.city.id,
         name: l.city.name,
@@ -395,14 +395,14 @@ export async function POST(request: Request) {
     }
 
     // Phase 2: fetch state (depends on country), then city (depends on state)
-    let state = null;
+    let state: Awaited<ReturnType<typeof db.state.findFirst>> = null;
     if (stateSlug) {
       state = await db.state.findFirst({
         where: { slug: stateSlug, countryId: country.id },
       });
     }
 
-    let city = null;
+    let city: Awaited<ReturnType<typeof db.city.findFirst>> = null;
     if (citySlug && state) {
       city = await db.city.findFirst({
         where: { slug: citySlug, stateId: state.id },
@@ -442,7 +442,7 @@ export async function POST(request: Request) {
           userId: session.user.id,
           categoryId: category.id,
           countryId: country.id,
-          stateId: state.id,
+          stateId: state?.id ?? null,
           cityId: city.id,
         },
       });
@@ -471,7 +471,7 @@ export async function POST(request: Request) {
         await tx.listingImage.updateMany({
           where: {
             id: { in: imageIds },
-            listingId: null,
+            listingId: null as any,
           },
           data: { listingId: newListing.id },
         });

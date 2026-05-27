@@ -375,7 +375,7 @@ export function scoreByListingCount(listingCount: number): { overallScore: numbe
     }, 0)
   ));
   
-  return generateRecommendation(overallScore, []);
+  return generateRecommendation(overallScore, []) as any;
 }
 
 /**

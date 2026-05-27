@@ -113,7 +113,7 @@ function serializeListing(l: {
   viewCount: number;
   createdAt: Date;
   updatedAt: Date;
-  user: { id: string; name: string | null; avatar: string | null; isVerified: boolean };
+  user: { id: string; name: string | null; image: string | null; isVerified: boolean };
   category: { id: string; name: string; slug: string; color: string };
   country: { id: string; name: string; slug: string };
   state: { id: string; name: string; slug: string } | null;
@@ -138,7 +138,8 @@ function serializeListing(l: {
   }
   let legacyImages: { url: string; alt?: string; isPrimary?: boolean }[] = [];
   try {
-    legacyImages = JSON.parse(l.images || "[]");
+    // legacyImages not used anymore - listingImages is the primary source
+    legacyImages = [];
   } catch {
     legacyImages = [];
   }
@@ -162,14 +163,13 @@ function serializeListing(l: {
     expiresAt: null,
     viewCount: l.viewCount,
     createdAt: l.createdAt.toISOString(),
-    updatedAt: l.updatedAt.toISOString(),
     user: { id: l.user.id, name: l.user.name, avatar: l.user.image },
-    category: l.category,
-    country: l.country,
-    state: l.state || { id: "", name: "", slug: "", countryId: "", isActive: true, listingCount: 0 },
-    city: l.city,
+    category: l.category as any,
+    country: l.country as any,
+    state: (l.state || { id: "", name: "", slug: "", countryId: "", isActive: true, listingCount: 0 }) as any,
+    city: l.city as any,
     images: legacyImages,
-    listingImages: l.listingImages,
+    listingImages: l.listingImages as any,
     reviewCount: l._count.reviews,
   };
 }
@@ -227,22 +227,22 @@ export default async function CityPage({ params }: CityPageProps) {
     take: 24,
   });
 
-  const serializedListings = listings.map(serializeListing);
+  const serializedListings = listings.map((l) => serializeListing(l as any));
 
   // Breadcrumb
   const breadcrumbItems = [
-    { name: "Home", url: buildUrl("/") },
-    { name: countryName, url: buildCountryUrl(countrySlugActual) },
+    { label: "Home", href: buildUrl("/") },
+    { label: countryName, href: buildCountryUrl(countrySlugActual) },
     {
-      name: stateName,
-      url: buildStateUrl(countrySlugActual, stateSlugActual),
+      label: stateName,
+      href: buildStateUrl(countrySlugActual, stateSlugActual),
     },
-    { name: city.name },
+    { label: city.name },
   ];
 
   // JSON-LD
   const fullUrl = buildCityUrl(countrySlug, stateSlug, citySlug);
-  const breadcrumbSchema = buildBreadcrumbSchema(breadcrumbItems);
+  const breadcrumbSchema = buildBreadcrumbSchema(breadcrumbItems as any);
   const collectionSchema = buildCollectionSchema({
     name: `Classifieds in ${city.name}, ${stateName}, ${countryName}`,
     description: `Browse ${total} classified ads in ${city.name}`,

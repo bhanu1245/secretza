@@ -102,7 +102,7 @@ function serializeListing(l: {
   viewCount: number;
   createdAt: Date;
   updatedAt: Date;
-  user: { id: string; name: string | null; avatar: string | null; isVerified: boolean };
+  user: { id: string; name: string | null; image: string | null; isVerified: boolean };
   category: { id: string; name: string; slug: string; color: string };
   country: { id: string; name: string; slug: string };
   state: { id: string; name: string; slug: string } | null;
@@ -126,11 +126,6 @@ function serializeListing(l: {
     tags = [];
   }
   let legacyImages: { url: string; alt?: string; isPrimary?: boolean }[] = [];
-  try {
-    legacyImages = JSON.parse(l.images || "[]");
-  } catch {
-    legacyImages = [];
-  }
 
   return {
     id: l.id,
@@ -151,14 +146,13 @@ function serializeListing(l: {
     expiresAt: null,
     viewCount: l.viewCount,
     createdAt: l.createdAt.toISOString(),
-    updatedAt: l.updatedAt.toISOString(),
     user: { id: l.user.id, name: l.user.name, avatar: l.user.image },
-    category: l.category,
-    country: l.country,
-    state: l.state || { id: "", name: "", slug: "", countryId: "", isActive: true, listingCount: 0 },
-    city: l.city,
+    category: l.category as any,
+    country: l.country as any,
+    state: (l.state || { id: "", name: "", slug: "", countryId: "", isActive: true, listingCount: 0 }) as any,
+    city: l.city as any,
     images: legacyImages,
-    listingImages: l.listingImages,
+    listingImages: l.listingImages as any,
     reviewCount: l._count.reviews,
   };
 }
@@ -210,13 +204,13 @@ export default async function CountryPage({ params }: CountryPageProps) {
 
   // Breadcrumb
   const breadcrumbItems = [
-    { name: "Home", url: buildUrl("/") },
-    { name: country.name },
+    { label: "Home", href: buildUrl("/") },
+    { label: country.name },
   ];
 
   // JSON-LD
   const fullUrl = buildCountryUrl(country.slug);
-  const breadcrumbSchema = buildBreadcrumbSchema(breadcrumbItems);
+  const breadcrumbSchema = buildBreadcrumbSchema(breadcrumbItems as any);
   const collectionSchema = buildCollectionSchema({
     name: `Classifieds in ${country.name}`,
     description: `Browse ${total} classified ads in ${country.name} on Secretza`,

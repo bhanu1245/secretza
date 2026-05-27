@@ -50,28 +50,28 @@ export async function GET(request: NextRequest) {
     if (type === 'related') {
       return NextResponse.json({
         type: 'related',
-        relatedSearches: generateRelatedSearches(pageType, slug, limit),
+        relatedSearches: generateRelatedSearches(pageType, slug, limit as any),
       });
     }
 
     if (type === 'trending') {
       return NextResponse.json({
         type: 'trending',
-        trendingCities: getTrendingCities(limit),
+        trendingCities: getTrendingCities(),
       });
     }
 
     if (type === 'seasonal') {
       return NextResponse.json({
         type: 'seasonal',
-        seasonalSearches: getSeasonalSearches(limit),
+        seasonalSearches: getSeasonalSearches(limit as any),
       });
     }
 
     if (type === 'silo') {
       return NextResponse.json({
         type: 'silo',
-        siloLinks: getSiloLinks(pageType, slug, limit),
+        siloLinks: getSiloLinks(pageType, slug),
       });
     }
 
@@ -81,10 +81,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       type: 'all',
-      relatedSearches: generateRelatedSearches(effectivePageType, effectiveSlug, limit),
-      trendingCities: getTrendingCities(limit),
-      seasonalSearches: getSeasonalSearches(limit),
-      siloLinks: getSiloLinks(effectivePageType, effectiveSlug, limit),
+      relatedSearches: generateRelatedSearches(effectivePageType, effectiveSlug, limit as any),
+      trendingCities: getTrendingCities(),
+      seasonalSearches: getSeasonalSearches(limit as any),
+      siloLinks: getSiloLinks(effectivePageType, effectiveSlug),
       breadcrumbLinks: getBreadcrumbLinks(effectivePageType, effectiveSlug),
       autoLinks: getAutoInternalLinks(effectivePageType, effectiveSlug, limit),
     });
