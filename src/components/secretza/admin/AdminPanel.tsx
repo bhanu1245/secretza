@@ -712,18 +712,27 @@ function AdminListingsPage() {
 
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const statuses: (ListingStatus | "all")[] = ["all", "approved", "pending", "rejected", "expired"];
 
   useEffect(() => {
   const loadListings = async () => {
+    setLoading(true);
+    setError("");
     try {
       const response = await fetch("/api/admin/listings");
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to load listings (${response.status})`);
+      }
 
       setListings(data.listings || []);
     } catch (error) {
       logError(error, { component: "AdminPanel" });
+      setError(error instanceof Error ? error.message : "Failed to load listings");
+    } finally {
       setLoading(false);
     }
   };
@@ -808,6 +817,14 @@ function AdminListingsPage() {
           Manage all listings on the platform.
         </p>
       </div>
+
+      {error && (
+        <Card className="bg-red-500/10 border-red-500/20">
+          <CardContent className="p-4 text-sm text-red-300">
+            {error}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters & Bulk Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">

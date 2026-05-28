@@ -121,6 +121,8 @@ export interface Listing {
   contact: ContactInfo;
   images: ListingImage[];
   listingImages?: ListingImageDB[];
+  profileImage?: string | null;
+  galleryImages?: string[] | string;
   status: ListingStatus;
   isFeatured: boolean;
   isBoosted: boolean;

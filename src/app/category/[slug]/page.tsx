@@ -173,10 +173,10 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       createdAt: l.createdAt.toISOString(),
       updatedAt: l.updatedAt.toISOString(),
       user: {
-        id: l.user.id,
-        name: l.user.name,
-        avatar: l.user.image,
-        isVerified: l.user.isVerified,
+        id: l.user?.id || "",
+        name: l.user?.name || "Unknown user",
+        avatar: l.user?.image || null,
+        isVerified: l.user?.isVerified || false,
       },
       category: {
         id: l.category.id,
@@ -200,6 +200,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         slug: l.city.slug,
       },
       images: legacyImages,
+      profileImage: l.profileImage,
+      galleryImages: l.galleryImages,
       listingImages: l.listingImages.map((img) => ({
         id: img.id,
         url: img.url,

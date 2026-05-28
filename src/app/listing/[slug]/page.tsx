@@ -144,6 +144,13 @@ export default async function ListingPage({ params }: ListingPageProps) {
     tags = [];
   }
 
+  let services: string[] = [];
+  try {
+    services = JSON.parse(listing.services || "[]");
+  } catch {
+    services = [];
+  }
+
   // Parse images from JSON string (legacy format)
   let legacyImages: { url: string; alt?: string; isPrimary?: boolean }[] = [];
   try {
@@ -202,6 +209,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
     slug: listing.slug,
     description: listing.description,
     tags,
+    services,
     price: listing.price,
     currency: listing.currency,
     status: listing.status,
@@ -215,11 +223,15 @@ export default async function ListingPage({ params }: ListingPageProps) {
     contactInstagram: listing.contactInstagram,
     contactWebsite: listing.contactWebsite,
     contactText: listing.contactText,
+    whatsapp: listing.whatsapp,
+    age: listing.age,
+    profileImage: listing.profileImage,
+    galleryImages: listing.galleryImages,
     user: {
-      id: listing.user.id,
-      name: listing.user.name,
-      avatar: listing.user.image,
-      isVerified: listing.user.isVerified,
+      id: listing.user?.id || "",
+      name: listing.user?.name || "Unknown user",
+      avatar: listing.user?.image || null,
+      isVerified: listing.user?.isVerified || false,
     },
     category: {
       id: listing.category.id,

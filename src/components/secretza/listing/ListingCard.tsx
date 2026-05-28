@@ -9,6 +9,7 @@ import TimeAgo from "@/components/secretza/shared/TimeAgo";
 import { useNavigationStore, useUIStore } from "@/store/useAppStore";
 import StarRating from "@/components/secretza/review/StarRating";
 import { cn } from "@/lib/utils";
+import { getListingCoverImage, getListingImages } from "@/lib/listing-images";
 
 interface ListingCardProps {
   listing: Listing;
@@ -135,10 +136,7 @@ function OptimizedImage({
 }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  // Use thumbnail for initial load, then swap to full image
-  const displaySrc = loaded ? src : (thumbnailSrc || src);
+  const [displaySrc, setDisplaySrc] = useState(thumbnailSrc || src);
 
   return (
     <div className={cn("relative overflow-hidden", className)}>
@@ -154,22 +152,17 @@ function OptimizedImage({
 
       {/* Actual image */}
       <img
-        ref={imgRef}
         src={displaySrc}
         alt={alt}
         loading="lazy"
         decoding="async"
         onLoad={() => {
           if (!loaded && thumbnailSrc && thumbnailSrc !== src) {
-            // First load thumbnail, then load full image
             setLoaded(true);
-            // Preload the full image
             const fullImg = new Image();
             fullImg.src = src;
             fullImg.onload = () => {
-              if (imgRef.current) {
-                imgRef.current.src = src;
-              }
+              setDisplaySrc(src);
             };
           } else {
             setLoaded(true);
@@ -203,34 +196,19 @@ function OptimizedImage({
 export default function ListingCard({ listing }: ListingCardProps) {
   const navigate = useNavigationStore((s) => s.navigate);
   const setSelectedListingId = useUIStore((s) => s.setSelectedListingId);
-
-  const primaryImage = listing.images.find((img) => img.isPrimary) || listing.images[0];
-  
-  // Check for listingImages (from DB) for multi-size support
-  const listingImages = (listing as unknown as { listingImages?: Array<{
-    id: string;
-    url: string;
-    thumbnailUrl: string;
-    mediumUrl: string;
-    width: number;
-    height: number;
-    sortOrder: number;
-    blurHash?: string;
-    isPrimary?: boolean;
-  }> }).listingImages;
-  
-  const dbPrimaryImage = listingImages?.find((img) => img.isPrimary) || listingImages?.[0];
+  const resolvedImages = getListingImages(listing);
+  const coverImage = getListingCoverImage(listing);
 
   const handleClick = () => {
     setSelectedListingId(listing.id);
     navigate("listing", { id: listing.id });
   };
 
-  const imageSrc = dbPrimaryImage?.url || primaryImage?.url || "";
-  const thumbSrc = dbPrimaryImage?.thumbnailUrl || imageSrc;
-  const blurHash = dbPrimaryImage?.blurHash;
-  const imgWidth = dbPrimaryImage?.width;
-  const imgHeight = dbPrimaryImage?.height;
+  const imageSrc = coverImage?.url || "";
+  const thumbSrc = coverImage?.thumbnailUrl || imageSrc;
+  const blurHash = coverImage?.blurHash;
+  const imgWidth = coverImage?.width;
+  const imgHeight = coverImage?.height;
 
   return (
     <motion.div
@@ -244,7 +222,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
         {imageSrc ? (
           <OptimizedImage
             src={imageSrc}
-            alt={primaryImage?.alt || listing.title}
+            alt={coverImage?.alt || listing.title}
             thumbnailSrc={thumbSrc !== imageSrc ? thumbSrc : undefined}
             blurHash={blurHash}
             imageWidth={imgWidth}
@@ -283,10 +261,10 @@ export default function ListingCard({ listing }: ListingCardProps) {
         )}
 
         {/* Image Count Badge (if multiple images) */}
-        {listingImages && listingImages.length > 1 && (
+        {resolvedImages.length > 1 && (
           <div className="absolute bottom-2.5 left-2.5 z-10">
             <span className="rounded-lg bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
-              {listingImages.length} photos
+              {resolvedImages.length} photos
             </span>
           </div>
         )}

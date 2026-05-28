@@ -37,6 +37,7 @@ import { useUIStore } from "@/store/useAppStore";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import ReviewList from "@/components/secretza/review/ReviewList";
+import { getListingImages } from "@/lib/listing-images";
 
 interface ListingDetailProps {
   listing: Listing;
@@ -129,37 +130,7 @@ export default function ListingDetail({
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [mainImageLoaded, setMainImageLoaded] = useState(false);
 
-  // Check for listingImages (from DB) for multi-size support
-  const listingImages = (listing as unknown as { listingImages?: Array<{
-    id: string;
-    url: string;
-    thumbnailUrl: string;
-    mediumUrl: string;
-    width: number;
-    height: number;
-    sortOrder: number;
-    blurHash?: string;
-    isPrimary?: boolean;
-    sizeBytes?: number;
-  }> }).listingImages;
-
-  // Use DB images if available, otherwise fallback to legacy images array
-  const useDbImages = listingImages && listingImages.length > 0;
-  const images = useDbImages
-    ? listingImages.map((img) => ({
-        url: img.url,
-        thumbnailUrl: img.thumbnailUrl,
-        mediumUrl: img.mediumUrl,
-        alt: `${listing.title} - Photo`,
-        blurHash: img.blurHash,
-      }))
-    : listing.images.map((img) => ({
-        url: img.url,
-        thumbnailUrl: img.url,
-        mediumUrl: img.url,
-        alt: img.alt || listing.title,
-        blurHash: undefined,
-      }));
+  const images = getListingImages(listing);
 
   const currentImage = images[selectedImageIndex] || images[0];
 

@@ -34,6 +34,7 @@ import {
 import { toast } from "sonner";
 import { signOut } from "next-auth/react";
 import { logError } from "@/lib/logger";
+import { getListingCoverImage } from "@/lib/listing-images";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -672,25 +673,19 @@ const handleDelete = async (id: string) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredListings.map((listing) => (
+          {filteredListings.map((listing) => {
+            const coverImage = getListingCoverImage(listing);
+            return (
             <Card
               key={listing.id}
               className="bg-[#15151D] border-[rgba(255,255,255,0.08)] hover:border-[rgba(124,58,237,0.2)] transition-all duration-300 group overflow-hidden"
             >
               {/* Thumbnail */}
               <div className="relative h-36 overflow-hidden">
-                {(listing as unknown as { listingImages?: Array<{ url: string; thumbnailUrl: string }> }).listingImages?.[0] ? (
+                {coverImage ? (
                   <img
-                    src={(listing as unknown as { listingImages: Array<{ thumbnailUrl: string; url: string }> }).listingImages[0].thumbnailUrl || (listing as unknown as { listingImages: Array<{ url: string }> }).listingImages[0].url}
-                    alt={listing.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : listing.images[0]?.url ? (
-                  <img
-                    src={listing.images[0].url}
-                    alt={listing.title}
+                    src={coverImage.thumbnailUrl || coverImage.url}
+                    alt={coverImage.alt || listing.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                     decoding="async"
@@ -770,7 +765,8 @@ const handleDelete = async (id: string) => {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

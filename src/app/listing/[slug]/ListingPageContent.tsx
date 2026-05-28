@@ -31,6 +31,7 @@ import ListingCard from "@/components/secretza/listing/ListingCard";
 import { buildCategoryUrl, buildCityUrl } from "@/lib/seo-ssr";
 import type { Listing } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { getListingImages } from "@/lib/listing-images";
 
 // ------------------------------------------------------------------
 // Types
@@ -41,6 +42,7 @@ interface SerializedListing {
   slug: string;
   description: string;
   tags: string[];
+  services: string[];
   price: string;
   currency: string;
   status: string;
@@ -54,6 +56,8 @@ interface SerializedListing {
   contactInstagram: string | null;
   contactWebsite: string | null;
   contactText: string | null;
+  whatsapp: string | null;
+  age: number | null;
   user: { id: string; name: string | null; avatar: string | null; isVerified: boolean };
   category: { id: string; name: string; slug: string; color: string };
   country: { id: string; name: string; slug: string };
@@ -69,6 +73,8 @@ interface SerializedListing {
     sortOrder: number;
     blurHash: string | null;
   }>;
+  profileImage?: string | null;
+  galleryImages?: string[] | string;
   legacyImages: Array<{ url: string; alt?: string; isPrimary?: boolean }>;
   averageRating: number;
   reviewCount: number;
@@ -81,23 +87,15 @@ interface ListingPageContentProps {
 // ------------------------------------------------------------------
 // Helpers
 // ------------------------------------------------------------------
-function useImages(listing: SerializedListing) {
-  const hasDbImages = listing.listingImages && listing.listingImages.length > 0;
-  return hasDbImages
-    ? listing.listingImages.map((img) => ({
-        url: img.url,
-        thumbnailUrl: img.thumbnailUrl,
-        mediumUrl: img.mediumUrl,
-        alt: `${listing.title} - Photo`,
-        blurHash: img.blurHash,
-      }))
-    : listing.legacyImages.map((img) => ({
-        url: img.url,
-        thumbnailUrl: img.url,
-        mediumUrl: img.url,
-        alt: img.alt || listing.title,
-        blurHash: undefined,
-      }));
+function useImages(listing?: SerializedListing) {
+  if (!listing) {
+    return [];
+  }
+
+  return getListingImages({
+    ...listing,
+    images: listing.legacyImages,
+  });
 }
 
 function contactAction(type: string, value?: string | null) {
@@ -114,6 +112,9 @@ function contactAction(type: string, value?: string | null) {
       break;
     case "website":
       window.open(value.startsWith("http") ? value : `https://${value}`, "_blank");
+      break;
+    case "whatsapp":
+      window.open(`https://wa.me/${value.replace(/[^0-9]/g, "")}`, "_blank");
       break;
   }
 }
@@ -281,6 +282,24 @@ export default function ListingPageContent({ listing }: ListingPageContentProps)
           </div>
         )}
 
+        {listing.services.length > 0 && (
+          <div>
+            <h2 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Services
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {listing.services.map((service) => (
+                <span
+                  key={service}
+                  className="rounded-lg border border-violet/20 bg-violet/10 px-3 py-1.5 text-xs text-violet"
+                >
+                  {service}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Reviews */}
         <ReviewList listingId={listing.id} />
       </div>
@@ -293,6 +312,15 @@ export default function ListingPageContent({ listing }: ListingPageContentProps)
             Contact Information
           </h3>
           <div className="flex flex-col gap-2">
+            {listing.whatsapp && (
+              <Button
+                className="w-full justify-start gap-2 bg-emerald-600 text-white hover:bg-emerald-700"
+                onClick={() => contactAction("whatsapp", listing.whatsapp)}
+              >
+                <MessageSquare className="size-4" />
+                WhatsApp
+              </Button>
+            )}
             {listing.contactEmail && (
               <Button
                 variant="outline"
@@ -393,6 +421,12 @@ export default function ListingPageContent({ listing }: ListingPageContentProps)
                 {listing.country.name}
               </span>
             </div>
+            {listing.age && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <BadgeCheck className="size-4 shrink-0 text-violet" />
+                <span className="text-sm">{listing.age} years old</span>
+              </div>
+            )}
             <div className="flex items-center gap-2 text-muted-foreground">
               <Clock className="size-4 shrink-0 text-violet" />
               <span className="text-sm">

@@ -33,6 +33,10 @@ export async function GET(request: Request) {
   const country = searchParams.get("country") || undefined;
   const state = searchParams.get("state") || undefined;
   const city = searchParams.get("city") || undefined;
+  const premium = searchParams.get("premium") === "true";
+  const boosted = searchParams.get("boosted") === "true";
+  const minAge = searchParams.get("minAge");
+  const maxAge = searchParams.get("maxAge");
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10) || 20));
   const featured = searchParams.get("featured") === "true";
@@ -66,6 +70,14 @@ export async function GET(request: Request) {
   if (state) where.stateSlug = state;
   if (city) where.citySlug = city;
   if (featured) where.isFeatured = true;
+  if (premium) (where as any).isPremium = true;
+  if (boosted) where.isBoosted = true;
+  if (minAge || maxAge) {
+    (where as any).age = {
+      ...(minAge ? { gte: Number(minAge) } : {}),
+      ...(maxAge ? { lte: Number(maxAge) } : {}),
+    };
+  }
 
   // Determine Prisma-level ordering (used when sortBy is not "ranking")
   let orderBy: Prisma.ListingOrderByWithRelationInput;
@@ -98,9 +110,11 @@ export async function GET(request: Request) {
       include: {
         user: { select: { id: true, name: true, image: true } },
         category: true,
+        subcategory: true,
         country: true,
         state: true,
         city: true,
+        areaRelation: true,
         _count: { select: { reviews: { where: { status: "approved" } } } },
         listingImages: {
           where: { moderationStatus: { in: ["pending", "approved"] } },
@@ -135,6 +149,8 @@ export async function GET(request: Request) {
 
   // Compute real-time scores and rank labels for each listing
   const transformed = listings.map((l) => {
+    const legacyImages = safeJsonParse(l.images, []) as Array<{ url?: string } | string>;
+    const galleryImages = safeJsonParse((l as any).galleryImages, []) as string[];
     const rankInput = {
       id: l.id,
       isFeatured: l.isFeatured,
@@ -166,6 +182,11 @@ export async function GET(request: Request) {
         isFeatured: l.category.isFeatured,
         listingCount: l.category.listingCount,
       },
+      subcategory: l.subcategory ? {
+        id: l.subcategory.id,
+        name: l.subcategory.name,
+        slug: l.subcategory.slug,
+      } : null,
       country: {
         id: l.country.id,
         name: l.country.name,
@@ -191,7 +212,10 @@ export async function GET(request: Request) {
         isActive: l.city.isActive,
         listingCount: l.city.listingCount,
       },
+      area: (l as any).area,
+      areaRelation: (l as any).areaRelation,
       tags: safeJsonParse(l.tags, []),
+      services: safeJsonParse((l as any).services, []),
       price: l.price,
       currency: l.currency,
       contact: {
@@ -201,7 +225,9 @@ export async function GET(request: Request) {
         website: l.contactWebsite,
         customText: l.contactText,
       },
-      images: safeJsonParse(l.images, []),
+      images: legacyImages,
+      profileImage: (l as any).profileImage,
+      galleryImages,
       listingImages: l.listingImages.map((img) => ({
         id: img.id,
         url: img.url,
@@ -213,17 +239,28 @@ export async function GET(request: Request) {
         blurHash: img.blurHash,
         isPrimary: img.sortOrder === 0,
       })),
+      coverImage:
+        l.listingImages[0]?.thumbnailUrl ||
+        l.listingImages[0]?.url ||
+        (l as any).profileImage ||
+        galleryImages[0] ||
+        (typeof legacyImages[0] === "string" ? legacyImages[0] : legacyImages[0]?.url) ||
+        null,
       status: l.status,
       isFeatured: l.isFeatured,
       isBoosted: l.isBoosted,
+      isPremium: (l as any).isPremium,
       featuredUntil: l.featuredUntil?.toISOString(),
       boostUntil: l.boostUntil?.toISOString(),
       lastBumpedAt: l.lastBumpedAt?.toISOString(),
       priorityScore: l.priorityScore,
       expiresAt: l.expiresAt?.toISOString(),
       viewCount: l.viewCount,
+      views: (l as any).views,
       createdAt: l.createdAt.toISOString(),
-      user: { id: l.user.id, name: l.user.name, avatar: l.user.image },
+      user: l.user
+        ? { id: l.user.id, name: l.user.name, avatar: l.user.image }
+        : { id: "", name: "Unknown user", avatar: null },
       computedScore,
       rankLabel,
       boostActive: isBoostActive(rankInput),

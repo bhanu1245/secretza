@@ -27,9 +27,11 @@ export async function GET(
     include: {
       user: { select: { id: true, name: true, image: true } },
       category: true,
+      subcategory: true,
       country: true,
       state: true,
       city: true,
+      areaRelation: true,
       listingImages: {
         where: { moderationStatus: { in: ["pending", "approved"] } },
         orderBy: { sortOrder: "asc" },
@@ -81,10 +83,14 @@ export async function GET(
     slug: listing.slug,
     description: listing.description,
     category: listing.category,
+    subcategory: listing.subcategory,
     country: listing.country,
     state: listing.state,
     city: listing.city,
+    area: listing.area,
+    areaRelation: listing.areaRelation,
     tags: safeJsonParse(listing.tags, []),
+    services: safeJsonParse((listing as any).services, []),
     price: listing.price,
     currency: listing.currency,
     contact: {
@@ -95,6 +101,18 @@ export async function GET(
       customText: listing.contactText,
     },
     images: safeJsonParse(listing.images, []),
+    profileImage: (listing as any).profileImage,
+    galleryImages: safeJsonParse((listing as any).galleryImages, []),
+    coverImage:
+      listing.listingImages[0]?.thumbnailUrl ||
+      listing.listingImages[0]?.url ||
+      (listing as any).profileImage ||
+      (safeJsonParse((listing as any).galleryImages, []) as any[])[0] ||
+      (safeJsonParse(listing.images, []) as any[])[0]?.url ||
+      null,
+    age: (listing as any).age,
+    whatsapp: (listing as any).whatsapp,
+    telegram: (listing as any).telegram,
     listingImages: listing.listingImages.map((img) => ({
       id: img.id,
       url: img.url,
@@ -166,6 +184,15 @@ export async function PUT(
       citySlug,
       tags,
       price,
+      services,
+      age,
+      whatsapp,
+      telegram,
+      subcategorySlug,
+      area,
+      areaId,
+      profileImage,
+      galleryImages,
       contactEmail,
       contactTelegram,
       contactInstagram,
@@ -215,6 +242,13 @@ export async function PUT(
       }
     }
 
+    if (age !== undefined && age !== null && age !== "") {
+      const numericAge = Number(age);
+      if (!Number.isInteger(numericAge) || numericAge < 18 || numericAge > 99) {
+        return NextResponse.json({ error: "Age must be between 18 and 99" }, { status: 400 });
+      }
+    }
+
     // Validate contact fields if provided
     if (contactEmail !== undefined && contactEmail !== null) {
       if (typeof contactEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
@@ -224,9 +258,11 @@ export async function PUT(
 
     // Validate location fields only if they are provided (partial update support)
     let categoryId = existing.categoryId;
+    let subcategoryId = (existing as any).subcategoryId ?? null;
     let countryId = existing.countryId;
     let stateId = existing.stateId;
     let cityId = existing.cityId;
+    let resolvedAreaId = (existing as any).areaId ?? null;
 
     if (categorySlug !== undefined || countrySlug !== undefined) {
       const resolvedCategorySlug = categorySlug ?? existing.categorySlug;
@@ -249,6 +285,20 @@ export async function PUT(
       }
       categoryId = category.id;
       countryId = country.id;
+
+      if (subcategorySlug !== undefined) {
+        if (subcategorySlug) {
+          const subcategory = await db.category.findFirst({
+            where: { slug: subcategorySlug, parentId: category.id },
+          });
+          if (!subcategory) {
+            return NextResponse.json({ error: "Invalid subcategory" }, { status: 400 });
+          }
+          subcategoryId = subcategory.id;
+        } else {
+          subcategoryId = null;
+        }
+      }
 
       if (stateSlug !== undefined) {
         if (stateSlug) {
@@ -292,6 +342,20 @@ export async function PUT(
       );
     }
 
+    if (areaId !== undefined) {
+      if (areaId) {
+        const areaRecord = await db.area.findFirst({
+          where: { id: areaId, cityId },
+        });
+        if (!areaRecord) {
+          return NextResponse.json({ error: "Invalid area" }, { status: 400 });
+        }
+        resolvedAreaId = areaRecord.id;
+      } else {
+        resolvedAreaId = null;
+      }
+    }
+
     // Only regenerate slug if title actually changed
     const titleChanged = title !== undefined && title !== existing.title;
     const slug = titleChanged
@@ -307,21 +371,31 @@ export async function PUT(
         description: description !== undefined ? description : existing.description,
         price: price !== undefined ? Number(price).toString() : existing.price,
         categorySlug: categorySlug !== undefined ? categorySlug : existing.categorySlug,
+        subcategorySlug: subcategorySlug !== undefined ? subcategorySlug || null : (existing as any).subcategorySlug,
         countrySlug: countrySlug !== undefined ? countrySlug : existing.countrySlug,
         stateSlug: stateSlug !== undefined ? stateSlug : existing.stateSlug,
         citySlug: citySlug !== undefined ? citySlug : existing.citySlug,
+        area: area !== undefined ? area || null : (existing as any).area,
         tags: tags !== undefined ? JSON.stringify(tags) : existing.tags,
+        services: services !== undefined ? JSON.stringify(services) : (existing as any).services,
+        age: age !== undefined && age !== "" ? Number(age) : (age === "" ? null : (existing as any).age),
+        whatsapp: whatsapp !== undefined ? whatsapp || null : (existing as any).whatsapp,
+        telegram: telegram !== undefined ? telegram || null : (existing as any).telegram,
         contactEmail: contactEmail !== undefined ? contactEmail : existing.contactEmail,
-        contactTelegram: contactTelegram !== undefined ? contactTelegram : existing.contactTelegram,
+        contactTelegram: telegram !== undefined ? telegram || null : (contactTelegram !== undefined ? contactTelegram : existing.contactTelegram),
         contactInstagram: contactInstagram !== undefined ? contactInstagram : existing.contactInstagram,
         contactWebsite: contactWebsite !== undefined ? contactWebsite : existing.contactWebsite,
         contactText: contactText !== undefined ? contactText : existing.contactText,
         images: images !== undefined ? JSON.stringify(images) : existing.images,
+        profileImage: profileImage !== undefined ? profileImage || null : (existing as any).profileImage,
+        galleryImages: galleryImages !== undefined ? JSON.stringify(galleryImages) : (existing as any).galleryImages,
         categoryId,
+        subcategoryId,
         countryId,
         stateId,
         cityId,
-      },
+        areaId: resolvedAreaId,
+      } as any,
     });
 
     // Associate new uploaded images with the listing (if imageIds provided)

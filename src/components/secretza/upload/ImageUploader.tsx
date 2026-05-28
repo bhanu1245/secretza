@@ -24,6 +24,7 @@ export interface UploadedImage {
   uploadResult?: {
     id: string;
     key: string;
+    storageKey?: string;
     url: string;
     sizeBytes: number;
     mimeType: string;
@@ -135,9 +136,13 @@ export default function ImageUploader({
           body: formData,
         });
 
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
+          console.error("[ImageUploader] upload request failed", {
+            status: res.status,
+            data,
+          });
           throw new Error(data.error || "Upload failed");
         }
 
@@ -160,6 +165,7 @@ export default function ImageUploader({
                   uploadResult: {
                     id: uploadedFile.id || tempId,
                     key: uploadedFile.key || "",
+                    storageKey: uploadedFile.storageKey || uploadedFile.key || "",
                     url: uploadedFile.url,
                     sizeBytes: uploadedFile.sizeBytes || 0,
                     mimeType: uploadedFile.mimeType || "",
@@ -176,6 +182,7 @@ export default function ImageUploader({
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Upload failed";
+        console.error("[ImageUploader] upload failed", err);
 
         // Mark as errored
         onImagesChange((prev) =>
