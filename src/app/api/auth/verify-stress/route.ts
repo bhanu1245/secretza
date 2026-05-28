@@ -155,7 +155,7 @@ async function test2_protectedRouteRedirect(): Promise<{ status: TestResult["sta
 
 async function test3_adminRouteProtection(): Promise<{ status: TestResult["status"]; details: string; evidence: string | null }> {
   // Check middleware blocks unauthenticated access to admin routes
-  const middlewareSource = readFileSync(join(process.cwd(), "src/middleware.ts"), "utf-8");
+  const middlewareSource = readFileSync(join(process.cwd(), "src/proxy.ts"), "utf-8");
 
   const hasAdminRoutes = middlewareSource.includes("/api/admin/") || middlewareSource.includes("adminApiRoutes");
   if (!hasAdminRoutes) {
@@ -438,7 +438,7 @@ async function test9_concurrentTabBehavior(): Promise<{ status: TestResult["stat
 }
 
 async function test10_middlewareProtection(): Promise<{ status: TestResult["status"]; details: string; evidence: string | null }> {
-  const middlewareSource = readFileSync(join(process.cwd(), "src/middleware.ts"), "utf-8");
+  const middlewareSource = readFileSync(join(process.cwd(), "src/proxy.ts"), "utf-8");
 
   const findings: string[] = [];
 

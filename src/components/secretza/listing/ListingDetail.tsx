@@ -33,7 +33,10 @@ import { cn } from "@/lib/utils";
 import ReviewList from "@/components/secretza/review/ReviewList";
 import ListingContactSection from "@/components/secretza/listing/ListingContactSection";
 import { normalizeListingContact } from "@/lib/listing-contact";
-import { getListingImages } from "@/lib/listing-images";
+import {
+  getListingImages,
+  getListingCoverImageWithPlaceholder,
+} from "@/lib/listing-images";
 
 interface ListingDetailProps {
   listing: Listing;
@@ -126,7 +129,11 @@ export default function ListingDetail({
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [mainImageLoaded, setMainImageLoaded] = useState(false);
 
-  const images = getListingImages(listing);
+  const resolvedImages = getListingImages(listing);
+  const images =
+    resolvedImages.length > 0
+      ? resolvedImages
+      : [getListingCoverImageWithPlaceholder(listing)];
   const contact = normalizeListingContact(listing as any);
 
   const currentImage = images[selectedImageIndex] || images[0];

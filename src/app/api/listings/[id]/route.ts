@@ -15,6 +15,7 @@ import {
   sanitizePhone,
   sanitizeTelegram,
 } from "@/lib/listing-contact";
+import { persistListingImages } from "@/lib/listing-image-persist";
 
 function safeJsonParse(str: unknown, fallback: unknown): unknown {
   if (typeof str !== 'string') return fallback;
@@ -202,6 +203,7 @@ export async function PUT(
       contactPhone,
       images,
       imageIds,
+      uploadResults,
     } = body;
 
     // Validate content fields if provided
@@ -422,6 +424,20 @@ export async function PUT(
           listingId: null as any, // Only attach unattached images
         },
         data: { listingId: id },
+      });
+    }
+
+    const galleryUrls = Array.isArray(galleryImages)
+      ? galleryImages.map(String).filter(Boolean)
+      : undefined;
+
+    if (
+      (Array.isArray(uploadResults) && uploadResults.length > 0) ||
+      (galleryUrls && galleryUrls.length > 0)
+    ) {
+      await persistListingImages(id, {
+        galleryImages: galleryUrls,
+        uploadResults: Array.isArray(uploadResults) ? uploadResults : [],
       });
     }
 

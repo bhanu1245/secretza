@@ -220,7 +220,6 @@ export const authOptions: NextAuthOptions = {
             where: { id: user.id },
             data: { image: account.picture },
           });
-          (token.user as any).image = account.picture;
         }
       }
 
@@ -347,7 +346,9 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: "/api/auth/signin",
+    signIn: "/",
+    error: "/",
   },
+  debug: process.env.NODE_ENV === "development",
   secret: process.env.NEXTAUTH_SECRET,
 };

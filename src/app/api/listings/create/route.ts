@@ -8,6 +8,7 @@ import {
   sanitizePhone,
   sanitizeTelegram,
 } from "@/lib/listing-contact";
+import { persistListingImages } from "@/lib/listing-image-persist";
 
 const listingSchema = z.object({
   title: z.string().trim().min(5).max(120),
@@ -187,21 +188,10 @@ export async function POST(req: Request) {
       } as any,
     });
 
-    if (body.uploadResults.length > 0) {
-      await db.listingImage.createMany({
-        data: body.uploadResults.map((img, index) => ({
-          listingId: listing.id,
-          url: String(img.url || ""),
-          thumbnailUrl: String(img.url || ""),
-          mediumUrl: String(img.url || ""),
-          storageKey: String(img.storageKey || img.key || `listings/${listing.id}/${index}`),
-          mimeType: String(img.mimeType || "image/jpeg"),
-          width: Number(img.width || 0),
-          height: Number(img.height || 0),
-          sizeBytes: Number(img.sizeBytes || 0),
-          sortOrder: index,
-          moderationStatus: "pending",
-        })),
+    if (body.uploadResults.length > 0 || galleryImages.length > 0) {
+      await persistListingImages(listing.id, {
+        galleryImages,
+        uploadResults: body.uploadResults,
       });
     }
 

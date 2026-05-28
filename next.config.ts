@@ -7,6 +7,14 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   reactStrictMode: true,
+  async rewrites() {
+    return [
+      {
+        source: "/uploads/:path*",
+        destination: "/api/upload/file?key=:path*",
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

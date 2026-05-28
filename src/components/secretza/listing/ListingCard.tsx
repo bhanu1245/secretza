@@ -9,7 +9,7 @@ import TimeAgo from "@/components/secretza/shared/TimeAgo";
 import { useNavigationStore, useUIStore } from "@/store/useAppStore";
 import StarRating from "@/components/secretza/review/StarRating";
 import { cn } from "@/lib/utils";
-import { getListingCoverImage, getListingImages } from "@/lib/listing-images";
+import { getListingCoverImageWithPlaceholder, getListingImages } from "@/lib/listing-images";
 
 interface ListingCardProps {
   listing: Listing;
@@ -197,15 +197,15 @@ export default function ListingCard({ listing }: ListingCardProps) {
   const navigate = useNavigationStore((s) => s.navigate);
   const setSelectedListingId = useUIStore((s) => s.setSelectedListingId);
   const resolvedImages = getListingImages(listing);
-  const coverImage = getListingCoverImage(listing);
+  const coverImage = getListingCoverImageWithPlaceholder(listing);
 
   const handleClick = () => {
     setSelectedListingId(listing.id);
     navigate("listing", { id: listing.id });
   };
 
-  const imageSrc = coverImage?.url || "";
-  const thumbSrc = coverImage?.thumbnailUrl || imageSrc;
+  const imageSrc = coverImage.url;
+  const thumbSrc = coverImage.thumbnailUrl || imageSrc;
   const blurHash = coverImage?.blurHash;
   const imgWidth = coverImage?.width;
   const imgHeight = coverImage?.height;
@@ -219,23 +219,15 @@ export default function ListingCard({ listing }: ListingCardProps) {
     >
       {/* Image Container */}
       <div className="relative aspect-[3/4] w-full overflow-hidden">
-        {imageSrc ? (
-          <OptimizedImage
-            src={imageSrc}
-            alt={coverImage?.alt || listing.title}
-            thumbnailSrc={thumbSrc !== imageSrc ? thumbSrc : undefined}
-            blurHash={blurHash}
-            imageWidth={imgWidth}
-            imageHeight={imgHeight}
-            className="transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1E1E2A] to-[#15151D]">
-            <svg className="w-8 h-8 text-[#52525B]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-        )}
+        <OptimizedImage
+          src={imageSrc}
+          alt={coverImage.alt || listing.title}
+          thumbnailSrc={thumbSrc !== imageSrc ? thumbSrc : undefined}
+          blurHash={blurHash}
+          imageWidth={imgWidth}
+          imageHeight={imgHeight}
+          className="transition-transform duration-500 group-hover:scale-105"
+        />
 
         {/* Gradient Overlay */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />

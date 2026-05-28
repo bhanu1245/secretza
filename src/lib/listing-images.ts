@@ -28,6 +28,9 @@ export type ResolvedListingImage = {
   height?: number;
 };
 
+/** Shown when a listing has no resolvable image URL. */
+export const LISTING_IMAGE_PLACEHOLDER = "/logo.svg";
+
 function parseJsonArray(value: unknown): unknown[] {
   if (Array.isArray(value)) return value;
   if (typeof value !== "string" || !value.trim()) return [];
@@ -43,10 +46,75 @@ function stringUrl(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function normalizeUrl(value: unknown): string | null {
+/** Extract a storage key from known upload URL formats. */
+export function extractStorageKeyFromUrl(url: string): string | null {
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.startsWith("blob:")) return null;
+
+  if (!trimmed.includes("://") && trimmed.startsWith("listings/")) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("/uploads/")) {
+    return trimmed.slice("/uploads/".length);
+  }
+
+  try {
+    const parsed = trimmed.startsWith("/")
+      ? new URL(trimmed, "http://localhost")
+      : new URL(trimmed);
+
+    if (parsed.pathname === "/api/upload/file") {
+      const key = parsed.searchParams.get("key");
+      return key ? decodeURIComponent(key) : null;
+    }
+
+    if (parsed.pathname.startsWith("/uploads/")) {
+      return parsed.pathname.slice("/uploads/".length);
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+/** Normalize relative paths, storage keys, and API routes to a browser-loadable URL. */
+export function resolveListingImageUrl(value: unknown): string | null {
   const url = stringUrl(value);
-  if (!url) return null;
+  if (!url || url.startsWith("blob:")) return null;
+
+  if (url.startsWith("data:") || url.startsWith("http://") || url.startsWith("https://")) {
+    const key = extractStorageKeyFromUrl(url);
+    if (key && url.includes("/api/upload/file")) {
+      return `/api/upload/file?key=${encodeURIComponent(key)}`;
+    }
+    return url;
+  }
+
+  if (url.startsWith("/api/upload/file")) {
+    const key = extractStorageKeyFromUrl(url);
+    return key ? `/api/upload/file?key=${encodeURIComponent(key)}` : url;
+  }
+
+  if (url.startsWith("/uploads/")) {
+    const key = url.slice("/uploads/".length);
+    return `/api/upload/file?key=${encodeURIComponent(key)}`;
+  }
+
+  if (url.startsWith("listings/")) {
+    return `/api/upload/file?key=${encodeURIComponent(url)}`;
+  }
+
+  if (url.startsWith("/")) {
+    return url;
+  }
+
   return url;
+}
+
+function normalizeUrl(value: unknown): string | null {
+  return resolveListingImageUrl(value);
 }
 
 function fromUnknownImage(value: unknown, title: string): ResolvedListingImage | null {
@@ -128,4 +196,19 @@ export function getListingImages(listing: ListingLikeWithImages): ResolvedListin
 
 export function getListingCoverImage(listing: ListingLikeWithImages): ResolvedListingImage | null {
   return getListingImages(listing)[0] || null;
+}
+
+export function getListingCoverImageWithPlaceholder(
+  listing: ListingLikeWithImages,
+): ResolvedListingImage {
+  const cover = getListingCoverImage(listing);
+  if (cover) return cover;
+
+  const title = listing.title || "Listing";
+  return {
+    url: LISTING_IMAGE_PLACEHOLDER,
+    thumbnailUrl: LISTING_IMAGE_PLACEHOLDER,
+    mediumUrl: LISTING_IMAGE_PLACEHOLDER,
+    alt: title,
+  };
 }

@@ -26,7 +26,10 @@ import ListingContactSection from "@/components/secretza/listing/ListingContactS
 import { normalizeListingContact } from "@/lib/listing-contact";
 import { buildCategoryUrl } from "@/lib/seo-ssr";
 import { cn } from "@/lib/utils";
-import { getListingImages } from "@/lib/listing-images";
+import {
+  getListingImages,
+  getListingCoverImageWithPlaceholder,
+} from "@/lib/listing-images";
 
 // ------------------------------------------------------------------
 // Types
@@ -88,10 +91,16 @@ function useImages(listing?: SerializedListing) {
     return [];
   }
 
-  return getListingImages({
+  const resolved = getListingImages({
     ...listing,
     images: listing.legacyImages,
   });
+
+  if (resolved.length > 0) {
+    return resolved;
+  }
+
+  return [getListingCoverImageWithPlaceholder(listing)];
 }
 
 // ------------------------------------------------------------------

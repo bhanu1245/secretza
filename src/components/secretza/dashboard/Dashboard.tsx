@@ -34,7 +34,7 @@ import {
 import { toast } from "sonner";
 import { signOut } from "next-auth/react";
 import { logError } from "@/lib/logger";
-import { getListingCoverImage } from "@/lib/listing-images";
+import { getListingCoverImageWithPlaceholder } from "@/lib/listing-images";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -674,7 +674,7 @@ const handleDelete = async (id: string) => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredListings.map((listing) => {
-            const coverImage = getListingCoverImage(listing);
+            const coverImage = getListingCoverImageWithPlaceholder(listing);
             return (
             <Card
               key={listing.id}
@@ -682,19 +682,13 @@ const handleDelete = async (id: string) => {
             >
               {/* Thumbnail */}
               <div className="relative h-36 overflow-hidden">
-                {coverImage ? (
-                  <img
-                    src={coverImage.thumbnailUrl || coverImage.url}
-                    alt={coverImage.alt || listing.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1E1E2A] to-[#15151D]">
-                    <FileText className="size-8 text-[#52525B]" />
-                  </div>
-                )}
+                <img
+                  src={coverImage.thumbnailUrl || coverImage.url}
+                  alt={coverImage.alt || listing.title}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                  decoding="async"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#15151D] via-transparent to-transparent" />
                 <div className="absolute top-3 left-3">
                   <StatusBadge status={listing.status} />

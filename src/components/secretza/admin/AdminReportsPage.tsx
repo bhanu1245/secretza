@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle, Search, ShieldAlert, UserX } from "lucide-react";
-import { getListingCoverImage } from "@/lib/listing-images";
+import { getListingCoverImageWithPlaceholder } from "@/lib/listing-images";
 
 type Report = {
   id: string;
@@ -97,16 +97,10 @@ export default function AdminReportsPage() {
         ) : (
           <div className="divide-y divide-[rgba(255,255,255,0.08)]">
             {reports.map((report) => {
-              const cover = getListingCoverImage(report.listing);
+              const cover = getListingCoverImageWithPlaceholder(report.listing);
               return (
                 <div key={report.id} className="p-4 grid grid-cols-1 xl:grid-cols-[96px,1fr,260px] gap-4">
-                  {cover ? (
-                    <img src={cover.thumbnailUrl || cover.url} alt={report.listing.title} className="w-24 h-28 rounded-lg object-cover" />
-                  ) : (
-                    <div className="w-24 h-28 rounded-lg bg-[#0B0B0F] flex items-center justify-center">
-                      <ShieldAlert className="size-5 text-[#52525B]" />
-                    </div>
-                  )}
+                  <img src={cover.thumbnailUrl || cover.url} alt={report.listing.title} className="w-24 h-28 rounded-lg object-cover" />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-sm font-semibold text-[#F5F5F7] truncate">{report.listing.title}</h3>
