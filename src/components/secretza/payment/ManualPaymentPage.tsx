@@ -403,6 +403,8 @@ export default function ManualPaymentPage({
       if (listingId) formData.append("listingId", listingId);
       formData.append("paymentType", paymentType);
       formData.append("amount", String(selectedAmount));
+      formData.append("selectedPlan", tiers[selectedTierIndex]?.label || "");
+      formData.append("paymentMethod", "upi");
       formData.append("utrNumber", utrNumber);
       if (notes.trim()) formData.append("notes", notes.trim());
       if (screenshotFile) formData.append("screenshot", screenshotFile);
@@ -416,6 +418,7 @@ export default function ManualPaymentPage({
 
       if (!res.ok) {
         const errorMessage = data.error || "Failed to submit payment proof. Please try again.";
+        const fieldHint = data.field ? ` (${data.field})` : "";
         if (res.status === 409) {
           setSubmitError("Duplicate UTR number detected. This UTR has already been submitted.");
           toast.error("Duplicate UTR", { description: "This transaction number has already been used." });
@@ -423,8 +426,8 @@ export default function ManualPaymentPage({
           setSubmitError("Too many submissions. Please wait a moment before trying again.");
           toast.error("Rate limited", { description: "Please wait before submitting again." });
         } else {
-          setSubmitError(errorMessage);
-          toast.error("Submission failed", { description: errorMessage });
+          setSubmitError(`${errorMessage}${fieldHint}`);
+          toast.error("Submission failed", { description: `${errorMessage}${fieldHint}` });
         }
         return;
       }
@@ -441,7 +444,7 @@ export default function ManualPaymentPage({
     } finally {
       setSubmitting(false);
     }
-  }, [isFormValid, listingId, paymentType, selectedAmount, utrNumber, notes, screenshotFile]);
+  }, [isFormValid, listingId, paymentType, selectedAmount, selectedTierIndex, tiers, utrNumber, notes, screenshotFile]);
 
   const handleUTRChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");

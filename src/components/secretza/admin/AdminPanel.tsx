@@ -2035,10 +2035,14 @@ function UPIPaymentSettings() {
 interface ManualPaymentSubmission {
   id: string;
   userId: string;
+  listingId: string | null;
+  listing: { id: string; title: string; slug: string } | null;
   paymentType: "boost" | "feature" | "premium";
   amount: number;
   utrNumber: string;
   screenshotUrl: string | null;
+  selectedPlan: string | null;
+  paymentMethod: string | null;
   status: "pending" | "approved" | "rejected" | "proof_requested" | "duplicate";
   adminNotes: string | null;
   createdAt: string;
@@ -2227,7 +2231,7 @@ function ManualPaymentQueue() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[rgba(255,255,255,0.06)]">
-                    {["User", "Payment Type", "Amount", "UTR", "Screenshot", "Status", "Date", "Actions"].map((h) => (
+                    {["User", "Listing", "Plan", "Payment Type", "Amount", "UTR", "Screenshot", "Status", "Date", "Actions"].map((h) => (
                       <th key={h} className="text-left px-4 py-3 text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-wider whitespace-nowrap">
                         {h}
                       </th>
@@ -2248,6 +2252,21 @@ function ManualPaymentQueue() {
                             <p className="text-[10px] text-[#A1A1AA] truncate max-w-[140px]">{sub.user.email}</p>
                           </div>
                         </div>
+                      </td>
+                      {/* Listing */}
+                      <td className="px-4 py-3">
+                        {sub.listing ? (
+                          <div className="min-w-0">
+                            <p className="text-sm text-[#F5F5F7] font-medium truncate max-w-[160px]">{sub.listing.title}</p>
+                            <p className="text-[10px] text-[#52525B] truncate max-w-[160px]">{sub.listing.slug}</p>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[#52525B]">—</span>
+                        )}
+                      </td>
+                      {/* Plan */}
+                      <td className="px-4 py-3">
+                        <span className="text-xs text-[#A1A1AA]">{sub.selectedPlan || "—"}</span>
                       </td>
                       {/* Payment Type */}
                       <td className="px-4 py-3">{getPaymentTypeBadge(sub.paymentType)}</td>

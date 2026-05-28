@@ -232,6 +232,9 @@ export interface ManualPaymentSubmission {
   amount: number;
   utrNumber: string;
   screenshotUrl: string | null;
+  planLabel?: string | null;
+  selectedPlan?: string | null;
+  paymentMethod?: string | null;
   notes: string | null;
   status: ManualPaymentStatus;
   adminNotes: string | null;
@@ -239,6 +242,7 @@ export interface ManualPaymentSubmission {
   reviewedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  listing?: { id: string; title: string; slug: string } | null;
   user?: Pick<User, "id" | "email" | "name">;
 }
 

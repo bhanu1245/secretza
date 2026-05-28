@@ -75,15 +75,30 @@ export async function GET(request: Request) {
       countsByStatus[sc.status] = sc._count.status;
     }
 
+    const listingIds = submissions
+      .map((s) => s.listingId)
+      .filter((id): id is string => Boolean(id));
+    const listings =
+      listingIds.length > 0
+        ? await db.listing.findMany({
+            where: { id: { in: listingIds } },
+            select: { id: true, title: true, slug: true },
+          })
+        : [];
+    const listingMap = new Map(listings.map((listing) => [listing.id, listing]));
+
     return NextResponse.json({
       submissions: submissions.map((s) => ({
         id: s.id,
         userId: s.userId,
         listingId: s.listingId,
+        listing: s.listingId ? listingMap.get(s.listingId) ?? null : null,
         paymentType: s.paymentType,
         amount: s.amount,
         utrNumber: s.utrNumber,
         screenshotUrl: s.screenshotUrl,
+        selectedPlan: s.planLabel,
+        paymentMethod: s.paymentMethod,
         notes: s.notes,
         status: s.status,
         adminNotes: s.adminNotes,

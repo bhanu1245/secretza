@@ -395,6 +395,8 @@ model ManualPaymentSubmission {
   amount        Float
   utrNumber     String    @unique
   screenshotUrl String?
+  planLabel     String?
+  paymentMethod String?   @default("upi")
   notes         String?
   status        String    @default("pending")
   adminNotes    String?

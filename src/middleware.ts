@@ -12,6 +12,7 @@ const protectedApiRoutes = [
   "/api/payments/",
   "/api/listings/create",
   "/api/listings/",
+  "/api/upload",
   "/api/upload/",
 ];
 
@@ -28,6 +29,9 @@ const csrfExemptRoutes = [
   "/api/sentry-tunnel",
   "/api/listings/create",
   "/api/listings/",
+  "/api/upload",
+  "/api/upload/",
+  "/api/payments/",
 ];
 
 // ---------------------------------------------------------------------------
@@ -249,7 +253,14 @@ export async function middleware(request: NextRequest) {
       const headerToken = request.headers.get("x-csrf-token");
       const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
       if (!validateCsrfToken(headerToken ?? null, cookieToken ?? null)) {
-        return NextResponse.json({ error: "Invalid request" }, { status: 403 });
+        return NextResponse.json(
+          {
+            error: "CSRF validation failed",
+            field: "csrf",
+            details: "Missing or invalid x-csrf-token header",
+          },
+          { status: 403 },
+        );
       }
     }
   }

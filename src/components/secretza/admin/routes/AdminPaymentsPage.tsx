@@ -9,9 +9,11 @@ type ManualPayment = {
   amount: number;
   utrNumber: string;
   screenshotUrl: string | null;
+  selectedPlan: string | null;
   status: string;
   notes: string | null;
   createdAt: string;
+  listing: { id: string; title: string; slug: string } | null;
   user: { email: string; name: string | null };
 };
 
@@ -102,7 +104,11 @@ export default function AdminPaymentsPage() {
                 </div>
                 <p className="mt-1 text-sm text-[#A1A1AA]">
                   {payment.user.email} · ₹{payment.amount} · UTR {payment.utrNumber}
+                  {payment.selectedPlan ? ` · ${payment.selectedPlan}` : ""}
                 </p>
+                {payment.listing && (
+                  <p className="mt-1 text-xs text-[#8B5CF6]">{payment.listing.title}</p>
+                )}
                 <p className="mt-1 text-xs text-[#52525B]">{new Date(payment.createdAt).toLocaleString()}</p>
                 {payment.notes && <p className="mt-2 text-sm text-[#A1A1AA]">{payment.notes}</p>}
               </div>
