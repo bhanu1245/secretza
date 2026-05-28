@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import StarRating from "@/components/secretza/review/StarRating";
 import { useAuthStore } from "@/store/useAppStore";
+import { apiFetch, fetchCsrfToken } from "@/lib/api-client";
 import { toast } from "sonner";
 
 export interface Review {
@@ -68,6 +69,15 @@ export default function CreateReviewForm({
     }
   }, [existingReview]);
 
+  // Pre-fetch CSRF token when the form is shown for authenticated users
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCsrfToken().catch(() => {
+        // Token will be fetched again on submit
+      });
+    }
+  }, [isAuthenticated]);
+
   const canSubmit = useMemo(() => {
     return rating >= 1 && body.trim().length >= 10;
   }, [rating, body]);
@@ -84,10 +94,8 @@ export default function CreateReviewForm({
         : "/api/reviews";
       const method = isEditing ? "PATCH" : "POST";
 
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           listingId,
           rating,

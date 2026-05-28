@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import StarRating from "@/components/secretza/review/StarRating";
 import ReviewCard from "@/components/secretza/review/ReviewCard";
 import CreateReviewForm from "@/components/secretza/review/CreateReviewForm";
+import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/store/useAppStore";
 import type { Review } from "@/components/secretza/review/CreateReviewForm";
 
@@ -118,9 +119,8 @@ export default function ReviewList({ listingId }: ReviewListProps) {
 
   const handleHelpful = useCallback(async (reviewId: string) => {
     try {
-      await fetch(`/api/reviews/${reviewId}/helpful`, {
+      await apiFetch(`/api/reviews/${reviewId}/helpful`, {
         method: "POST",
-        credentials: "include",
       });
       // Optimistically update local state
       setReviews((prev) =>
@@ -135,9 +135,9 @@ export default function ReviewList({ listingId }: ReviewListProps) {
 
   const handleReport = useCallback(async (reviewId: string) => {
     try {
-      await fetch(`/api/reviews/${reviewId}/report`, {
+      await apiFetch(`/api/reviews/${reviewId}/report`, {
         method: "POST",
-        credentials: "include",
+        body: JSON.stringify({ reason: "other" }),
       });
     } catch {
       // Silently fail

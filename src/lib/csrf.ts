@@ -67,4 +67,21 @@ export function validateCsrfToken(
   }
 }
 
+/** Human-readable reason when CSRF validation fails. */
+export function describeCsrfValidationFailure(
+  headerToken: string | null,
+  cookieToken: string | null,
+): string {
+  if (!headerToken && !cookieToken) {
+    return "Missing x-csrf-token header and csrf_token cookie";
+  }
+  if (!headerToken) {
+    return "Missing x-csrf-token header";
+  }
+  if (!cookieToken) {
+    return "Missing csrf_token cookie — fetch GET /api/csrf first";
+  }
+  return "x-csrf-token header does not match csrf_token cookie";
+}
+
 export { CSRF_COOKIE_NAME, CSRF_HEADER_NAME };

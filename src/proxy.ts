@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken, type JWT } from "next-auth/jwt";
-import { validateCsrfToken, CSRF_COOKIE_NAME } from "@/lib/csrf";
+import { validateCsrfToken, CSRF_COOKIE_NAME, describeCsrfValidationFailure } from "@/lib/csrf";
 
 /** Routes that require any authenticated user */
 const protectedApiRoutes = [
@@ -117,6 +117,11 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next();
     }
 
+    // CSRF token issuance — must stay public
+    if (pathname === "/api/csrf") {
+      return NextResponse.next();
+    }
+
     const publicRoutes = [
       "/api/listings",
       "/api/categories",
@@ -196,11 +201,15 @@ export async function proxy(request: NextRequest) {
       const headerToken = request.headers.get("x-csrf-token");
       const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
       if (!validateCsrfToken(headerToken ?? null, cookieToken ?? null)) {
+        const details = describeCsrfValidationFailure(
+          headerToken ?? null,
+          cookieToken ?? null,
+        );
         return NextResponse.json(
           {
             error: "CSRF validation failed",
             field: "csrf",
-            details: "Missing or invalid x-csrf-token header",
+            details,
           },
           { status: 403 },
         );
