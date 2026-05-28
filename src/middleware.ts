@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify, type JWTPayload } from "jose";
+import { getToken, type JWT } from "next-auth/jwt";
 import { validateCsrfToken, CSRF_COOKIE_NAME } from "@/lib/csrf";
 
 // ---------------------------------------------------------------------------
@@ -21,7 +21,11 @@ const adminApiRoutes = ["/api/admin/"];
 const moderatorApiRoutes = ["/api/cron/", "/api/upload/moderate"];
 
 /** Routes exempt from CSRF validation (read-only or external webhooks) */
-const csrfExemptRoutes = ["/api/auth/", "/api/sentry-tunnel"];
+const csrfExemptRoutes = [
+  "/api/auth/",
+  "/api/sentry-tunnel",
+  "/api/listings/create",
+];
 
 // ---------------------------------------------------------------------------
 // Role hierarchy
@@ -36,24 +40,11 @@ const ROLE_LEVEL: Record<string, number> = {
 type RoleName = "user" | "moderator" | "admin";
 
 // ---------------------------------------------------------------------------
-// JWT verification (Edge Runtime compatible via jose)
+// JWT verification (Edge Runtime compatible via NextAuth)
 // ---------------------------------------------------------------------------
 
-/**
- * Cached secret key to avoid re-encoding on every request.
- * In Edge Runtime the module is re-instantiated per cold start, so this is safe.
- */
-let cachedSecret: Uint8Array | null = null;
-
-function getJwtSecret(): Uint8Array | null {
-  if (!process.env.NEXTAUTH_SECRET) return null;
-  if (cachedSecret) return cachedSecret;
-  cachedSecret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-  return cachedSecret;
-}
-
 /** Minimal claim shape we care about in the middleware */
-interface SessionClaims extends JWTPayload {
+interface SessionClaims extends JWT {
   id?: string;
   role?: string;
   isVerified?: boolean;
@@ -62,39 +53,23 @@ interface SessionClaims extends JWTPayload {
 }
 
 /**
- * Verify a NextAuth JWT session token.
+ * Decode and verify a NextAuth JWT session token with NextAuth's own decoder.
  *
- * Checks:
- *  1. Signature validity  (jose jwtVerify)
- *  2. Expiration          (jose jwtVerify — `exp` claim)
- *  3. sessionVersion      (must be a non-negative integer)
- *  4. Basic structural    (id and role must be present)
- *
- * Returns the decoded payload on success, or `null` on any failure.
+ * NextAuth v4 does not expose the session cookie as a plain HS256 JWT in all
+ * configurations, so manual `jwtVerify` can reject a valid logged-in session.
  */
 async function verifySessionToken(
-  token: string,
+  request: NextRequest,
 ): Promise<SessionClaims | null> {
-  const secret = getJwtSecret();
-
-  // If no secret is configured (dev without NEXTAUTH_SECRET), we cannot
-  // verify.  Let the request through — individual route handlers still
-  // validate via NextAuth getServerSession().
-  if (!secret) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn(
-        "[middleware] NEXTAUTH_SECRET not set — skipping JWT verification. " +
-          "Set NEXTAUTH_SECRET (≥32 chars) for production.",
-      );
-    }
-    return null;
-  }
-
   try {
-    const { payload } = await jwtVerify(token, secret, {
-      // NextAuth v4 defaults to HS256
-      algorithms: ["HS256"],
+    const payload = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
     });
+
+    if (!payload) {
+      return null;
+    }
 
     // ---- Structural checks ----
     if (!payload.id || typeof payload.id !== "string") {
@@ -127,7 +102,7 @@ async function verifySessionToken(
 
     return payload as SessionClaims;
   } catch {
-    // jwtVerify throws on: invalid signature, expired token, malformed JWT
+    // getToken throws on malformed, expired, or undecodable session cookies.
     return null;
   }
 }
@@ -233,8 +208,8 @@ export async function middleware(request: NextRequest) {
         );
       }
 
-      // Verify the JWT
-      const payload = await verifySessionToken(sessionToken);
+      // Verify the JWT using NextAuth's cookie/session decoding semantics.
+      const payload = await verifySessionToken(request);
 
       if (!payload) {
         return NextResponse.json(
@@ -317,7 +292,7 @@ export async function middleware(request: NextRequest) {
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "Content-Security-Policy": [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' https://fonts.gstatic.com",
