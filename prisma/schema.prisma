@@ -121,7 +121,8 @@ model Category {
   updatedAt     DateTime  @updatedAt
   parent        Category? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children      Category[] @relation("CategoryHierarchy")
-  listings      Listing[]
+  listings      Listing[] @relation("ListingCategory")
+  subcategoryListings Listing[] @relation("ListingSubcategory")
 
   @@index([isActive, isFeatured])
   @@index([isActive, listingCount(sort: Desc)])
@@ -173,12 +174,30 @@ model City {
   updatedAt    DateTime  @updatedAt
   state        State     @relation(fields: [stateId], references: [id], onDelete: Cascade)
   listings     Listing[]
+  areas        Area[]
   districts    District[]
 
   @@unique([slug, stateId])
   @@index([stateId, isActive])
   @@index([isActive, listingCount(sort: Desc)])
   @@index([isFeatured, isActive])
+}
+
+model Area {
+  id           String    @id @default(cuid())
+  name         String
+  slug         String
+  cityId       String
+  isActive     Boolean   @default(true)
+  listingCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  city         City      @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  listings     Listing[]
+
+  @@unique([slug, cityId])
+  @@index([cityId, isActive])
+  @@index([isActive, listingCount(sort: Desc)])
 }
 
 model District {
@@ -226,45 +245,59 @@ model Listing {
   slug             String         @unique
   description      String
   categorySlug     String
+  subcategorySlug  String?
   countrySlug      String
   stateSlug        String
   citySlug         String
+  area             String?
   localitySlug      String?
   tags             String         @default("[]")
+  services         String         @default("[]")
   price            String         // Decimal-safe: stored as string, parsed as number
   currency         String         @default("USD")
   contactEmail     String?
+  whatsapp         String?
   contactTelegram  String?
+  telegram         String?
   contactInstagram String?
   contactWebsite   String?
   contactText      String?
+  age              Int?
+  profileImage     String?
+  galleryImages    String         @default("[]")
   images           String         @default("[]")
   status           String         @default("pending")
   isFeatured       Boolean        @default(false)
   isBoosted        Boolean        @default(false)
+  isPremium        Boolean        @default(false)
   featuredUntil    DateTime?
   boostUntil       DateTime?
   lastBumpedAt     DateTime?
   priorityScore    Float          @default(0)
   expiresAt        DateTime?
   riskScore        Int            @default(0)
+  views            Int            @default(0)
   viewCount        Int            @default(0)
   reportCount      Int            @default(0)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   userId           String?
   categoryId       String
+  subcategoryId    String?
   countryId        String
   stateId          String?
   cityId           String
+  areaId           String?
   districtId       String?
   localityId       String?
   city             City           @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  areaRelation     Area?          @relation(fields: [areaId], references: [id], onDelete: SetNull)
   district         District?      @relation(fields: [districtId], references: [id], onDelete: Cascade)
   locality         Locality?     @relation(fields: [localityId], references: [id], onDelete: Cascade)
   state            State?          @relation(fields: [stateId], references: [id], onDelete: Cascade)
   country          Country        @relation(fields: [countryId], references: [id], onDelete: Cascade)
-  category         Category       @relation(fields: [categoryId], references: [id])
+  category         Category       @relation("ListingCategory", fields: [categoryId], references: [id])
+  subcategory      Category?      @relation("ListingSubcategory", fields: [subcategoryId], references: [id])
   user             User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
   listingImages    ListingImage[]
   payments         Payment[]
@@ -275,9 +308,11 @@ model Listing {
   @@index([userId, status])
   @@index([userId, createdAt(sort: Desc)])
   @@index([categoryId])
+  @@index([subcategoryId])
   @@index([countryId])
   @@index([stateId])
   @@index([cityId])
+  @@index([areaId])
   @@index([categorySlug, citySlug, status])
   @@index([citySlug, status])
   @@index([localitySlug, status])
@@ -408,6 +443,55 @@ model PaymentSettings {
 }
 
 // ============================================================================
+// Pricing Plans
+// ============================================================================
+
+model PricingPlan {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  price         Float
+  currency      String   @default("INR")
+  durationDays  Int
+  featuredDays  Int      @default(0)
+  boostDays     Int      @default(0)
+  listingLimit  Int      @default(1)
+  imageLimit    Int      @default(5)
+  premiumBadge  Boolean  @default(false)
+  priorityScore Float    @default(0)
+  features      String   @default("[]")
+  isActive      Boolean  @default(true)
+  isPopular     Boolean  @default(false)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+// ============================================================================
+// CMS Pages
+// ============================================================================
+
+model CmsPage {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  content         String
+  excerpt         String?
+  seoTitle        String?
+  metaDescription String?
+  isPublished     Boolean  @default(false)
+  publishedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isPublished, slug])
+  @@index([updatedAt(sort: Desc)])
+}
+
+// ============================================================================
 // Reports (User-facing listing reports)
 // ============================================================================
 
@@ -420,6 +504,7 @@ model ListingReport {
   isResolved  Boolean   @default(false)
   resolvedBy  String?
   resolvedAt  DateTime?
+  moderatorNotes String?
   createdAt   DateTime  @default(now())
   listing     Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
   reporter    User      @relation(fields: [userId], references: [id], onDelete: Cascade)

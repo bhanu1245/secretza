@@ -1,10 +1,26 @@
 'use client';
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigationStore, useUIStore, useAuthStore } from "@/store/useAppStore";
 import { useListing, useListings, useCategories } from "@/hooks/useApiData";
-import { pricingPackages } from "@/lib/config";
+
+type PricingPlan = {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  currency: string;
+  durationDays: number;
+  featuredDays: number;
+  boostDays: number;
+  listingLimit: number;
+  imageLimit: number;
+  premiumBadge: boolean;
+  priorityScore: number;
+  features: string[];
+  isPopular: boolean;
+};
 
 // Layout
 import Header from "@/components/secretza/layout/Header";
@@ -136,12 +152,33 @@ function CategoryPage({ slug }: { slug: string }) {
 }
 
 // ==========================================
-// Pricing Page — Uses pricingPackages from config
+// Pricing Page — Fetches real plans from the database
 // ==========================================
 function PricingPage() {
   const navigate = useNavigationStore((s) => s.navigate);
   const { isAuthenticated, setAuthModalOpen, setAuthModalTab } = useAuthStore();
-  const handleSelectPackage = (pkg: typeof pricingPackages[0]) => {
+  const [plans, setPlans] = useState<PricingPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    fetch("/api/pricing-plans")
+      .then((res) => res.json())
+      .then((data) => {
+        if (mounted) setPlans(data.plans || []);
+      })
+      .catch(() => {
+        if (mounted) setPlans([]);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleSelectPackage = (pkg: PricingPlan) => {
     if (!isAuthenticated) {
       setAuthModalTab("register");
       setAuthModalOpen(true);
@@ -163,8 +200,16 @@ function PricingPage() {
           Select the perfect plan to boost your visibility and reach more potential clients.
         </p>
       </div>
+      {loading ? (
+        <div className="text-center text-muted-foreground py-16">Loading pricing plans...</div>
+      ) : plans.length === 0 ? (
+        <div className="rounded-xl border border-border bg-surface p-10 text-center">
+          <p className="text-foreground font-medium">No active pricing plans are available.</p>
+          <p className="text-sm text-muted-foreground mt-1">Please check back soon or contact support.</p>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {pricingPackages.map((pkg: typeof pricingPackages[0]) => (
+        {plans.map((pkg) => (
           <motion.div
             key={pkg.id}
             whileHover={{ y: -4 }}
@@ -186,10 +231,16 @@ function PricingPage() {
                 <span className="text-3xl font-bold text-foreground">Free</span>
               ) : (
                 <>
-                  <span className="text-3xl font-bold text-foreground">${pkg.price}</span>
-                  <span className="text-sm text-muted-foreground">/{pkg.duration}d</span>
+                  <span className="text-3xl font-bold text-foreground">{pkg.currency} {pkg.price}</span>
+                  <span className="text-sm text-muted-foreground">/{pkg.durationDays}d</span>
                 </>
               )}
+            </div>
+            <div className="mb-4 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+              <span>{pkg.listingLimit} listings</span>
+              <span>{pkg.imageLimit} images</span>
+              <span>{pkg.featuredDays} featured days</span>
+              <span>{pkg.boostDays} boost days</span>
             </div>
             <ul className="flex-1 space-y-2.5 mb-6">
               {pkg.features.map((feature: string, i: number) => (
@@ -214,6 +265,7 @@ function PricingPage() {
           </motion.div>
         ))}
       </div>
+      )}
     </div>
   );
 }

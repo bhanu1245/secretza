@@ -83,6 +83,10 @@ import SeoManager from "@/components/secretza/admin/SeoManager";
 import SeoDashboard from "@/components/secretza/admin/SeoDashboard";
 import { AdminReviewQueue, AdminReviewAnalytics } from "@/components/secretza/admin/AdminReviewPanel";
 import CategoryManager from "@/components/secretza/admin/CategoryManager";
+import { getListingCoverImage } from "@/lib/listing-images";
+import AdminPricingPlans from "@/components/secretza/admin/AdminPricingPlans";
+import AdminCmsPages from "@/components/secretza/admin/AdminCmsPages";
+import AdminReportsPage from "@/components/secretza/admin/AdminReportsPage";
 
 // ==========================================
 // Types
@@ -1361,17 +1365,24 @@ function AdminModerationPage() {
             <div className="space-y-4">
               {items.map((item) => {
                 const risk = getRiskBadge(item.riskScore);
+                const coverImage = getListingCoverImage(item.listing);
                 return (
                   <Card key={item.listing.id} className="bg-[#15151D] border-[rgba(255,255,255,0.08)] hover:border-[rgba(124,58,237,0.2)] transition-all">
                     <CardContent className="p-4">
                       <div className="flex flex-col lg:flex-row gap-4">
                         {/* Listing Preview */}
                         <div className="flex items-start gap-4 flex-1 min-w-0">
-                          <img
-                            src={item.listing.listingImages?.[0]?.url}
-                            alt=""
-                            className="w-20 h-24 rounded-lg object-cover flex-shrink-0"
-                          />
+                          {coverImage ? (
+                            <img
+                              src={coverImage.thumbnailUrl || coverImage.url}
+                              alt={coverImage.alt || item.listing.title}
+                              className="w-20 h-24 rounded-lg object-cover flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-20 h-24 rounded-lg bg-[#0B0B0F] flex items-center justify-center flex-shrink-0">
+                              <ImageIcon className="size-5 text-[#52525B]" />
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <div>
@@ -2530,7 +2541,7 @@ export default function AdminPanel() {
       case "geo":
         return <AdminGeoPage />;
       case "pricing":
-        return <PlaceholderPage title="Pricing" description="Configure pricing packages and features." />;
+        return <AdminPricingPlans />;
       case "payments":
         return <ManualPaymentQueue />;
       case "reviews":
@@ -2540,9 +2551,9 @@ export default function AdminPanel() {
       case "coupons":
         return <PlaceholderPage title="Coupons" description="Create and manage discount coupons." />;
       case "cms":
-        return <PlaceholderPage title="CMS Pages" description="Manage static pages and content." />;
+        return <AdminCmsPages />;
       case "reports":
-        return <PlaceholderPage title="Reports" description="View detailed analytics and reports." />;
+        return <AdminReportsPage />;
       case "seo":
         return <SeoManager />;
       case "seo-dashboard":

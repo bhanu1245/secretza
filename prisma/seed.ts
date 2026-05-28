@@ -14,6 +14,7 @@
 import { PrismaClient } from "@prisma/client";
 import { UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 import { seedGeoData } from "../src/lib/seed-geo";
 
 const db = new PrismaClient();
@@ -23,6 +24,64 @@ const DEFAULT_ADMIN = {
   password: "Admin@123",
   name: "Secretza Admin",
 };
+
+const PRICING_PLANS = [
+  {
+    name: "Basic",
+    slug: "basic",
+    description: "Standard listing visibility for new posts",
+    price: 0,
+    durationDays: 7,
+    featuredDays: 0,
+    boostDays: 0,
+    listingLimit: 1,
+    imageLimit: 3,
+    premiumBadge: false,
+    priorityScore: 0,
+    features: ["1 active listing", "3 images", "7-day duration", "Basic search visibility"],
+    sortOrder: 1,
+  },
+  {
+    name: "Featured",
+    slug: "featured",
+    description: "Better placement with featured visibility",
+    price: 999,
+    durationDays: 14,
+    featuredDays: 14,
+    boostDays: 3,
+    listingLimit: 1,
+    imageLimit: 8,
+    premiumBadge: false,
+    priorityScore: 25,
+    features: ["Featured badge", "8 images", "Priority in category pages", "3 boost days"],
+    isPopular: true,
+    sortOrder: 2,
+  },
+  {
+    name: "Premium",
+    slug: "premium",
+    description: "Maximum visibility with premium badge and boosts",
+    price: 2499,
+    durationDays: 30,
+    featuredDays: 30,
+    boostDays: 10,
+    listingLimit: 5,
+    imageLimit: 20,
+    premiumBadge: true,
+    priorityScore: 75,
+    features: ["Premium badge", "5 listings", "20 images per listing", "Top search priority", "10 boost days"],
+    sortOrder: 3,
+  },
+];
+
+const CMS_PAGES = [
+  { title: "Terms & Conditions", slug: "terms", excerpt: "Rules for using Secretza.", content: "<p>These Terms & Conditions govern your use of Secretza. Users must comply with all applicable laws and platform policies.</p>" },
+  { title: "Privacy Policy", slug: "privacy", excerpt: "How Secretza handles user data.", content: "<p>Secretza respects your privacy and only collects data needed to operate the platform, provide support, and keep users safe.</p>" },
+  { title: "About Us", slug: "about", excerpt: "Learn about Secretza.", content: "<p>Secretza is a premium classified platform focused on secure publishing, moderation, and discoverability.</p>" },
+  { title: "Contact", slug: "contact", excerpt: "Contact Secretza support.", content: "<p>For support, moderation, or business inquiries, contact the Secretza admin team.</p>" },
+  { title: "Safety Tips", slug: "safety-tips", excerpt: "Practical safety guidance.", content: "<p>Always verify information, protect your privacy, and report suspicious behavior to moderators.</p>" },
+  { title: "FAQ", slug: "faq", excerpt: "Common Secretza questions.", content: "<p>Find answers about listings, moderation, upgrades, payments, and account safety.</p>" },
+];
 
 // ==========================================
 // Categories
@@ -111,6 +170,87 @@ async function seedDefaultAdmin() {
   console.log(`   ✅ Admin ready: ${admin.email} (${admin.role})`);
 }
 
+async function seedPricingPlans() {
+  console.log(`\n💳 Seeding ${PRICING_PLANS.length} pricing plans...`);
+  for (const plan of PRICING_PLANS) {
+    const existing = await db.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM PricingPlan WHERE slug = ${plan.slug} LIMIT 1
+    `;
+    const now = new Date();
+    if (existing[0]) {
+      await db.$executeRaw`
+        UPDATE PricingPlan SET
+          name = ${plan.name},
+          description = ${plan.description},
+          price = ${plan.price},
+          currency = ${"INR"},
+          durationDays = ${plan.durationDays},
+          featuredDays = ${plan.featuredDays},
+          boostDays = ${plan.boostDays},
+          listingLimit = ${plan.listingLimit},
+          imageLimit = ${plan.imageLimit},
+          premiumBadge = ${plan.premiumBadge ? 1 : 0},
+          priorityScore = ${plan.priorityScore},
+          features = ${JSON.stringify(plan.features)},
+          isActive = ${1},
+          isPopular = ${plan.isPopular ? 1 : 0},
+          sortOrder = ${plan.sortOrder},
+          updatedAt = ${now}
+        WHERE id = ${existing[0].id}
+      `;
+    } else {
+      await db.$executeRaw`
+        INSERT INTO PricingPlan (
+          id, name, slug, description, price, currency, durationDays, featuredDays,
+          boostDays, listingLimit, imageLimit, premiumBadge, priorityScore, features,
+          isActive, isPopular, sortOrder, createdAt, updatedAt
+        ) VALUES (
+          ${randomUUID()}, ${plan.name}, ${plan.slug}, ${plan.description}, ${plan.price}, ${"INR"},
+          ${plan.durationDays}, ${plan.featuredDays}, ${plan.boostDays}, ${plan.listingLimit},
+          ${plan.imageLimit}, ${plan.premiumBadge ? 1 : 0}, ${plan.priorityScore},
+          ${JSON.stringify(plan.features)}, ${1}, ${plan.isPopular ? 1 : 0}, ${plan.sortOrder}, ${now}, ${now}
+        )
+      `;
+    }
+  }
+  console.log("   ✅ Pricing plans ready");
+}
+
+async function seedCmsPages() {
+  console.log(`\n📄 Seeding ${CMS_PAGES.length} CMS pages...`);
+  for (const page of CMS_PAGES) {
+    const existing = await db.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM CmsPage WHERE slug = ${page.slug} LIMIT 1
+    `;
+    const now = new Date();
+    if (existing[0]) {
+      await db.$executeRaw`
+        UPDATE CmsPage SET
+          title = ${page.title},
+          excerpt = ${page.excerpt},
+          content = ${page.content},
+          seoTitle = ${`${page.title} | Secretza`},
+          metaDescription = ${page.excerpt},
+          isPublished = ${1},
+          publishedAt = ${now},
+          updatedAt = ${now}
+        WHERE id = ${existing[0].id}
+      `;
+    } else {
+      await db.$executeRaw`
+        INSERT INTO CmsPage (
+          id, title, slug, content, excerpt, seoTitle, metaDescription,
+          isPublished, publishedAt, createdAt, updatedAt
+        ) VALUES (
+          ${randomUUID()}, ${page.title}, ${page.slug}, ${page.content}, ${page.excerpt},
+          ${`${page.title} | Secretza`}, ${page.excerpt}, ${1}, ${now}, ${now}, ${now}
+        )
+      `;
+    }
+  }
+  console.log("   ✅ CMS pages ready");
+}
+
 async function main() {
   console.log("🌱 Secretza Master Seed\n");
 
@@ -122,6 +262,10 @@ async function main() {
 
   // 2. Seed categories
   await seedCategories();
+
+  // 3. Seed pricing and CMS defaults
+  await seedPricingPlans();
+  await seedCmsPages();
 
   console.log("\n🎉 All seed data complete!");
 }

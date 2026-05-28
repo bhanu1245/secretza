@@ -17,37 +17,62 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    const { action } = body as { action: "resolve" | "dismiss" };
+    const { action, moderatorNotes } = body as {
+      action: "resolve" | "dismiss" | "suspend_listing" | "suspend_user";
+      moderatorNotes?: string;
+    };
 
-    if (action !== "resolve" && action !== "dismiss") {
-      return NextResponse.json({ error: "Action must be 'resolve' or 'dismiss'" }, { status: 400 });
+    if (!["resolve", "dismiss", "suspend_listing", "suspend_user"].includes(action)) {
+      return NextResponse.json({ error: "Invalid report action" }, { status: 400 });
     }
 
     const report = await db.listingReport.findUnique({
       where: { id },
-      select: { id: true, listingId: true },
+      include: { listing: { select: { id: true, userId: true } } },
     });
 
     if (!report) {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
 
-    const updated = await db.listingReport.update({
-      where: { id },
-      data: {
-        isResolved: true,
-        resolvedBy: admin.id,
-        resolvedAt: new Date(),
-      },
+    const updated = await db.$transaction(async (tx) => {
+      if (action === "suspend_listing") {
+        await tx.listing.update({
+          where: { id: report.listingId },
+          data: { status: "rejected" },
+        });
+      }
+
+      if (action === "suspend_user" && report.listing.userId) {
+        await tx.user.update({
+          where: { id: report.listing.userId },
+          data: { isSuspended: true, sessionVersion: { increment: 1 } },
+        });
+      }
+
+      const updatedReport = await tx.listingReport.update({
+        where: { id },
+        data: {
+          isResolved: true,
+          resolvedBy: admin.id,
+          resolvedAt: new Date(),
+        },
+      });
+      await tx.$executeRaw`
+        UPDATE ListingReport
+        SET moderatorNotes = ${moderatorNotes ? String(moderatorNotes) : null}
+        WHERE id = ${id}
+      `;
+      return updatedReport;
     });
 
     // Audit log the report resolution
     logAdminAction(
       admin.id,
-      `report_${action}`,
+      `report_${action}` as any,
       "ListingReport",
       id,
-      { action, listingId: report.listingId },
+      { action, listingId: report.listingId, moderatorNotes },
       extractIpAddress(request)
     );
 

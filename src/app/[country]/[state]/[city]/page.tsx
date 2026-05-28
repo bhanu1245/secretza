@@ -113,7 +113,7 @@ function serializeListing(l: {
   viewCount: number;
   createdAt: Date;
   updatedAt: Date;
-  user: { id: string; name: string | null; image: string | null; isVerified: boolean };
+  user: { id: string; name: string | null; image: string | null; isVerified: boolean } | null;
   category: { id: string; name: string; slug: string; color: string };
   country: { id: string; name: string; slug: string };
   state: { id: string; name: string; slug: string } | null;
@@ -129,6 +129,8 @@ function serializeListing(l: {
     blurHash: string | null;
   }>;
   _count: { reviews: number };
+  profileImage?: string | null;
+  galleryImages?: string | null;
 }): Listing {
   let tags: string[] = [];
   try {
@@ -163,12 +165,18 @@ function serializeListing(l: {
     expiresAt: null,
     viewCount: l.viewCount,
     createdAt: l.createdAt.toISOString(),
-    user: { id: l.user.id, name: l.user.name, avatar: l.user.image },
+    user: {
+      id: l.user?.id || "",
+      name: l.user?.name || "Unknown user",
+      avatar: l.user?.image || null,
+    },
     category: l.category as any,
     country: l.country as any,
     state: (l.state || { id: "", name: "", slug: "", countryId: "", isActive: true, listingCount: 0 }) as any,
     city: l.city as any,
     images: legacyImages,
+    profileImage: l.profileImage,
+    galleryImages: l.galleryImages || undefined,
     listingImages: l.listingImages as any,
     reviewCount: l._count.reviews,
   };
@@ -196,7 +204,12 @@ export default async function CityPage({ params }: CityPageProps) {
     notFound();
   }
 
-  const total = city._count.listings;
+  const total = await db.listing.count({
+    where: {
+      status: "approved",
+      cityId: city.id,
+    },
+  });
   const countryName = city.state.country.name;
   const stateName = city.state.name;
   const countrySlugActual = city.state.country.slug;
@@ -205,9 +218,7 @@ export default async function CityPage({ params }: CityPageProps) {
   // Fetch listings (limit 24)
   const listings = await db.listing.findMany({
     where: {
-      citySlug,
-      stateSlug: stateSlugActual,
-      countrySlug: countrySlugActual,
+      cityId: city.id,
       status: "approved",
     },
     include: {

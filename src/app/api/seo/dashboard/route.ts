@@ -3,13 +3,7 @@ import { requireMinRole } from '@/lib/auth-helpers';
 import { scoreAllPages } from '@/lib/indexation-scorer';
 import { getCrawlStats } from '@/lib/crawl-analytics';
 import { db } from '@/lib/db';
-import { indiaCities, indiaStates } from '@/lib/india-geo-data';
 import { logError } from '@/lib/monitoring';
-
-const CATEGORIES = [
-  'escorts', 'massage', 'dating', 'trans', 'male-escorts',
-  'couples', 'adult-jobs', 'adult-services', 'webcam', 'phone-chat',
-];
 
 export async function GET(request: NextRequest) {
   try {
@@ -80,95 +74,108 @@ export async function GET(request: NextRequest) {
       ]);
 
     const seoPagesTotal = seoPagesGrouped.reduce((sum, g) => sum + g._count.id, 0);
+    const [
+      countryCount,
+      stateCount,
+      cityCount,
+      categoryCount,
+      approvedListings,
+      pendingListings,
+      totalListings,
+      userCount,
+      cmsPageRows,
+      cityRows,
+      categoryRows,
+    ] = await Promise.all([
+      db.country.count({ where: { isActive: true } }),
+      db.state.count({ where: { isActive: true } }),
+      db.city.count({ where: { isActive: true } }),
+      db.category.count({ where: { isActive: true } }),
+      db.listing.count({ where: { status: 'approved' } }),
+      db.listing.count({ where: { status: 'pending' } }),
+      db.listing.count(),
+      db.user.count(),
+      db.$queryRaw<Array<{ slug: string; isPublished: number }>>`
+        SELECT slug, isPublished FROM CmsPage
+      `.catch(() => []),
+      db.city.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          state: { select: { slug: true, country: { select: { slug: true } } } },
+          _count: { select: { listings: { where: { status: 'approved' } } } },
+        },
+        orderBy: { updatedAt: 'desc' },
+      }),
+      db.category.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true, slug: true },
+      }),
+    ]);
 
     // ---- Sitemap stats ----
-    const tier1Cities = indiaCities.filter((c) => c.tier === 1);
-    const tier2Cities = indiaCities.filter((c) => c.tier === 2);
-    const tier3Cities = indiaCities.filter((c) => c.tier === 3);
+    const publishedCmsPages = cmsPageRows.filter((page) => Boolean(page.isPublished)).length;
+    const cityCategoryUrls = cityRows.length * categoryRows.length;
     const sitemapTotalUrls =
-      indiaStates.length +
-      indiaCities.length +
-      CATEGORIES.length +
-      tier1Cities.length * CATEGORIES.length +
-      tier2Cities.length * CATEGORIES.length;
+      countryCount +
+      stateCount +
+      cityCount +
+      categoryCount +
+      cityCategoryUrls +
+      approvedListings +
+      publishedSeoPages +
+      publishedCmsPages;
 
     // Approximate chunks: 50k URLs per sitemap chunk
     const sitemapChunks = Math.max(1, Math.ceil(sitemapTotalUrls / 50000));
 
     const sitemapBreakdown = [
-      { section: 'States', count: indiaStates.length },
-      { section: 'Cities', count: indiaCities.length },
-      { section: 'Categories', count: CATEGORIES.length },
-      { section: 'City-Category (Tier 1)', count: tier1Cities.length * CATEGORIES.length },
-      { section: 'City-Category (Tier 2)', count: tier2Cities.length * CATEGORIES.length },
-      { section: 'Country', count: 1 },
+      { section: 'Countries', count: countryCount },
+      { section: 'States', count: stateCount },
+      { section: 'Cities', count: cityCount },
+      { section: 'Categories', count: categoryCount },
+      { section: 'City-Category', count: cityCategoryUrls },
+      { section: 'Listings', count: approvedListings },
+      { section: 'CMS Pages', count: publishedCmsPages },
+      { section: 'SEO Pages', count: publishedSeoPages },
     ];
 
     // ---- Duplicate risk ----
     const duplicateRisk: Array<{ slug: string; type: string; duplicates: string[]; risk: string }> = [];
-    const slugMap = new Map<string, { city: (typeof indiaCities)[0]; alias: string }[]>();
-
-    for (const city of indiaCities) {
-      for (const alias of city.aliases) {
-        const normalized = alias.toLowerCase().replace(/\s+/g, '-');
-        if (!slugMap.has(normalized)) {
-          slugMap.set(normalized, []);
-        }
-        slugMap.get(normalized)!.push({ city, alias });
-      }
+    const slugMap = new Map<string, string[]>();
+    for (const city of cityRows) {
+      const key = city.slug.toLowerCase();
+      slugMap.set(key, [...(slugMap.get(key) || []), `city:${city.id}`]);
     }
-
-    for (const [slug, entries] of slugMap) {
-      if (entries.length > 1) {
-        // Multiple cities share the same alias slug — potential duplicate
-        const duplicateSlugs = entries.map((e) => e.city.slug);
-        const allSame = entries.every((e) => e.city.slug === entries[0].city.slug);
-        if (!allSame) {
-          duplicateRisk.push({
-            slug,
-            type: 'alias_conflict',
-            duplicates: duplicateSlugs,
-            risk: 'high',
-          });
-        }
-      }
-      // Check if alias slug collides with an actual city slug
-      const matchingCity = indiaCities.find((c) => c.slug === slug);
-      if (matchingCity && entries.some((e) => e.city.slug !== slug)) {
+    for (const category of categoryRows) {
+      const key = category.slug.toLowerCase();
+      slugMap.set(key, [...(slugMap.get(key) || []), `category:${category.id}`]);
+    }
+    for (const page of cmsPageRows) {
+      const key = page.slug.toLowerCase();
+      slugMap.set(key, [...(slugMap.get(key) || []), `cms:${page.slug}`]);
+    }
+    for (const [slug, owners] of slugMap) {
+      if (owners.length > 1) {
         duplicateRisk.push({
           slug,
-          type: 'alias_collision',
-          duplicates: [matchingCity.slug, ...entries.map((e) => e.city.slug).filter((s) => s !== slug)],
+          type: 'slug_collision',
+          duplicates: owners,
           risk: 'high',
         });
       }
     }
 
-    // Also check for city names that are substrings of other city names
-    const cityNames = indiaCities.map((c) => c.name.toLowerCase());
-    for (const city of indiaCities.filter((c) => c.tier <= 3)) {
-      const name = city.name.toLowerCase();
-      const similar = indiaCities.filter(
-        (c) => c.slug !== city.slug && (c.name.toLowerCase().includes(name) || name.includes(c.name.toLowerCase()))
-      );
-      if (similar.length > 0 && similar.length <= 3) {
-        const existing = duplicateRisk.find((d) => d.slug === city.slug);
-        if (!existing) {
-          duplicateRisk.push({
-            slug: city.slug,
-            type: 'name_similarity',
-            duplicates: similar.map((s) => s.slug),
-            risk: 'medium',
-          });
-        }
-      }
-    }
-
     // ---- Top landing pages ----
+    const cityBySlug = new Map(cityRows.map((city) => [city.slug, city]));
     const topLandingPages = topLandingListings.map((item) => {
-      const city = indiaCities.find((c) => c.slug === item.citySlug);
+      const city = cityBySlug.get(item.citySlug);
+      const countrySlug = city?.state.country.slug || 'country';
+      const stateSlug = city?.state.slug || 'state';
       return {
-        url: `https://secretza.com/${item.citySlug}`,
+        url: city ? `/${countrySlug}/${stateSlug}/${city.slug}` : `/search?city=${item.citySlug}`,
         title: city ? `${city.name} Classifieds` : item.citySlug,
         type: 'city',
         listings: item._count.id,
@@ -271,6 +278,10 @@ export async function GET(request: NextRequest) {
         noindex: noindexSeoPages,
         withCustomContent: seoPagesWithCustom,
         withFaqs: seoPagesWithFaqs,
+        listings: totalListings,
+        approvedListings,
+        pendingListings,
+        users: userCount,
       },
       duplicateRisk: duplicateRisk.slice(0, 20),
       topLandingPages,
