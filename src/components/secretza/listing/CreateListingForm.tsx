@@ -27,6 +27,8 @@ type ListingFormValues = {
   age: string;
   whatsapp: string;
   telegram: string;
+  contactEmail: string;
+  contactPhone: string;
   categorySlug: string;
   subcategorySlug: string;
   countrySlug: string;
@@ -81,6 +83,8 @@ const emptyValues: ListingFormValues = {
   age: "",
   whatsapp: "",
   telegram: "",
+  contactEmail: "",
+  contactPhone: "",
   categorySlug: "",
   subcategorySlug: "",
   countrySlug: "",
@@ -215,8 +219,10 @@ export default function CreateListingForm({
           slug: listing.slug || "",
           description: listing.description || "",
           age: listing.age?.toString() || "",
-          whatsapp: listing.whatsapp || "",
+          whatsapp: listing.contact?.whatsapp || listing.whatsapp || "",
           telegram: listing.contact?.telegram || listing.telegram || "",
+          contactEmail: listing.contact?.email || listing.contactEmail || "",
+          contactPhone: listing.contact?.phone || listing.contactText || "",
           categorySlug: listing.category?.slug || "",
           subcategorySlug: listing.subcategory?.slug || "",
           countrySlug: listing.country?.slug || "",
@@ -331,6 +337,8 @@ export default function CreateListingForm({
         age: values.age || null,
         whatsapp: values.whatsapp || null,
         telegram: values.telegram || null,
+        contactEmail: values.contactEmail || null,
+        contactPhone: values.contactPhone || null,
         categorySlug: values.categorySlug,
         subcategorySlug: values.subcategorySlug || null,
         countrySlug: values.countrySlug,
@@ -385,10 +393,12 @@ export default function CreateListingForm({
           <Input label="Title" value={values.title} onChange={(value) => updateField("title", value)} required />
           <Input label="Slug" value={values.slug} onChange={(value) => updateField("slug", slugify(value))} />
           <Textarea label="Description" value={values.description} onChange={(value) => updateField("description", value)} required />
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <Input label="Age" type="number" value={values.age} onChange={(value) => updateField("age", value)} />
             <Input label="WhatsApp" value={values.whatsapp} onChange={(value) => updateField("whatsapp", value)} />
             <Input label="Telegram" value={values.telegram} onChange={(value) => updateField("telegram", value)} />
+            <Input label="Mobile Phone" value={values.contactPhone} onChange={(value) => updateField("contactPhone", value)} />
+            <Input label="Email" type="email" value={values.contactEmail} onChange={(value) => updateField("contactEmail", value)} />
           </div>
         </Section>
 

@@ -4,12 +4,17 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createStorageService } from "@/lib/storage";
 import { logError } from "@/lib/monitoring";
-import {
-  computePriorityScore,
+import { computePriorityScore,
   getRankLabel,
   isBoostActive,
   isFeaturedActive,
 } from "@/lib/ranking-engine";
+import {
+  serializeListingContact,
+  sanitizeEmail,
+  sanitizePhone,
+  sanitizeTelegram,
+} from "@/lib/listing-contact";
 
 function safeJsonParse(str: unknown, fallback: unknown): unknown {
   if (typeof str !== 'string') return fallback;
@@ -77,6 +82,8 @@ export async function GET(
   const computedScore = computePriorityScore(rankInput);
   const rankLabel = getRankLabel(rankInput, computedScore);
 
+  const contactFields = serializeListingContact(listing as any);
+
   return NextResponse.json({
     id: listing.id,
     title: listing.title,
@@ -93,13 +100,7 @@ export async function GET(
     services: safeJsonParse((listing as any).services, []),
     price: listing.price,
     currency: listing.currency,
-    contact: {
-      email: listing.contactEmail,
-      telegram: listing.contactTelegram,
-      instagram: listing.contactInstagram,
-      website: listing.contactWebsite,
-      customText: listing.contactText,
-    },
+    ...contactFields,
     images: safeJsonParse(listing.images, []),
     profileImage: (listing as any).profileImage,
     galleryImages: safeJsonParse((listing as any).galleryImages, []),
@@ -111,8 +112,8 @@ export async function GET(
       (safeJsonParse(listing.images, []) as any[])[0]?.url ||
       null,
     age: (listing as any).age,
-    whatsapp: (listing as any).whatsapp,
-    telegram: (listing as any).telegram,
+    whatsapp: contactFields.whatsapp,
+    telegram: contactFields.telegram,
     listingImages: listing.listingImages.map((img) => ({
       id: img.id,
       url: img.url,
@@ -198,6 +199,7 @@ export async function PUT(
       contactInstagram,
       contactWebsite,
       contactText,
+      contactPhone,
       images,
       imageIds,
     } = body;
@@ -379,13 +381,26 @@ export async function PUT(
         tags: tags !== undefined ? JSON.stringify(tags) : existing.tags,
         services: services !== undefined ? JSON.stringify(services) : (existing as any).services,
         age: age !== undefined && age !== "" ? Number(age) : (age === "" ? null : (existing as any).age),
-        whatsapp: whatsapp !== undefined ? whatsapp || null : (existing as any).whatsapp,
-        telegram: telegram !== undefined ? telegram || null : (existing as any).telegram,
-        contactEmail: contactEmail !== undefined ? contactEmail : existing.contactEmail,
-        contactTelegram: telegram !== undefined ? telegram || null : (contactTelegram !== undefined ? contactTelegram : existing.contactTelegram),
+        whatsapp:
+          whatsapp !== undefined ? sanitizePhone(whatsapp) ?? null : (existing as any).whatsapp,
+        telegram:
+          telegram !== undefined ? sanitizeTelegram(telegram) ?? null : (existing as any).telegram,
+        contactEmail:
+          contactEmail !== undefined ? sanitizeEmail(contactEmail) ?? null : existing.contactEmail,
+        contactTelegram:
+          telegram !== undefined
+            ? sanitizeTelegram(telegram) ?? null
+            : contactTelegram !== undefined
+              ? sanitizeTelegram(contactTelegram) ?? null
+              : existing.contactTelegram,
         contactInstagram: contactInstagram !== undefined ? contactInstagram : existing.contactInstagram,
         contactWebsite: contactWebsite !== undefined ? contactWebsite : existing.contactWebsite,
-        contactText: contactText !== undefined ? contactText : existing.contactText,
+        contactText:
+          contactPhone !== undefined
+            ? sanitizePhone(contactPhone) ?? null
+            : contactText !== undefined
+              ? sanitizePhone(contactText) || contactText || null
+              : existing.contactText,
         images: images !== undefined ? JSON.stringify(images) : existing.images,
         profileImage: profileImage !== undefined ? profileImage || null : (existing as any).profileImage,
         galleryImages: galleryImages !== undefined ? JSON.stringify(galleryImages) : (existing as any).galleryImages,

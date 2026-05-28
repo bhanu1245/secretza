@@ -6,12 +6,6 @@ import {
   Shield,
   Star,
   Eye,
-  Clock,
-  Mail,
-  Send,
-  Instagram,
-  Globe,
-  MessageSquare,
   Flag,
   ChevronLeft,
   ChevronRight,
@@ -37,6 +31,8 @@ import { useUIStore } from "@/store/useAppStore";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import ReviewList from "@/components/secretza/review/ReviewList";
+import ListingContactSection from "@/components/secretza/listing/ListingContactSection";
+import { normalizeListingContact } from "@/lib/listing-contact";
 import { getListingImages } from "@/lib/listing-images";
 
 interface ListingDetailProps {
@@ -131,6 +127,7 @@ export default function ListingDetail({
   const [mainImageLoaded, setMainImageLoaded] = useState(false);
 
   const images = getListingImages(listing);
+  const contact = normalizeListingContact(listing as any);
 
   const currentImage = images[selectedImageIndex] || images[0];
 
@@ -142,27 +139,6 @@ export default function ListingDetail({
   const handleNextImage = () => {
     setSelectedImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
     setMainImageLoaded(false);
-  };
-
-  const handleContactAction = (type: string, value?: string) => {
-    if (!value) return;
-    switch (type) {
-      case "email":
-        window.open(`mailto:${value}`, "_blank");
-        break;
-      case "telegram":
-        window.open(`https://t.me/${value.replace("@", "")}`, "_blank");
-        break;
-      case "instagram":
-        window.open(`https://instagram.com/${value.replace("@", "")}`, "_blank");
-        break;
-      case "website":
-        window.open(
-          value.startsWith("http") ? value : `https://${value}`,
-          "_blank"
-        );
-        break;
-    }
   };
 
   return (
@@ -381,73 +357,7 @@ export default function ListingDetail({
 
               <Separator className="bg-[rgba(255,255,255,0.08)]" />
 
-              {/* Contact Section */}
-              <div className="rounded-xl bg-surface p-4">
-                <h3 className="mb-3 text-sm font-semibold text-[#F5F5F7]">
-                  Contact Information
-                </h3>
-                <div className="flex flex-col gap-2">
-                  {listing.contact.email && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start gap-2 border-[rgba(255,255,255,0.08)] bg-[#1E1E2A] text-[#F5F5F7] hover:bg-violet/10 hover:text-violet hover:border-violet/30"
-                      onClick={() =>
-                        handleContactAction("email", listing.contact.email)
-                      }
-                    >
-                      <Mail className="size-4" />
-                      {listing.contact.email}
-                    </Button>
-                  )}
-                  {listing.contact.telegram && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start gap-2 border-[rgba(255,255,255,0.08)] bg-[#1E1E2A] text-[#F5F5F7] hover:bg-[#229ED9]/10 hover:text-[#229ED9] hover:border-[#229ED9]/30"
-                      onClick={() =>
-                        handleContactAction("telegram", listing.contact.telegram)
-                      }
-                    >
-                      <Send className="size-4" />
-                      {listing.contact.telegram}
-                    </Button>
-                  )}
-                  {listing.contact.instagram && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start gap-2 border-[rgba(255,255,255,0.08)] bg-[#1E1E2A] text-[#F5F5F7] hover:bg-[#E4405F]/10 hover:text-[#E4405F] hover:border-[#E4405F]/30"
-                      onClick={() =>
-                        handleContactAction(
-                          "instagram",
-                          listing.contact.instagram
-                        )
-                      }
-                    >
-                      <Instagram className="size-4" />
-                      {listing.contact.instagram}
-                    </Button>
-                  )}
-                  {listing.contact.website && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start gap-2 border-[rgba(255,255,255,0.08)] bg-[#1E1E2A] text-[#F5F5F7] hover:bg-violet/10 hover:text-violet hover:border-violet/30"
-                      onClick={() =>
-                        handleContactAction("website", listing.contact.website)
-                      }
-                    >
-                      <Globe className="size-4" />
-                      {listing.contact.website}
-                    </Button>
-                  )}
-                  {listing.contact.customText && (
-                    <div className="flex items-start gap-2 rounded-lg bg-[#1E1E2A] p-3">
-                      <MessageSquare className="mt-0.5 size-4 shrink-0 text-violet" />
-                      <span className="text-sm text-[#F5F5F7]/80">
-                        {listing.contact.customText}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <ListingContactSection contact={contact} className="bg-surface" />
 
               {/* Report */}
               <Button

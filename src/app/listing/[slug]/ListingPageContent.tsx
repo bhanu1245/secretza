@@ -8,11 +8,6 @@ import {
   Star,
   Eye,
   Clock,
-  Mail,
-  Send,
-  Instagram,
-  Globe,
-  MessageSquare,
   Flag,
   ChevronLeft,
   ChevronRight,
@@ -27,9 +22,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import StarRating from "@/components/secretza/review/StarRating";
 import ReviewList from "@/components/secretza/review/ReviewList";
-import ListingCard from "@/components/secretza/listing/ListingCard";
-import { buildCategoryUrl, buildCityUrl } from "@/lib/seo-ssr";
-import type { Listing } from "@/lib/types";
+import ListingContactSection from "@/components/secretza/listing/ListingContactSection";
+import { normalizeListingContact } from "@/lib/listing-contact";
+import { buildCategoryUrl } from "@/lib/seo-ssr";
 import { cn } from "@/lib/utils";
 import { getListingImages } from "@/lib/listing-images";
 
@@ -57,6 +52,7 @@ interface SerializedListing {
   contactWebsite: string | null;
   contactText: string | null;
   whatsapp: string | null;
+  telegram: string | null;
   age: number | null;
   user: { id: string; name: string | null; avatar: string | null; isVerified: boolean };
   category: { id: string; name: string; slug: string; color: string };
@@ -98,27 +94,6 @@ function useImages(listing?: SerializedListing) {
   });
 }
 
-function contactAction(type: string, value?: string | null) {
-  if (!value) return;
-  switch (type) {
-    case "email":
-      window.open(`mailto:${value}`, "_blank");
-      break;
-    case "telegram":
-      window.open(`https://t.me/${value.replace("@", "")}`, "_blank");
-      break;
-    case "instagram":
-      window.open(`https://instagram.com/${value.replace("@", "")}`, "_blank");
-      break;
-    case "website":
-      window.open(value.startsWith("http") ? value : `https://${value}`, "_blank");
-      break;
-    case "whatsapp":
-      window.open(`https://wa.me/${value.replace(/[^0-9]/g, "")}`, "_blank");
-      break;
-  }
-}
-
 // ------------------------------------------------------------------
 // Component
 // ------------------------------------------------------------------
@@ -126,6 +101,7 @@ export default function ListingPageContent({ listing }: ListingPageContentProps)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const images = useImages(listing);
   const currentImage = images[selectedImageIndex] || images[0];
+  const contact = normalizeListingContact(listing);
 
   const handlePrevImage = () => {
     setSelectedImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
@@ -306,73 +282,7 @@ export default function ListingPageContent({ listing }: ListingPageContentProps)
 
       {/* Right Column — Sidebar */}
       <div className="flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
-        {/* Contact Card */}
-        <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-surface p-5">
-          <h3 className="mb-4 text-base font-semibold text-foreground">
-            Contact Information
-          </h3>
-          <div className="flex flex-col gap-2">
-            {listing.whatsapp && (
-              <Button
-                className="w-full justify-start gap-2 bg-emerald-600 text-white hover:bg-emerald-700"
-                onClick={() => contactAction("whatsapp", listing.whatsapp)}
-              >
-                <MessageSquare className="size-4" />
-                WhatsApp
-              </Button>
-            )}
-            {listing.contactEmail && (
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2 border-[rgba(255,255,255,0.08)] bg-[#1E1E2A] text-foreground hover:bg-violet/10 hover:text-violet hover:border-violet/30"
-                onClick={() => contactAction("email", listing.contactEmail)}
-              >
-                <Mail className="size-4" />
-                {listing.contactEmail}
-              </Button>
-            )}
-            {listing.contactTelegram && (
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2 border-[rgba(255,255,255,0.08)] bg-[#1E1E2A] text-foreground hover:bg-[#229ED9]/10 hover:text-[#229ED9] hover:border-[#229ED9]/30"
-                onClick={() => contactAction("telegram", listing.contactTelegram)}
-              >
-                <Send className="size-4" />
-                {listing.contactTelegram}
-              </Button>
-            )}
-            {listing.contactInstagram && (
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2 border-[rgba(255,255,255,0.08)] bg-[#1E1E2A] text-foreground hover:bg-[#E4405F]/10 hover:text-[#E4405F] hover:border-[#E4405F]/30"
-                onClick={() =>
-                  contactAction("instagram", listing.contactInstagram)
-                }
-              >
-                <Instagram className="size-4" />
-                {listing.contactInstagram}
-              </Button>
-            )}
-            {listing.contactWebsite && (
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2 border-[rgba(255,255,255,0.08)] bg-[#1E1E2A] text-foreground hover:bg-violet/10 hover:text-violet hover:border-violet/30"
-                onClick={() => contactAction("website", listing.contactWebsite)}
-              >
-                <Globe className="size-4" />
-                {listing.contactWebsite}
-              </Button>
-            )}
-            {listing.contactText && (
-              <div className="flex items-start gap-2 rounded-lg bg-[#1E1E2A] p-3">
-                <MessageSquare className="mt-0.5 size-4 shrink-0 text-violet" />
-                <span className="text-sm text-foreground/80">
-                  {listing.contactText}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
+        <ListingContactSection contact={contact} />
 
         {/* Advertiser Card */}
         <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-surface p-5">

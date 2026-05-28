@@ -99,6 +99,8 @@ export interface ListingImageDB {
 export interface ContactInfo {
   email?: string;
   telegram?: string;
+  whatsapp?: string;
+  phone?: string;
   instagram?: string;
   website?: string;
   customText?: string;

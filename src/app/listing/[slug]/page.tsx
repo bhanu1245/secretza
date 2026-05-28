@@ -224,6 +224,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
     contactWebsite: listing.contactWebsite,
     contactText: listing.contactText,
     whatsapp: listing.whatsapp,
+    telegram: listing.telegram,
     age: listing.age,
     profileImage: listing.profileImage,
     galleryImages: listing.galleryImages,

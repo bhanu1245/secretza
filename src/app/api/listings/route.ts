@@ -10,6 +10,7 @@ import {
   isFeaturedActive,
 } from "@/lib/ranking-engine";
 import { rateLimit, RATE_LIMITS, getClientIp, getRateLimitHeaders } from "@/lib/rate-limit";
+import { serializeListingContact } from "@/lib/listing-contact";
 
 function safeJsonParse(str: unknown, fallback: unknown): unknown {
   if (typeof str !== 'string') return fallback;
@@ -208,6 +209,8 @@ export async function GET(request: Request) {
     const computedScore = computePriorityScore(rankInput);
     const rankLabel = getRankLabel(rankInput, computedScore);
 
+    const contactFields = serializeListingContact(l as any);
+
     return {
       id: l.id,
       title: l.title,
@@ -261,13 +264,14 @@ export async function GET(request: Request) {
       services: safeJsonParse((l as any).services, []),
       price: l.price,
       currency: l.currency,
-      contact: {
-        email: l.contactEmail,
-        telegram: l.contactTelegram,
-        instagram: l.contactInstagram,
-        website: l.contactWebsite,
-        customText: l.contactText,
-      },
+      contact: contactFields.contact,
+      whatsapp: contactFields.whatsapp,
+      telegram: contactFields.telegram,
+      contactEmail: contactFields.contactEmail,
+      contactTelegram: contactFields.contactTelegram,
+      contactText: contactFields.contactText,
+      contactInstagram: contactFields.contactInstagram,
+      contactWebsite: contactFields.contactWebsite,
       images: legacyImages,
       profileImage: (l as any).profileImage,
       galleryImages,

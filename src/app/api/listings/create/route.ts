@@ -3,6 +3,11 @@ import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import {
+  sanitizeEmail,
+  sanitizePhone,
+  sanitizeTelegram,
+} from "@/lib/listing-contact";
 
 const listingSchema = z.object({
   title: z.string().trim().min(5).max(120),
@@ -11,6 +16,8 @@ const listingSchema = z.object({
   age: z.coerce.number().int().min(18).max(99).optional().nullable(),
   whatsapp: z.string().trim().max(40).optional().nullable(),
   telegram: z.string().trim().max(100).optional().nullable(),
+  contactEmail: z.string().trim().max(120).optional().nullable(),
+  contactPhone: z.string().trim().max(40).optional().nullable(),
   categorySlug: z.string().trim().min(1),
   subcategorySlug: z.string().trim().optional().nullable(),
   countrySlug: z.string().trim().min(1),
@@ -138,6 +145,10 @@ export async function POST(req: Request) {
           .map((img) => String(img.url || ""))
           .filter(Boolean);
     const profileImage = body.profileImage || galleryImages[0] || null;
+    const whatsapp = sanitizePhone(body.whatsapp) ?? null;
+    const telegram = sanitizeTelegram(body.telegram) ?? null;
+    const contactEmail = sanitizeEmail(body.contactEmail) ?? null;
+    const contactText = sanitizePhone(body.contactPhone) ?? null;
 
     const listing = await db.listing.create({
       data: {
@@ -154,9 +165,11 @@ export async function POST(req: Request) {
         tags: JSON.stringify(body.tags),
         services: JSON.stringify(body.services),
         currency: body.currency.toUpperCase(),
-        whatsapp: body.whatsapp || null,
-        contactTelegram: body.telegram || null,
-        telegram: body.telegram || null,
+        whatsapp,
+        contactTelegram: telegram,
+        telegram,
+        contactEmail,
+        contactText,
         age: body.age ?? null,
         profileImage,
         galleryImages: JSON.stringify(galleryImages),
