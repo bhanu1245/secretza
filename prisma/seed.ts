@@ -12,9 +12,17 @@
 // ==========================================
 
 import { PrismaClient } from "@prisma/client";
+import { UserRole } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import { seedGeoData } from "../src/lib/seed-geo";
 
 const db = new PrismaClient();
+
+const DEFAULT_ADMIN = {
+  email: "admin@secretza.com",
+  password: "Admin@123",
+  name: "Secretza Admin",
+};
 
 // ==========================================
 // Categories
@@ -71,8 +79,43 @@ async function seedCategories() {
   console.log(`   ✅ Categories: ${created} created, ${updated} updated`);
 }
 
+async function seedDefaultAdmin() {
+  console.log(`\n🔐 Seeding default admin user...`);
+
+  const passwordHash = await bcrypt.hash(DEFAULT_ADMIN.password, 12);
+
+  const admin = await db.user.upsert({
+    where: { email: DEFAULT_ADMIN.email },
+    update: {
+      name: DEFAULT_ADMIN.name,
+      passwordHash,
+      role: UserRole.ADMIN,
+      isVerified: true,
+      isSuspended: false,
+      provider: "email",
+      emailVerified: new Date(),
+      sessionVersion: { increment: 1 },
+    },
+    create: {
+      name: DEFAULT_ADMIN.name,
+      email: DEFAULT_ADMIN.email,
+      passwordHash,
+      role: UserRole.ADMIN,
+      isVerified: true,
+      isSuspended: false,
+      provider: "email",
+      emailVerified: new Date(),
+    },
+  });
+
+  console.log(`   ✅ Admin ready: ${admin.email} (${admin.role})`);
+}
+
 async function main() {
   console.log("🌱 Secretza Master Seed\n");
+
+  // 0. Seed default admin login
+  await seedDefaultAdmin();
 
   // 1. Seed comprehensive geo data
   await seedGeoData();
