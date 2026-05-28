@@ -15,6 +15,7 @@ export async function GET() {
       totalListings,
       activeListings,
       pendingReview,
+      pendingPayments,
       revenueResult,
       featuredListings,
       premiumUsers,
@@ -24,6 +25,7 @@ export async function GET() {
       db.listing.count(),
       db.listing.count({ where: { status: "approved" } }),
       db.listing.count({ where: { status: "pending" } }),
+      db.manualPaymentSubmission.count({ where: { status: "pending" } }),
       db.payment.aggregate({
         where: { status: "completed" },
         _sum: { amount: true },
@@ -74,6 +76,7 @@ export async function GET() {
       totalListings,
       activeListings,
       pendingReview,
+      pendingPayments,
       totalRevenue: revenueResult._sum.amount ?? 0,
       featuredListings,
       premiumUsers,

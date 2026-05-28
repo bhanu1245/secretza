@@ -13,13 +13,18 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || undefined;
+    const filter = searchParams.get("filter") || status || undefined;
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
 
     const where: Prisma.ListingWhereInput = {};
 
-    if (status) {
-      where.status = status;
+    if (filter === "featured") {
+      where.isFeatured = true;
+    } else if (filter === "boosted") {
+      where.isBoosted = true;
+    } else if (filter) {
+      where.status = filter;
     }
 
     const [listings, total] = await Promise.all([
@@ -107,7 +112,7 @@ export async function GET(request: Request) {
         boostUntil: l.boostUntil?.toISOString() ?? null,
         createdAt: l.createdAt.toISOString(),
         updatedAt: l.updatedAt.toISOString(),
-        user: l.user,
+        user: l.user ? { ...l.user, role: l.user.role.toLowerCase() } : null,
         category: l.category,
         country: l.country,
         state: l.state,

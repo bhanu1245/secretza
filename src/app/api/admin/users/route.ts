@@ -4,6 +4,17 @@ import { requireMinRole } from "@/lib/auth-helpers";
 import { Prisma } from "@prisma/client";
 import { logError } from "@/lib/monitoring";
 
+function toDbRole(role: string) {
+  const normalized = role.toUpperCase();
+  if (normalized === "ADMIN") return "ADMIN";
+  if (normalized === "MODERATOR") return "MODERATOR";
+  return "USER";
+}
+
+function toSessionRole(role: string) {
+  return role.toLowerCase();
+}
+
 export async function GET(request: Request) {
   try {
     const admin = await requireMinRole("admin");
@@ -27,7 +38,7 @@ export async function GET(request: Request) {
     }
 
     if (role) {
-      where.role = role;
+      where.role = toDbRole(role) as Prisma.UserWhereInput["role"];
     }
 
     const [users, total] = await Promise.all([
@@ -64,6 +75,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       users: users.map((u) => ({
         ...u,
+        role: toSessionRole(u.role),
         premiumExpiry: u.premiumExpiry?.toISOString() ?? null,
         lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
         createdAt: u.createdAt.toISOString(),

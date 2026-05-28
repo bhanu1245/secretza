@@ -27,6 +27,13 @@ function setCachedUserStatus(userId: string, data: { role: string; isVerified: b
   userStatusCache.set(userId, { data, ts: Date.now() });
 }
 
+function normalizeRole(role: string | null | undefined): string {
+  const value = (role || "user").toLowerCase();
+  if (value === "admin") return "admin";
+  if (value === "moderator") return "moderator";
+  return "user";
+}
+
 // Extend NextAuth types to include our custom fields
 declare module "next-auth" {
   interface Session {
@@ -172,7 +179,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           image: user.image,
-          role: user.role,
+          role: normalizeRole(user.role),
           isVerified: user.isVerified,
           isSuspended: user.isSuspended,
           isPremium: user.isPremium,
@@ -197,7 +204,7 @@ export const authOptions: NextAuthOptions = {
       // On first sign in, add user fields to token
       if (user) {
         token.id = user.id;
-        token.role = user.role;
+        token.role = normalizeRole(user.role);
         token.isVerified = user.isVerified;
         token.isSuspended = user.isSuspended;
         token.isPremium = user.isPremium;
@@ -232,7 +239,7 @@ export const authOptions: NextAuthOptions = {
           },
         });
         if (dbUser) {
-          token.role = dbUser.role;
+          token.role = normalizeRole(dbUser.role);
           token.isVerified = dbUser.isVerified;
           token.isSuspended = dbUser.isSuspended;
           token.isPremium = dbUser.isPremium;
@@ -248,7 +255,7 @@ export const authOptions: NextAuthOptions = {
         const cached = getCachedUserStatus(token.id);
         if (cached) {
           // Use cached data to update token
-          token.role = cached.role;
+          token.role = normalizeRole(cached.role);
           token.isVerified = cached.isVerified;
           token.isPremium = cached.isPremium;
           token.premiumExpiry = cached.premiumExpiry;
@@ -281,7 +288,7 @@ export const authOptions: NextAuthOptions = {
           });
           if (suspensionCheck) {
             setCachedUserStatus(token.id, suspensionCheck);
-            token.role = suspensionCheck.role;
+            token.role = normalizeRole(suspensionCheck.role);
             token.isVerified = suspensionCheck.isVerified;
             token.isPremium = suspensionCheck.isPremium;
             token.premiumExpiry = suspensionCheck.premiumExpiry;
@@ -308,7 +315,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id || "";
-        session.user.role = token.role || "user";
+        session.user.role = normalizeRole(token.role);
         session.user.isVerified = token.isVerified || false;
         session.user.isSuspended = token.isSuspended || false;
         session.user.isPremium = token.isPremium || false;

@@ -53,6 +53,12 @@ model VerificationToken {
 // User
 // ============================================================================
 
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
 model User {
   id                     String                    @id @default(cuid())
   email                  String                    @unique
@@ -60,7 +66,7 @@ model User {
   emailVerified          DateTime?
   passwordHash           String?
   image                  String?
-  role                   String                    @default("user")
+  role                   UserRole                  @default(USER)
   isVerified             Boolean                   @default(false)
   isSuspended            Boolean                   @default(false)
   isPremium              Boolean                   @default(false)
@@ -246,7 +252,7 @@ model Listing {
   reportCount      Int            @default(0)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
-  userId           String
+  userId           String?
   categoryId       String
   countryId        String
   stateId          String?
@@ -259,7 +265,7 @@ model Listing {
   state            State?          @relation(fields: [stateId], references: [id], onDelete: Cascade)
   country          Country        @relation(fields: [countryId], references: [id], onDelete: Cascade)
   category         Category       @relation(fields: [categoryId], references: [id])
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
   listingImages    ListingImage[]
   payments         Payment[]
   reports          Report[]          // Legacy (deprecated — use ListingReport)

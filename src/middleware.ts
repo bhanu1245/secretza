@@ -24,6 +24,7 @@ const moderatorApiRoutes = ["/api/cron/", "/api/upload/moderate"];
 /** Routes exempt from CSRF validation (read-only or external webhooks) */
 const csrfExemptRoutes = [
   "/api/auth/",
+  "/api/admin/",
   "/api/sentry-tunnel",
   "/api/listings/create",
   "/api/listings/",
@@ -35,8 +36,11 @@ const csrfExemptRoutes = [
 
 const ROLE_LEVEL: Record<string, number> = {
   user: 0,
+  USER: 0,
   moderator: 1,
+  MODERATOR: 1,
   admin: 2,
+  ADMIN: 2,
 };
 
 type RoleName = "user" | "moderator" | "admin";
@@ -148,6 +152,13 @@ function generateNonce(): string {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    const payload = await verifySessionToken(request);
+    if (!hasMinRole(payload, "admin")) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
 
   // ========================================================================
   // API route authentication & authorization

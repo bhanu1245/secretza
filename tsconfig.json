@@ -39,6 +39,7 @@
   "exclude": [
     "node_modules",
     "examples",
+    "prisma-backup",
     "skills",
     "upload-extract"
   ]

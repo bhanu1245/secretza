@@ -4,6 +4,17 @@ import { requireMinRole } from "@/lib/auth-helpers";
 import { logAdminAction, extractIpAddress } from "@/lib/audit-logger";
 import { logError } from "@/lib/monitoring";
 
+function toDbRole(role: string) {
+  const normalized = role.toUpperCase();
+  if (normalized === "ADMIN") return "ADMIN";
+  if (normalized === "MODERATOR") return "MODERATOR";
+  return "USER";
+}
+
+function toSessionRole(role: string) {
+  return role.toLowerCase();
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -74,6 +85,7 @@ export async function GET(
     return NextResponse.json({
       user: {
         ...user,
+        role: toSessionRole(user.role),
         premiumExpiry: user.premiumExpiry?.toISOString() ?? null,
         lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
         createdAt: user.createdAt.toISOString(),
@@ -134,7 +146,7 @@ export async function PATCH(
           return NextResponse.json({ error: "Cannot suspend your own account" }, { status: 403 });
         }
         // Prevent admin from suspending other admins
-        if (existingUser.role === "admin" && existingUser.id !== admin.id) {
+        if (toSessionRole(existingUser.role) === "admin" && existingUser.id !== admin.id) {
           return NextResponse.json({ error: "Cannot suspend another admin" }, { status: 403 });
         }
         updateData = { isSuspended: true, sessionVersion: { increment: 1 } };
@@ -169,13 +181,13 @@ export async function PATCH(
           );
         }
         // Prevent admin from demoting another admin
-        if (existingUser.role === "admin" && role !== "admin") {
+        if (toSessionRole(existingUser.role) === "admin" && role !== "admin") {
           return NextResponse.json(
             { error: "Cannot demote another admin" },
             { status: 403 }
           );
         }
-        updateData = { role };
+        updateData = { role: toDbRole(role) };
         message = `User role updated to ${role}`;
         break;
     }
@@ -214,6 +226,7 @@ export async function PATCH(
       message,
       user: {
         ...updatedUser,
+        role: toSessionRole(updatedUser.role),
         premiumExpiry: updatedUser.premiumExpiry?.toISOString() ?? null,
         lastLoginAt: updatedUser.lastLoginAt?.toISOString() ?? null,
         createdAt: updatedUser.createdAt.toISOString(),

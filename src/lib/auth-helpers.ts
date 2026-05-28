@@ -36,7 +36,7 @@ export async function requireRole(role: UserRole): Promise<SessionUser | null> {
   const session = await getServerSession(authOptions);
   if (!session?.user) return null;
   const user = session.user as SessionUser;
-  if (user.role !== role) return null;
+  if (user.role.toLowerCase() !== role) return null;
   return user;
 }
 
@@ -46,7 +46,7 @@ export async function requireMinRole(minRole: UserRole): Promise<SessionUser | n
   if (!session?.user) return null;
   const user = session.user as SessionUser;
   const hierarchy: Record<UserRole, number> = { user: 0, moderator: 1, admin: 2 };
-  if (hierarchy[user.role as UserRole] < hierarchy[minRole]) return null;
+  if (hierarchy[user.role.toLowerCase() as UserRole] < hierarchy[minRole]) return null;
   return user;
 }
 
