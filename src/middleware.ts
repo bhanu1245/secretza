@@ -126,14 +126,6 @@ function hasMinRole(
 }
 
 // ---------------------------------------------------------------------------
-// Lazy-loaded crawl analytics (avoids Prisma on Edge Runtime)
-// ---------------------------------------------------------------------------
-
-let recordCrawlEventFn:
-  | ((data: Record<string, unknown>) => Promise<void>)
-  | null = null;
-
-// ---------------------------------------------------------------------------
 // CSP nonce (Edge-compatible Web Crypto API)
 // ---------------------------------------------------------------------------
 
@@ -259,32 +251,6 @@ export async function middleware(request: NextRequest) {
       if (!validateCsrfToken(headerToken ?? null, cookieToken ?? null)) {
         return NextResponse.json({ error: "Invalid request" }, { status: 403 });
       }
-    }
-  }
-
-  // ========================================================================
-  // Crawl analytics tracking (non-API routes only)
-  // ========================================================================
-  if (!pathname.startsWith("/api/")) {
-    if (!recordCrawlEventFn) {
-      import("@/lib/crawl-analytics")
-        .then(({ recordCrawlEvent }) => {
-          recordCrawlEventFn = recordCrawlEvent as any;
-        })
-        .catch(() => {});
-    }
-    if (recordCrawlEventFn) {
-      recordCrawlEventFn({
-        userAgent: request.headers.get("user-agent") || "unknown",
-        path: pathname,
-        method: request.method,
-        statusCode: 200,
-        referer: request.headers.get("referer") || undefined,
-        ipAddress:
-          request.headers.get("x-real-ip") ||
-          request.headers.get("x-forwarded-for") ||
-          undefined,
-      }).catch(() => {});
     }
   }
 

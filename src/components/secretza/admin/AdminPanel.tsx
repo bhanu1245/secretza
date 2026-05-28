@@ -78,6 +78,7 @@ import { useAuthStore } from "@/store/useAppStore";
 import { formatNumber } from "@/lib/utils";
 import type { ListingStatus, User, ModerationItem } from "@/lib/types";
 import { toast } from "sonner";
+import AdminGeoPage from "@/components/secretza/admin/routes/AdminGeoPage";
 import SeoManager from "@/components/secretza/admin/SeoManager";
 import SeoDashboard from "@/components/secretza/admin/SeoDashboard";
 import { AdminReviewQueue, AdminReviewAnalytics } from "@/components/secretza/admin/AdminReviewPanel";
@@ -2510,7 +2511,7 @@ export default function AdminPanel() {
       case "categories":
         return <CategoryManager />;
       case "geo":
-        return <PlaceholderPage title="Geo Management" description="Manage countries, states, and cities." />;
+        return <AdminGeoPage />;
       case "pricing":
         return <PlaceholderPage title="Pricing" description="Configure pricing packages and features." />;
       case "payments":
