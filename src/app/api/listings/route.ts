@@ -65,10 +65,53 @@ export async function GET(request: Request) {
       { country: { name: { contains: keyword } } },
     ];
   }
-  if (category) where.categorySlug = category;
-  if (country) where.countrySlug = country;
-  if (state) where.stateSlug = state;
-  if (city) where.citySlug = city;
+  if (category) {
+    const categoryRecord = await db.category.findFirst({
+      where: {
+        slug: category,
+        isActive: true,
+      },
+      include: {
+        children: { where: { isActive: true }, select: { id: true } },
+      },
+    });
+    if (categoryRecord) {
+      const categoryIds = [categoryRecord.id, ...categoryRecord.children.map((child) => child.id)];
+      where.OR = [
+        { categoryId: { in: categoryIds } },
+        { subcategoryId: { in: categoryIds } },
+        { categorySlug: category },
+        { subcategorySlug: category },
+      ];
+    } else {
+      where.categorySlug = category;
+    }
+  }
+  if (city) {
+    const cityRecord = await db.city.findFirst({
+      where: {
+        slug: city,
+        isActive: true,
+        ...(state
+          ? {
+              state: {
+                slug: state,
+                ...(country ? { country: { slug: country } } : {}),
+              },
+            }
+          : {}),
+      },
+      select: { id: true, slug: true },
+    });
+    if (cityRecord) {
+      where.cityId = cityRecord.id;
+    } else {
+      where.citySlug = city;
+    }
+  } else {
+    if (country) where.countrySlug = country;
+    if (state) where.stateSlug = state;
+  }
   if (featured) where.isFeatured = true;
   if (premium) (where as any).isPremium = true;
   if (boosted) where.isBoosted = true;

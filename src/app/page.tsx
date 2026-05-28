@@ -152,6 +152,89 @@ function CategoryPage({ slug }: { slug: string }) {
 }
 
 // ==========================================
+// Location Page — City listings filtered from API
+// ==========================================
+function LocationPage({
+  country,
+  state,
+  city,
+}: {
+  country: string;
+  state: string;
+  city: string;
+}) {
+  const navigate = useNavigationStore((s) => s.navigate);
+  const { listings, loading, total, error } = useListings({
+    country,
+    state,
+    city,
+    limit: 24,
+    sortBy: "newest",
+  });
+
+  const cityLabel = city
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+  const stateLabel = state
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+  const countryLabel = country
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8 sm:py-12">
+      <div className="mb-8">
+        <button
+          onClick={() => navigate("home")}
+          className="text-sm text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1"
+        >
+          ← Back
+        </button>
+        <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
+          Listings in {cityLabel}
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          {stateLabel}, {countryLabel}
+        </p>
+        <div className="mt-3 flex items-center gap-3">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold text-white bg-violet">
+            {total} Listings
+          </span>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-16">
+          <div className="animate-spin size-8 border-2 border-violet/30 border-t-violet rounded-full mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading listings...</p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-16">
+          <p className="text-red-400 mb-2">Failed to load city listings.</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      ) : listings.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {listings.map((listing) => (
+            <ListingCard key={listing.id} listing={listing} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-16">
+          <p className="text-muted-foreground">
+            No approved listings in {cityLabel} yet.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==========================================
 // Pricing Page — Fetches real plans from the database
 // ==========================================
 function PricingPage() {
@@ -395,6 +478,14 @@ export default function Home() {
 
             {nav.view === "category" && (
               <CategoryPage slug={nav.params.slug || ""} />
+            )}
+
+            {nav.view === "location" && (
+              <LocationPage
+                country={nav.params.country || ""}
+                state={nav.params.state || ""}
+                city={nav.params.city || ""}
+              />
             )}
 
             {nav.view === "post-ad" && (

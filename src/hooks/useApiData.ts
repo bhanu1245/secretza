@@ -194,14 +194,14 @@ export function useTrendingCities() {
         );
       })
       .then((countryDetails) => {
-        const allFeatured: (City & { state: State; country: Country })[] = [];
+        const allCities: (City & { state: State; country: Country })[] = [];
         for (const c of countryDetails) {
           if (!c || !c.states) continue;
           for (const s of c.states) {
             if (!s.cities) continue;
             for (const city of s.cities) {
-              if (city.isFeatured) {
-                allFeatured.push({
+              if (city.listingCount > 0 || city.isFeatured) {
+                allCities.push({
                   ...city,
                   state: {
                     id: s.id,
@@ -224,7 +224,8 @@ export function useTrendingCities() {
             }
           }
         }
-        setCities(allFeatured);
+        allCities.sort((a, b) => b.listingCount - a.listingCount);
+        setCities(allCities.slice(0, 12));
       })
       .catch((err) => {
         setError(err?.message || "Failed to fetch trending cities");

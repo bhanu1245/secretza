@@ -235,7 +235,7 @@ export default function ManualPaymentPage({
   }, []);
 
   // ========================
-  // Fetch QR code
+  // Fetch QR code (prefer admin-uploaded static QR, else generate dynamic UPI QR)
   // ========================
   useEffect(() => {
     let cancelled = false;
@@ -243,6 +243,13 @@ export default function ManualPaymentPage({
     async function fetchQR() {
       setQrLoading(true);
       try {
+        if (paymentConfig?.qrImageUrl) {
+          if (!cancelled) {
+            setQrDataUrl(paymentConfig.qrImageUrl);
+          }
+          return;
+        }
+
         const res = await fetch(
           `/api/payments/manual/qr?amount=${selectedAmount}&paymentType=${paymentType}`
         );
@@ -252,12 +259,17 @@ export default function ManualPaymentPage({
             setQrDataUrl(data.qrDataUrl);
           }
         } else {
-          // API not available yet - show fallback
+          console.warn("[ManualPaymentPage] dynamic QR generation failed", {
+            status: res.status,
+            amount: selectedAmount,
+            paymentType,
+          });
           if (!cancelled) {
             setQrDataUrl(null);
           }
         }
-      } catch {
+      } catch (error) {
+        console.error("[ManualPaymentPage] failed to load payment QR", error);
         if (!cancelled) {
           setQrDataUrl(null);
         }
@@ -272,7 +284,7 @@ export default function ManualPaymentPage({
     return () => {
       cancelled = true;
     };
-  }, [selectedAmount, paymentType]);
+  }, [selectedAmount, paymentType, paymentConfig?.qrImageUrl]);
 
   // ========================
   // Fetch previous submissions

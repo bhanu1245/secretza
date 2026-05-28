@@ -1653,6 +1653,10 @@ function UPIPaymentSettings() {
       toast.error("Image too large", { description: "Max 2MB for QR images." });
       return;
     }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("Invalid file type", { description: "Use JPG, PNG, or WebP." });
+      return;
+    }
     setUploading(true);
     try {
       const formData = new FormData();
@@ -1661,15 +1665,21 @@ function UPIPaymentSettings() {
         method: "POST",
         body: formData,
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        const data = await res.json();
-        setQrPreview(data.qrImageUrl);
+        const nextUrl = data.qrImageUrl as string;
+        setQrPreview(nextUrl);
+        setSettings((current) => (current ? { ...current, qrImageUrl: nextUrl } : current));
         toast.success("QR uploaded", { description: "Payment QR image saved." });
       } else {
-        const err = await res.json();
-        toast.error("Upload failed", { description: err.error || "Unknown error" });
+        console.error("[UPIPaymentSettings] QR upload failed", {
+          status: res.status,
+          error: data.error,
+        });
+        toast.error("Upload failed", { description: data.error || "Unknown error" });
       }
-    } catch {
+    } catch (error) {
+      console.error("[UPIPaymentSettings] QR upload request failed", error);
       toast.error("Upload failed", { description: "Could not reach server." });
     } finally {
       setUploading(false);
