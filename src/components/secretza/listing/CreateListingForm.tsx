@@ -59,12 +59,15 @@ export default function CreateListingForm({
   const [draftRestored, setDraftRestored] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const latestValuesRef = useRef(values);
+  const restoredDraftRef = useRef(false);
 
   useEffect(() => {
     latestValuesRef.current = values;
   }, [values]);
 
   useEffect(() => {
+    restoredDraftRef.current = false;
+
     try {
       const storedDraft = window.localStorage.getItem(draftKey);
       if (!storedDraft) return;
@@ -76,6 +79,7 @@ export default function CreateListingForm({
         ...emptyValues,
         ...draft.values,
       });
+      restoredDraftRef.current = hasDraftContent(draft.values);
       setLastSavedAt(draft.savedAt || null);
     } catch (error) {
       console.warn("Failed to restore listing draft", error);
@@ -83,6 +87,50 @@ export default function CreateListingForm({
       setDraftRestored(true);
     }
   }, [draftKey]);
+
+  useEffect(() => {
+    if (!draftRestored || !editMode || !editListingId || restoredDraftRef.current) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadListingForEdit() {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/listings/${editListingId}`);
+        const listing = await response.json();
+
+        if (!response.ok) {
+          alert(listing.error || "Failed to load listing");
+          navigate("dashboard", { tab: "listings" });
+          return;
+        }
+
+        if (cancelled) return;
+
+        setValues({
+          title: listing.title || "",
+          description: listing.description || "",
+          price: listing.price?.toString() || "",
+        });
+      } catch (error) {
+        console.error(error);
+        alert("Failed to load listing");
+        navigate("dashboard", { tab: "listings" });
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadListingForEdit();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [draftRestored, editListingId, editMode, navigate]);
 
   const saveDraft = useCallback(() => {
     const currentValues = latestValuesRef.current;
@@ -161,17 +209,22 @@ export default function CreateListingForm({
     try {
       setLoading(true);
 
-      const response = await fetch("/api/listings/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        editMode && editListingId
+          ? `/api/listings/${editListingId}`
+          : "/api/listings/create",
+        {
+          method: editMode && editListingId ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: values.title,
+            description: values.description,
+            price: Number(values.price),
+          }),
         },
-        body: JSON.stringify({
-          title: values.title,
-          description: values.description,
-          price: Number(values.price),
-        }),
-      });
+      );
 
       const data = await response.json();
 
@@ -180,7 +233,7 @@ export default function CreateListingForm({
         return;
       }
 
-      alert("Listing created successfully!");
+      alert(editMode ? "Listing updated successfully!" : "Listing created successfully!");
       console.log("[CreateListing] saved listing id", data.listing?.id);
       console.log("[CreateListing] saved userId", data.listing?.userId);
 
@@ -191,7 +244,7 @@ export default function CreateListingForm({
       navigate("dashboard", { tab: "listings" });
     } catch (error) {
       console.error(error);
-      alert("Failed to create listing");
+      alert(editMode ? "Failed to update listing" : "Failed to create listing");
     } finally {
       setLoading(false);
     }
@@ -200,7 +253,7 @@ export default function CreateListingForm({
   return (
     <div className="max-w-3xl mx-auto p-10 text-white">
       <h1 className="text-5xl font-bold mb-8">
-        Create New Listing
+        {editMode ? "Edit Listing" : "Create New Listing"}
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -254,7 +307,13 @@ export default function CreateListingForm({
           disabled={loading}
           className="bg-blue-600 hover:bg-blue-700 transition px-8 py-4 rounded-xl font-semibold"
         >
-          {loading ? "Creating..." : "Create Listing"}
+          {loading
+            ? editMode
+              ? "Saving..."
+              : "Creating..."
+            : editMode
+              ? "Save Changes"
+              : "Create Listing"}
         </button>
 
         <p className="text-sm text-zinc-400">

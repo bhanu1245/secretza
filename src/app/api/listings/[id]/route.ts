@@ -165,6 +165,7 @@ export async function PUT(
       stateSlug,
       citySlug,
       tags,
+      price,
       contactEmail,
       contactTelegram,
       contactInstagram,
@@ -201,6 +202,16 @@ export async function PUT(
         if (typeof tag !== "string" || tag.trim().length === 0 || tag.length > 30) {
           return NextResponse.json({ error: "Each tag must be a non-empty string of at most 30 characters" }, { status: 400 });
         }
+      }
+    }
+
+    if (price !== undefined) {
+      const numericPrice = Number(price);
+      if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+        return NextResponse.json(
+          { error: "Price must be a valid non-negative number" },
+          { status: 400 }
+        );
       }
     }
 
@@ -294,6 +305,7 @@ export async function PUT(
         title: title !== undefined ? title : existing.title,
         slug,
         description: description !== undefined ? description : existing.description,
+        price: price !== undefined ? Number(price).toString() : existing.price,
         categorySlug: categorySlug !== undefined ? categorySlug : existing.categorySlug,
         countrySlug: countrySlug !== undefined ? countrySlug : existing.countrySlug,
         stateSlug: stateSlug !== undefined ? stateSlug : existing.stateSlug,
@@ -326,7 +338,12 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      listing: { id: updated.id, slug: updated.slug, status: updated.status },
+      listing: {
+        id: updated.id,
+        slug: updated.slug,
+        status: updated.status,
+        userId: updated.userId,
+      },
     });
   } catch (error) {
     logError(error, { component: "route:api/listings/[id]" });

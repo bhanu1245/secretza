@@ -526,12 +526,22 @@ function PriorityScoreBar({ score }: { score: number }) {
 // ==========================================
 // My Listings Page
 // ==========================================
-function MyListingsPage({ listings }: { listings: Listing[] }) {
+function MyListingsPage({
+  listings,
+  onListingsChange,
+}: {
+  listings: Listing[];
+  onListingsChange: (listings: Listing[]) => void;
+}) {
   const [statusFilter, setStatusFilter] = useState<ListingStatus | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [boostingId, setBoostingId] = useState<string | null>(null);
   const [featuringId, setFeaturingId] = useState<string | null>(null);
   const [localListings, setLocalListings] = useState<Listing[]>(listings);
+
+  useEffect(() => {
+    setLocalListings(listings);
+  }, [listings]);
 
   useEffect(() => {
     if (listings.length === 0) {
@@ -596,12 +606,13 @@ const handleDelete = async (id: string) => {
     });
 
     if (!response.ok) {
-      throw new Error("Delete failed");
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.error || "Delete failed");
     }
 
-    setLocalListings((prev) =>
-      prev.filter((listing) => listing.id !== id)
-    );
+    const nextListings = localListings.filter((listing) => listing.id !== id);
+    setLocalListings(nextListings);
+    onListingsChange(nextListings);
 
     alert("Listing deleted successfully");
   } catch (error) {
@@ -1351,7 +1362,9 @@ export default function Dashboard() {
         const res = await fetch(`/api/listings?userId=${userId}`);
         if (res.ok) {
           const data = await res.json();
-          setUserListings(data.listings || []);
+          const listings = data.listings || [];
+          console.log("[Dashboard] fetched listings count", listings.length);
+          setUserListings(listings);
         } else {
           toast.error("Failed to load listings", { description: "Could not fetch your listings. Please try again." });
         }
@@ -1451,7 +1464,10 @@ export default function Dashboard() {
             />
           )}
           {currentPage === "listings" && (
-            <MyListingsPage listings={userListings} />
+            <MyListingsPage
+              listings={userListings}
+              onListingsChange={setUserListings}
+            />
           )}
           {currentPage === "settings" && <AccountSettingsPage />}
         </div>

@@ -11,6 +11,7 @@ import { validateCsrfToken, CSRF_COOKIE_NAME } from "@/lib/csrf";
 const protectedApiRoutes = [
   "/api/payments/",
   "/api/listings/create",
+  "/api/listings/",
   "/api/upload/",
 ];
 
@@ -25,6 +26,7 @@ const csrfExemptRoutes = [
   "/api/auth/",
   "/api/sentry-tunnel",
   "/api/listings/create",
+  "/api/listings/",
 ];
 
 // ---------------------------------------------------------------------------
@@ -190,9 +192,11 @@ export async function middleware(request: NextRequest) {
     const isModRoute = moderatorApiRoutes.some((route) =>
       pathname.startsWith(route),
     );
-    const isProtectedRoute = protectedApiRoutes.some((route) =>
-      pathname.startsWith(route),
-    );
+    const isProtectedRoute =
+      request.method !== "GET" &&
+      protectedApiRoutes.some((route) =>
+        pathname.startsWith(route),
+      );
     const isListingPost =
       pathname === "/api/listings" && request.method === "POST";
 
