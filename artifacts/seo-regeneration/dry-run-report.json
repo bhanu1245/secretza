@@ -1,0 +1,16 @@
+{
+  "verifiedAt": "2026-05-29T10:03:33.648Z",
+  "sampleCities": {
+    "agra": { "wordCount": 511, "uniqueness": 87, "seoScore": 97, "risk": "low" },
+    "ahmedabad": { "wordCount": 507, "uniqueness": 87, "seoScore": 97, "risk": "low" },
+    "mumbai": { "wordCount": 505, "uniqueness": 91, "seoScore": 98, "risk": "low" }
+  },
+  "fullCityDryRun": {
+    "totalPages": 153,
+    "expectedAverageUniqueness": 41.27,
+    "expectedAverageSeoScore": 85.46,
+    "riskCounts": { "LOW": 3, "MEDIUM": 0, "HIGH": 150 },
+    "elapsedMs": 29782,
+    "note": "Only 3 cities (Agra, Ahmedabad, Mumbai) are live-regenerated with v3 engine. Dry-run predicts regenerated content for remaining legacy cities against current peer baseline — full live regen requires explicit admin confirmation."
+  }
+}

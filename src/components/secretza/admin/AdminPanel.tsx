@@ -81,6 +81,8 @@ import { toast } from "sonner";
 import AdminGeoPage from "@/components/secretza/admin/routes/AdminGeoPage";
 import SeoManager from "@/components/secretza/admin/SeoManager";
 import SeoDashboard from "@/components/secretza/admin/SeoDashboard";
+import SeoAuditPanel from "@/components/secretza/admin/SeoAuditPanel";
+import SeoRegenerationPanel from "@/components/secretza/admin/SeoRegenerationPanel";
 import { AdminReviewQueue, AdminReviewAnalytics } from "@/components/secretza/admin/AdminReviewPanel";
 import CategoryManager from "@/components/secretza/admin/CategoryManager";
 import { getListingCoverImageWithPlaceholder } from "@/lib/listing-images";
@@ -104,6 +106,8 @@ type AdminPage =
   | "review-analytics"
   | "seo"
   | "seo-dashboard"
+  | "seo-audit"
+  | "seo-regeneration"
   | "coupons"
   | "cms"
   | "reports"
@@ -160,6 +164,8 @@ const adminNavItems: { id: AdminPage; label: string; icon: React.ComponentType<{
   { id: "cms", label: "CMS Pages", icon: FileEdit },
   { id: "seo", label: "SEO", icon: Globe },
   { id: "seo-dashboard", label: "SEO Dashboard", icon: BarChart3 },
+  { id: "seo-audit", label: "SEO Audit", icon: ShieldCheck },
+  { id: "seo-regeneration", label: "SEO Regeneration", icon: RefreshCw },
   { id: "reports", label: "Reports", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings },
 ];
@@ -2581,6 +2587,10 @@ export default function AdminPanel() {
         return <SeoManager />;
       case "seo-dashboard":
         return <SeoDashboard />;
+      case "seo-audit":
+        return <SeoAuditPanel />;
+      case "seo-regeneration":
+        return <SeoRegenerationPanel />;
       default:
         return <AdminDashboardPage />;
     }

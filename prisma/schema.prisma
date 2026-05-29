@@ -629,23 +629,124 @@ model VirusScanResult {
 // ============================================================================
 
 model SeoPage {
-  id              String   @id @default(cuid())
+  id                 String              @id @default(cuid())
+  pageType           String
+  pageSlug           String
+  title              String?
+  metaDescription    String?
+  h1                 String?
+  introContent       String?
+  canonicalUrl       String?
+  featuredImage      String?
+  imageAlt           String?
+  imageTitle         String?
+  imageCaption       String?
+  noindex            Boolean             @default(false)
+  isPublished        Boolean             @default(true)
+  customData         String?
+  wordCount          Int?
+  faqCount           Int?
+  internalLinksCount Int?
+  uniquenessScore    Float?
+  duplicateRisk      String?
+  seoQualityScore    Float?
+  contentHash        String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  faqs               SeoFaq[]
+  contentVersions    SeoContentVersion[]
+  regenerationItems  SeoRegenerationItem[]
+
+  @@unique([pageType, pageSlug])
+  @@index([pageType])
+  @@index([duplicateRisk])
+  @@index([seoQualityScore])
+}
+
+model SeoRegenerationRun {
+  id              String                @id @default(cuid())
+  status          String                @default("pending")
+  mode            String
+  dryRun          Boolean               @default(false)
+  confirmed       Boolean               @default(false)
+  batchSize       Int                   @default(25)
+  pageTypeFilter  String?
+  filtersJson     String?
+  totalPages      Int                   @default(0)
+  queuedCount     Int                   @default(0)
+  processingCount Int                   @default(0)
+  completedCount  Int                   @default(0)
+  failedCount     Int                   @default(0)
+  skippedCount    Int                   @default(0)
+  avgUniqueness   Float?
+  avgSeoScore     Float?
+  lowRiskCount    Int                   @default(0)
+  mediumRiskCount Int                   @default(0)
+  highRiskCount   Int                   @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  lastProcessedAt DateTime?
+  createdById     String?
+  createdByEmail  String?
+  reportJson      String?
+  errorMessage    String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  items           SeoRegenerationItem[]
+  versions        SeoContentVersion[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model SeoRegenerationItem {
+  id              String             @id @default(cuid())
+  runId           String
+  seoPageId       String?
+  pageType        String
+  pageSlug        String
+  status          String             @default("queued")
+  error           String?
+  predictedWords  Int?
+  predictedUnique Float?
+  predictedScore  Float?
+  predictedRisk   String?
+  versionId       String?
+  processedAt     DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  run             SeoRegenerationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  seoPage         SeoPage?           @relation(fields: [seoPageId], references: [id], onDelete: SetNull)
+
+  @@index([runId, status])
+  @@index([pageType, pageSlug])
+}
+
+model SeoContentVersion {
+  id              String              @id @default(cuid())
+  runId           String?
+  seoPageId       String
   pageType        String
   pageSlug        String
   title           String?
   metaDescription String?
   h1              String?
   introContent    String?
-  canonicalUrl    String?
-  noindex         Boolean  @default(false)
-  isPublished     Boolean  @default(true)
-  customData      String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  faqs            SeoFaq[]
+  faqsJson        String?
+  wordCount       Int?
+  uniquenessScore Float?
+  seoQualityScore Float?
+  duplicateRisk   String?
+  createdById     String?
+  createdByEmail  String?
+  rolledBackAt    DateTime?
+  createdAt       DateTime            @default(now())
+  run             SeoRegenerationRun? @relation(fields: [runId], references: [id], onDelete: SetNull)
+  seoPage         SeoPage             @relation(fields: [seoPageId], references: [id], onDelete: Cascade)
 
-  @@unique([pageType, pageSlug])
-  @@index([pageType])
+  @@index([seoPageId])
+  @@index([runId])
+  @@index([createdAt])
 }
 
 model SeoFaq {
