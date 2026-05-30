@@ -103,7 +103,7 @@ export function validateInstructions(instructions: unknown): string | null {
 // ==========================================
 
 export const DEFAULT_PAYMENT_SETTINGS = {
-  upiId: "secretza@ybl",
+  upiId: "SecretZa@ybl",
   whatsappNumber: "+919876543210",
   boostPrice: 199,
   featuredPrice: 399,
@@ -228,4 +228,77 @@ export async function getValidAmounts(
         ? settings.featuredTiers
         : settings.premiumTiers;
   return tiers.map((t) => t.amount);
+}
+
+// ==========================================
+// Duration Lookup — single source of truth
+// ==========================================
+
+export interface TierDuration {
+  /** Minutes for boost tiers; 0 for feature/premium. */
+  durationMinutes: number;
+  /** Days for feature/premium tiers; 0 for boost. */
+  durationDays: number;
+  /** The matched tier label, for audit logging. */
+  label: string;
+  /** Whether a tier was actually found (false = safe default applied). */
+  matched: boolean;
+}
+
+/**
+ * Resolve the duration that should be granted for a given payment type and
+ * amount by reading live PaymentSettings from the database.
+ *
+ * This is the ONLY place in the application that maps (type, amount) →
+ * duration.  All activation code must call this function; no caller may
+ * maintain its own lookup table.
+ *
+ * Safe-default policy when no tier matches `amount`:
+ *   - boost:   60 minutes  (least-valuable tier)
+ *   - feature: 3 days      (least-valuable tier)
+ *   - premium: 30 days     (only tier)
+ *
+ * A mismatch means PaymentSettings was changed between submission and
+ * approval.  The function logs a warning so operators can investigate.
+ */
+export async function getDurationForTier(
+  type: "boost" | "feature" | "premium",
+  amount: number,
+): Promise<TierDuration> {
+  const settings = await getPaymentSettings();
+  const tiers =
+    type === "boost"
+      ? settings.boostTiers
+      : type === "feature"
+        ? settings.featuredTiers
+        : settings.premiumTiers;
+
+  // Match by exact amount (same logic used by getValidAmounts)
+  const tier = tiers.find((t) => t.amount === amount);
+
+  if (tier) {
+    return {
+      durationMinutes: tier.durationMinutes ?? 0,
+      durationDays: tier.durationDays ?? 0,
+      label: tier.label,
+      matched: true,
+    };
+  }
+
+  // No tier found — PaymentSettings changed after the submission was created.
+  // Apply a safe minimum and let the caller log/alert.
+  const safeDefaults: Record<"boost" | "feature" | "premium", TierDuration> = {
+    boost:   { durationMinutes: 60,  durationDays: 0,  label: "(fallback) 1 Hour",   matched: false },
+    feature: { durationMinutes: 0,   durationDays: 3,  label: "(fallback) 3 Days",   matched: false },
+    premium: { durationMinutes: 0,   durationDays: 30, label: "(fallback) 30 Days",  matched: false },
+  };
+
+  console.warn("[getDurationForTier] no tier matched — PaymentSettings may have changed", {
+    type,
+    amount,
+    availableAmounts: tiers.map((t) => t.amount),
+    fallback: safeDefaults[type],
+  });
+
+  return safeDefaults[type];
 }

@@ -9,27 +9,11 @@ import {
 import { createNotification } from "@/lib/notifications";
 import { logError } from "@/lib/monitoring";
 import { redeemCouponOnApproval } from "@/lib/coupons";
+import { getDurationForTier } from "@/lib/payment-settings";
 
 // Valid review actions
 const VALID_ACTIONS = ["approve", "reject", "request_proof", "duplicate"] as const;
 type ReviewAction = (typeof VALID_ACTIONS)[number];
-
-// Boost duration map (amount INR → minutes)
-const BOOST_DURATIONS: Record<number, number> = {
-  99: 60,   // 1 hour
-  199: 180, // 3 hours
-  499: 720, // 12 hours
-};
-
-// Feature duration map (amount INR → days)
-const FEATURE_DURATIONS: Record<number, number> = {
-  149: 3,   // 3 days
-  399: 7,   // 7 days
-  799: 30,  // 30 days
-};
-
-// Premium duration: 30 days
-const PREMIUM_DURATION_DAYS = 30;
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -129,7 +113,8 @@ export async function POST(
           },
         });
 
-        // Activate the corresponding feature (tier lookup uses original plan amount)
+        // Activate the corresponding feature.
+        // Duration is resolved from live PaymentSettings — no hardcoded maps.
         const tierAmount = submission.originalAmount ?? submission.amount;
 
         if (submission.paymentType === "boost") {
@@ -138,8 +123,13 @@ export async function POST(
               where: { id: submission.listingId },
             });
             if (listing) {
-              const boostMinutes = BOOST_DURATIONS[tierAmount] || 60;
-              const boostUntil = getBoostExpiry(boostMinutes);
+              const { durationMinutes, label, matched } = await getDurationForTier("boost", tierAmount);
+              if (!matched) {
+                console.warn("[review/approve] boost tier not found in PaymentSettings", {
+                  tierAmount, label, submissionId: submission.id,
+                });
+              }
+              const boostUntil = getBoostExpiry(durationMinutes);
 
               // Recompute priority score with the new boost
               const rankedListing = {
@@ -167,8 +157,13 @@ export async function POST(
               where: { id: submission.listingId },
             });
             if (listing) {
-              const featureDays = FEATURE_DURATIONS[tierAmount] || 7;
-              const featuredUntil = getFeatureExpiry(featureDays);
+              const { durationDays, label, matched } = await getDurationForTier("feature", tierAmount);
+              if (!matched) {
+                console.warn("[review/approve] feature tier not found in PaymentSettings", {
+                  tierAmount, label, submissionId: submission.id,
+                });
+              }
+              const featuredUntil = getFeatureExpiry(durationDays);
 
               // Recompute priority score with the new featured status
               const rankedListing = {
@@ -190,7 +185,13 @@ export async function POST(
           }
         } else if (submission.paymentType === "premium") {
           // Activate premium for user
-          const premiumExpiry = getFeatureExpiry(PREMIUM_DURATION_DAYS);
+          const { durationDays, label, matched } = await getDurationForTier("premium", tierAmount);
+          if (!matched) {
+            console.warn("[review/approve] premium tier not found in PaymentSettings", {
+              tierAmount, label, submissionId: submission.id,
+            });
+          }
+          const premiumExpiry = getFeatureExpiry(durationDays);
           await tx.user.update({
             where: { id: submission.userId },
             data: {
