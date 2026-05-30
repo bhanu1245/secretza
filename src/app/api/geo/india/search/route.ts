@@ -56,11 +56,13 @@ export async function GET(request: Request) {
         district: {
           select: {
             name: true,
+            slug: true,
             city: {
               select: {
                 name: true,
+                slug: true,
                 state: {
-                  select: { name: true },
+                  select: { name: true, slug: true },
                 },
               },
             },
@@ -77,9 +79,9 @@ export async function GET(request: Request) {
           id: r.id,
           name: r.name,
           slug: r.slug,
-          district: { name: r.district.name },
-          city: { name: r.district.city.name },
-          state: { name: r.district.city.state.name },
+          district: { name: r.district.name, slug: r.district.slug },
+          city: { name: r.district.city.name, slug: r.district.city.slug },
+          state: { name: r.district.city.state.name, slug: r.district.city.state.slug },
         })),
       },
       {

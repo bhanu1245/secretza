@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { ADMIN_HOME, isAdminRole } from "@/lib/admin-nav";
 import { useNavigationStore, useUIStore, useAuthStore } from "@/store/useAppStore";
 import { useListing, useListings, useCategories } from "@/hooks/useApiData";
 
@@ -48,14 +50,12 @@ import AuthVerificationDashboard from "@/components/secretza/auth/AuthVerificati
 // Dashboard
 import Dashboard from "@/components/secretza/dashboard/Dashboard";
 
-// Admin
-import AdminPanel from "@/components/secretza/admin/AdminPanel";
-
 // Payment
 import ManualPaymentPage from "@/components/secretza/payment/ManualPaymentPage";
 
 // Geo Explorer
 import IndiaGeoExplorer from "@/components/secretza/geo/IndiaGeoExplorer";
+import { parseSpaDeepLink } from "@/lib/public-navigation";
 
 // ==========================================
 // View Transitions
@@ -356,7 +356,9 @@ function PricingPage() {
 // ==========================================
 // Main App Component
 // ==========================================
-export default function Home() {
+function HomeApp() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const nav = useNavigationStore((s) => s.nav);
   const selectedListingId = useUIStore((s) => s.selectedListingId);
   const setSelectedListingId = useUIStore((s) => s.setSelectedListingId);
@@ -370,6 +372,14 @@ export default function Home() {
   // Fetch listings for the "Browse Listings" grid (fixes BUG #4)
   const { listings: browseListings, loading: browseLoading } = useListings({ limit: 8 });
 
+  // Handle deep-links from SSR pages (?view=pricing&tab=listings etc.)
+  useEffect(() => {
+    const deepLink = parseSpaDeepLink(searchParams);
+    if (!deepLink) return;
+    navigate(deepLink.view, deepLink.params);
+    router.replace("/", { scroll: false });
+  }, [searchParams, navigate, router]);
+
   // Redirect unauthenticated users away from protected views (after render, not during)
   useEffect(() => {
     if (nav.view === "dashboard" && !isAuthenticated) {
@@ -377,12 +387,16 @@ export default function Home() {
     }
   }, [nav.view, isAuthenticated, navigate]);
 
-  // Redirect unauthenticated users away from admin view
+  // Legacy SPA admin view → canonical /admin route
   useEffect(() => {
-    if (nav.view === "admin" && (!isAuthenticated || !user || (user.role !== "admin" && user.role !== "moderator"))) {
+    if (nav.view !== "admin") return;
+    if (!isAuthenticated || !user || !isAdminRole(user.role)) {
       navigate(isAuthenticated ? "dashboard" : "home");
+      return;
     }
-  }, [nav.view, isAuthenticated, user, navigate]);
+    router.replace(ADMIN_HOME);
+    navigate("home");
+  }, [nav.view, isAuthenticated, user, navigate, router]);
 
   // Full-page views (no header/footer)
   if (nav.view === "dashboard") {
@@ -398,15 +412,7 @@ export default function Home() {
   }
 
   if (nav.view === "admin") {
-    if (!isAuthenticated || !user || (user.role !== "admin" && user.role !== "moderator")) {
-      return null;
-    }
-    return (
-      <>
-        <AdminPanel />
-        <AuthModal />
-      </>
-    );
+    return null;
   }
 
   // Auth Verification Dashboard (full-page, no header/footer)
@@ -533,5 +539,13 @@ export default function Home() {
         />
       )}
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeApp />
+    </Suspense>
   );
 }

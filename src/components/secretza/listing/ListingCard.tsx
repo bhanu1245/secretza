@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { MapPin, Shield, Star, Eye, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +12,7 @@ import { useNavigationStore, useUIStore } from "@/store/useAppStore";
 import StarRating from "@/components/secretza/review/StarRating";
 import { cn } from "@/lib/utils";
 import { getListingCoverImageWithPlaceholder, getListingImages } from "@/lib/listing-images";
+import { isSpaHome, listingPath } from "@/lib/public-navigation";
 
 interface ListingCardProps {
   listing: Listing;
@@ -194,14 +197,19 @@ function OptimizedImage({
 // ListingCard Component
 // ==========================================
 export default function ListingCard({ listing }: ListingCardProps) {
+  const pathname = usePathname();
   const navigate = useNavigationStore((s) => s.navigate);
   const setSelectedListingId = useUIStore((s) => s.setSelectedListingId);
   const resolvedImages = getListingImages(listing);
   const coverImage = getListingCoverImageWithPlaceholder(listing);
+  const useSpaModal = isSpaHome(pathname);
+  const href = listing.slug ? listingPath(listing.slug) : undefined;
 
   const handleClick = () => {
     setSelectedListingId(listing.id);
-    navigate("listing", { id: listing.id });
+    if (useSpaModal) {
+      navigate("listing", { id: listing.id, slug: listing.slug });
+    }
   };
 
   const imageSrc = coverImage.url;
@@ -210,13 +218,8 @@ export default function ListingCard({ listing }: ListingCardProps) {
   const imgWidth = coverImage?.width;
   const imgHeight = coverImage?.height;
 
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className="card-hover group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-surface"
-      onClick={handleClick}
-    >
+  const cardContent = (
+    <>
       {/* Image Container */}
       <div className="relative aspect-[3/4] w-full overflow-hidden">
         <OptimizedImage
@@ -331,6 +334,33 @@ export default function ListingCard({ listing }: ListingCardProps) {
           </div>
         </div>
       </div>
+    </>
+  );
+
+  const cardClassName =
+    "card-hover group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-surface";
+
+  if (!useSpaModal && href) {
+    return (
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      >
+        <Link href={href} className={cardClassName}>
+          {cardContent}
+        </Link>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className={cardClassName}
+      onClick={handleClick}
+    >
+      {cardContent}
     </motion.div>
   );
 }

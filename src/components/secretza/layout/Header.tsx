@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Menu,
   Search,
@@ -40,13 +41,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { useNavigationStore, useAuthStore, useUIStore } from "@/store/useAppStore";
+import { useAuthStore, useUIStore } from "@/store/useAppStore";
 import { signOut } from "next-auth/react";
 import { toast } from "sonner";
 import { useCategories } from "@/hooks/useApiData";
+import { usePublicNavigation } from "@/hooks/usePublicNavigation";
+import { ADMIN_HOME, isAdminRole } from "@/lib/admin-nav";
 
 export default function Header() {
-  const navigate = useNavigationStore((s) => s.navigate);
+  const router = useRouter();
+  const {
+    goHome,
+    goCategory,
+    goSearch,
+    goPricing,
+    goPostAd,
+    goDashboard,
+  } = usePublicNavigation();
   const { isAuthenticated, user, setAuthModalOpen, setAuthModalTab, logout } =
     useAuthStore();
   const { isMobileMenuOpen, setMobileMenuOpen } = useUIStore();
@@ -56,27 +67,22 @@ export default function Header() {
   // Fetch categories from API (replaces mock-data import)
   const { categories } = useCategories();
 
-  const isAdminOrMod = user?.role === "admin" || user?.role === "moderator";
-  const dashboardView = isAdminOrMod ? "admin" : "dashboard";
+  const isAdminOrMod = isAdminRole(user?.role);
   const dashboardLabel = isAdminOrMod ? "Admin Panel" : "Dashboard";
   const DashboardIcon = isAdminOrMod ? Shield : LayoutDashboard;
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate("search", { keyword: searchQuery.trim() });
-      setSearchQuery("");
+  const goToDashboard = () => {
+    if (isAdminOrMod) {
+      router.push(ADMIN_HOME);
     } else {
-      navigate("search");
+      goDashboard();
     }
   };
 
-  const handleNavigateHome = () => {
-    navigate("home");
-  };
-
-  const handleNavigateCategory = (slug: string) => {
-    navigate("category", { slug });
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    goSearch(searchQuery.trim() || undefined);
+    setSearchQuery("");
   };
 
   const handlePostAd = () => {
@@ -85,7 +91,7 @@ export default function Header() {
       setAuthModalOpen(true);
       return;
     }
-    navigate("post-ad");
+    goPostAd();
   };
 
   const handleLogin = () => {
@@ -119,7 +125,7 @@ export default function Header() {
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo */}
           <button
-            onClick={handleNavigateHome}
+            onClick={goHome}
             className="flex items-center gap-2.5 shrink-0 group"
           >
             <div className="relative flex items-center justify-center w-9 h-9 rounded-xl gradient-violet violet-glow">
@@ -137,7 +143,7 @@ export default function Header() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("home")}
+              onClick={goHome}
               className="text-muted-foreground hover:text-foreground"
             >
               Browse
@@ -180,7 +186,7 @@ export default function Header() {
                       .map((cat) => (
                         <button
                           key={cat.id}
-                          onClick={() => handleNavigateCategory(cat.slug)}
+                          onClick={() => goCategory(cat.slug)}
                           className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-light transition-colors text-left"
                         >
                           <div
@@ -201,7 +207,7 @@ export default function Header() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("pricing")}
+              onClick={goPricing}
               className="text-muted-foreground hover:text-foreground"
             >
               <CreditCard className="size-4 mr-1" />
@@ -233,7 +239,7 @@ export default function Header() {
               variant="ghost"
               size="icon"
               className="md:hidden text-muted-foreground hover:text-foreground"
-              onClick={() => navigate("search")}
+              onClick={() => goSearch()}
             >
               <Search className="size-5" />
             </Button>
@@ -291,14 +297,14 @@ export default function Header() {
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuItem
-                      onClick={() => navigate(dashboardView)}
+                      onClick={goToDashboard}
                       className="cursor-pointer"
                     >
                       <DashboardIcon className="size-4" />
                       {dashboardLabel}
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => navigate("dashboard", { tab: "listings" })}
+                      onClick={() => goDashboard("listings")}
                       className="cursor-pointer"
                     >
                       <FileText className="size-4" />
@@ -399,7 +405,7 @@ export default function Header() {
                       icon={<Globe className="size-4" />}
                       label="Browse"
                       onClick={() => {
-                        navigate("home");
+                        goHome();
                         setMobileMenuOpen(false);
                       }}
                     />
@@ -416,7 +422,7 @@ export default function Header() {
                           <button
                             key={cat.id}
                             onClick={() => {
-                              handleNavigateCategory(cat.slug);
+                              goCategory(cat.slug);
                               setMobileMenuOpen(false);
                             }}
                             className="flex items-center gap-2.5 w-full rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-light transition-colors text-left"
@@ -439,7 +445,7 @@ export default function Header() {
                       icon={<CreditCard className="size-4" />}
                       label="Pricing"
                       onClick={() => {
-                        navigate("pricing");
+                        goPricing();
                         setMobileMenuOpen(false);
                       }}
                     />
@@ -474,7 +480,7 @@ export default function Header() {
                           variant="ghost"
                           className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
                           onClick={() => {
-                            navigate(dashboardView);
+                            goToDashboard();
                             setMobileMenuOpen(false);
                           }}
                         >
@@ -485,7 +491,7 @@ export default function Header() {
                           variant="ghost"
                           className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
                           onClick={() => {
-                            navigate("dashboard", { tab: "listings" });
+                            goDashboard("listings");
                             setMobileMenuOpen(false);
                           }}
                         >

@@ -1,7 +1,10 @@
 "use client";
 
-import { Home, Search, Plus, Heart, User } from "lucide-react";
+import { Home, Search, Plus, FileText, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useNavigationStore, useAuthStore } from "@/store/useAppStore";
+import { usePublicNavigation } from "@/hooks/usePublicNavigation";
+import { ADMIN_HOME, isAdminRole } from "@/lib/admin-nav";
 import type { AppView } from "@/lib/types";
 
 interface NavItem {
@@ -30,20 +33,23 @@ const navItems: NavItem[] = [
     isCenter: true,
   },
   {
-    label: "Favorites",
-    icon: Heart,
+    label: "My Ads",
+    icon: FileText,
     view: "dashboard",
-    params: { tab: "favorites" },
+    params: { tab: "listings" },
   },
   {
     label: "Profile",
     icon: User,
     view: "dashboard",
+    params: { tab: "overview" },
   },
 ];
 
 export default function MobileBottomNav() {
-  const { nav, navigate } = useNavigationStore();
+  const router = useRouter();
+  const { nav } = useNavigationStore();
+  const { go, goPostAd, goDashboard } = usePublicNavigation();
   const { isAuthenticated, user, setAuthModalOpen, setAuthModalTab } = useAuthStore();
 
   const handleClick = (item: NavItem) => {
@@ -54,19 +60,29 @@ export default function MobileBottomNav() {
       return;
     }
 
-    // If navigating to post-ad and not authenticated, redirect to register
-    if (!isAuthenticated && item.view === "post-ad") {
-      setAuthModalTab("register");
-      setAuthModalOpen(true);
+    if (item.view === "post-ad") {
+      if (!isAuthenticated) {
+        setAuthModalTab("register");
+        setAuthModalOpen(true);
+        return;
+      }
+      goPostAd();
       return;
     }
 
-    // Admin/moderator users: route Profile tab to admin panel
-    const resolvedView = (item.view === "dashboard" && (user?.role === "admin" || user?.role === "moderator"))
-      ? "admin"
-      : item.view;
+    // Admin/moderator users: route Profile tab to canonical /admin
+    if (item.view === "dashboard" && isAdminRole(user?.role)) {
+      router.push(ADMIN_HOME);
+      return;
+    }
 
-    navigate(resolvedView, item.params);
+    if (item.view === "dashboard") {
+      const tab = item.params?.tab as "overview" | "listings" | "settings" | undefined;
+      goDashboard(tab);
+      return;
+    }
+
+    go(item.view, item.params);
   };
 
   const isActive = (item: NavItem) => {

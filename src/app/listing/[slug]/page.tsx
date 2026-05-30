@@ -13,6 +13,7 @@ import {
 } from "@/lib/seo-ssr";
 import Breadcrumbs from "@/components/seo/Breadcrumbs";
 import JsonLd from "@/components/seo/JsonLd";
+import PublicSiteLayout from "@/components/secretza/layout/PublicSiteLayout";
 import ListingPageContent from "./ListingPageContent";
 
 // ------------------------------------------------------------------
@@ -167,8 +168,23 @@ export default async function ListingPage({ params }: ListingPageProps) {
       ? ratings.reduce((sum, r) => sum + r, 0) / reviewCount
       : 0;
 
-  // Build breadcrumb items
+  // Build breadcrumb items (relative paths for Link components)
   const breadcrumbItems = [
+    { label: "Home", href: "/" },
+    {
+      label: listing.category.name,
+      href: `/category/${listing.category.slug}`,
+    },
+    {
+      label: listing.city.name,
+      href: listing.state
+        ? `/${listing.country.slug}/${listing.state.slug}/${listing.city.slug}`
+        : "/",
+    },
+    { label: listing.title },
+  ];
+
+  const breadcrumbSchemaItems = [
     { name: "Home", url: buildUrl("/") },
     {
       name: listing.category.name,
@@ -184,11 +200,11 @@ export default async function ListingPage({ params }: ListingPageProps) {
           )
         : buildUrl("/"),
     },
-    { name: listing.title },
+    { name: listing.title, url: buildListingUrl(listing.slug) },
   ];
 
   // JSON-LD schemas
-  const breadcrumbSchema = buildBreadcrumbSchema(breadcrumbItems as any);
+  const breadcrumbSchema = buildBreadcrumbSchema(breadcrumbSchemaItems);
   const listingSchema = buildListingSchema({
     title: listing.title,
     description: listing.description,
@@ -277,12 +293,12 @@ export default async function ListingPage({ params }: ListingPageProps) {
       <JsonLd data={breadcrumbSchema} />
       <JsonLd data={listingSchema} />
 
-      <div className="min-h-screen pt-20 pb-12">
+      <PublicSiteLayout>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Breadcrumbs items={breadcrumbItems as any} />
+          <Breadcrumbs items={breadcrumbItems} />
           <ListingPageContent listing={serializedListing} />
         </div>
-      </div>
+      </PublicSiteLayout>
     </>
   );
 }

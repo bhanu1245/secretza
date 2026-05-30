@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { MapPin, ChevronRight, ChevronLeft, Search, Globe, Building2, Map, Navigation } from "lucide-react";
 import { useNavigationStore } from "@/store/useAppStore";
+import { usePublicNavigation } from "@/hooks/usePublicNavigation";
 
 // ==========================================
 // Types
@@ -40,6 +41,7 @@ interface GeoLocality {
 // ==========================================
 export default function IndiaGeoExplorer() {
   const navigate = useNavigationStore((s) => s.navigate);
+  const { goHome } = usePublicNavigation();
   const nav = useNavigationStore((s) => s.nav);
 
   // Data state
@@ -52,9 +54,9 @@ export default function IndiaGeoExplorer() {
   const [searchResults, setSearchResults] = useState<Array<{
     name: string;
     slug: string;
-    city: { name: string };
-    state: { name: string };
-    district: { name: string };
+    city: { name: string; slug: string };
+    state: { name: string; slug: string };
+    district: { name: string; slug: string };
   }>>([]);
 
   // Current breadcrumb context
@@ -220,7 +222,7 @@ export default function IndiaGeoExplorer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Back button */}
         <button
-          onClick={() => navigate("home")}
+          onClick={goHome}
           className="text-sm text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1 transition-colors"
         >
           <ChevronLeft className="size-4" />
@@ -245,6 +247,11 @@ export default function IndiaGeoExplorer() {
                   onClick={() => {
                     setSearchQuery("");
                     setSearchResults([]);
+                    navigate("geo-district", {
+                      stateSlug: r.state.slug,
+                      citySlug: r.city.slug,
+                      districtSlug: r.district.slug,
+                    });
                   }}
                   className="w-full px-4 py-2.5 text-left text-sm hover:bg-surface-light transition-colors flex items-center justify-between"
                 >
