@@ -150,6 +150,18 @@ function storageKeyFromClientUrl(url: string): string | null {
   return null;
 }
 
+function isExistingListingImage(
+  image: UploadedImage,
+  existingImageKeys: Set<string>,
+): boolean {
+  const storageKey = storageKeyFromClientUrl(image.url || "");
+  return (
+    existingImageKeys.has(image.id) ||
+    existingImageKeys.has(image.url) ||
+    Boolean(storageKey && existingImageKeys.has(storageKey))
+  );
+}
+
 function buildUploadResultsForSubmit(
   images: UploadedImage[],
   existingImageKeys: Set<string>,
@@ -162,12 +174,7 @@ function buildUploadResultsForSubmit(
         image.url &&
         !image.url.startsWith("blob:"),
     )
-    .filter((image) => {
-      if (image.uploadResult) return true;
-      return (
-        !existingImageKeys.has(image.id) && !existingImageKeys.has(image.url)
-      );
-    })
+    .filter((image) => !isExistingListingImage(image, existingImageKeys))
     .map((image) => {
       if (image.uploadResult) return image.uploadResult;
       const storageKey = storageKeyFromClientUrl(image.url);
@@ -269,9 +276,10 @@ export default function CreateListingForm({
         if (cancelled) return;
 
         existingImageKeysRef.current = new Set(
-          (listing.listingImages || []).flatMap((img: UploadedImage) =>
-            [img.id, img.url].filter(Boolean),
-          ),
+          (listing.listingImages || []).flatMap((img: UploadedImage) => {
+            const storageKey = storageKeyFromClientUrl(img.url || "");
+            return [img.id, img.url, storageKey].filter(Boolean) as string[];
+          }),
         );
 
         if (restoredDraftRef.current) return;
@@ -386,38 +394,63 @@ export default function CreateListingForm({
 
     try {
       setLoading(true);
-      const galleryImages = values.images
+      const submitValues = latestValuesRef.current;
+
+      if (submitValues.images.some((image) => image.isUploading)) {
+        toast.error("Please wait for all images to finish uploading");
+        return;
+      }
+
+      if (submitValues.images.some((image) => image.url?.startsWith("blob:"))) {
+        toast.error("Images are still processing. Wait a moment and try again.");
+        return;
+      }
+
+      const galleryImages = submitValues.images
         .filter((image) => !image.isUploading && !image.error && image.url)
         .map((image) => image.url);
       const uploadResults = buildUploadResultsForSubmit(
-        values.images,
+        submitValues.images,
         editMode ? existingImageKeysRef.current : new Set<string>(),
       );
 
+      if (editMode && process.env.NODE_ENV === "development") {
+        console.log("[CreateListingForm] edit submit", {
+          listingId: editListingId,
+          galleryCount: galleryImages.length,
+          uploadResultsCount: uploadResults.length,
+          existingKeyCount: existingImageKeysRef.current.size,
+          uploadResults: uploadResults.map((r) => ({
+            url: r.url,
+            storageKey: r.storageKey || r.key,
+          })),
+        });
+      }
+
       const payload = {
-        title: values.title,
-        slug: values.slug,
-        description: values.description,
-        age: values.age || null,
-        whatsapp: values.whatsapp || null,
-        telegram: values.telegram || null,
-        contactEmail: values.contactEmail || null,
-        contactPhone: values.contactPhone || null,
-        categorySlug: values.categorySlug,
-        subcategorySlug: values.subcategorySlug || null,
-        countrySlug: values.countrySlug,
-        stateSlug: values.stateSlug || null,
-        citySlug: values.citySlug,
-        areaId: values.areaId || null,
-        area: values.area || null,
-        tags: splitCsv(values.tags),
-        services: values.services,
-        price: Number(values.price),
-        currency: values.currency,
+        title: submitValues.title,
+        slug: submitValues.slug,
+        description: submitValues.description,
+        age: submitValues.age || null,
+        whatsapp: submitValues.whatsapp || null,
+        telegram: submitValues.telegram || null,
+        contactEmail: submitValues.contactEmail || null,
+        contactPhone: submitValues.contactPhone || null,
+        categorySlug: submitValues.categorySlug,
+        subcategorySlug: submitValues.subcategorySlug || null,
+        countrySlug: submitValues.countrySlug,
+        stateSlug: submitValues.stateSlug || null,
+        citySlug: submitValues.citySlug,
+        areaId: submitValues.areaId || null,
+        area: submitValues.area || null,
+        tags: splitCsv(submitValues.tags),
+        services: submitValues.services,
+        price: Number(submitValues.price),
+        currency: submitValues.currency,
         profileImage: galleryImages[0] || null,
         galleryImages,
         uploadResults,
-        pricingPlan: values.pricingPlan,
+        pricingPlan: submitValues.pricingPlan,
       };
 
       const response = await fetch(
@@ -502,7 +535,18 @@ export default function CreateListingForm({
         </Section>
 
         <Section title="Media">
-          <ImageUploader images={values.images} onImagesChange={(update) => setValues((current) => ({ ...current, images: typeof update === "function" ? update(current.images) : update }))} />
+          <ImageUploader
+            images={values.images}
+            onImagesChange={(update) =>
+              setValues((current) => {
+                const nextImages =
+                  typeof update === "function" ? update(current.images) : update;
+                const nextValues = { ...current, images: nextImages };
+                latestValuesRef.current = nextValues;
+                return nextValues;
+              })
+            }
+          />
         </Section>
 
         <Section title="Services">

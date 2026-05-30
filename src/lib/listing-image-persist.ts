@@ -132,7 +132,30 @@ export async function persistListingImages(
     candidates.push({ url, storageKey, sortOrder: candidates.length });
   }
 
-  if (candidates.length === 0) return 0;
+  if (candidates.length === 0) {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[persistListingImages] no new candidates", {
+        listingId,
+        existingKeyCount: existingKeys.size,
+        uploadResultsCount: uploadResults.length,
+        galleryCount: normalizedGallery.length,
+      });
+    }
+    return 0;
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("[persistListingImages] creating rows", {
+      listingId,
+      candidateCount: candidates.length,
+      candidates: candidates.map((img, index) => ({
+        url: String(img.url || "").slice(0, 100),
+        storageKey: resolveStorageKey(img, listingId, index),
+        moderationStatus: "pending",
+      })),
+      reuploadKeys,
+    });
+  }
 
   const keysToReplace = [
     ...new Set([
@@ -152,6 +175,10 @@ export async function persistListingImages(
   await db.listingImage.createMany({
     data: candidates.map((img, index) => toListingImageRow(listingId, img, index)),
   });
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("[persistListingImages] created", { listingId, count: candidates.length });
+  }
 
   return candidates.length;
 }

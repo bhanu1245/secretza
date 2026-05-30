@@ -16,10 +16,36 @@ import {
   sanitizeTelegram,
 } from "@/lib/listing-contact";
 import { persistListingImages } from "@/lib/listing-image-persist";
+import {
+  extractStorageKeyFromUrl,
+  resolveListingImageUrl,
+} from "@/lib/listing-images";
 
 function safeJsonParse(str: unknown, fallback: unknown): unknown {
   if (typeof str !== 'string') return fallback;
   try { return JSON.parse(str); } catch { return fallback; }
+}
+
+function normalizeGalleryUrlList(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map(String)
+    .map((url) => resolveListingImageUrl(url) || url.trim())
+    .filter((url) => url.length > 0 && !url.startsWith("blob:"));
+}
+
+function collectKnownStorageKeys(urls: string[], rows: Array<{ storageKey: string; url: string }>) {
+  const keys = new Set<string>();
+  for (const url of urls) {
+    const key = extractStorageKeyFromUrl(url);
+    if (key) keys.add(key);
+  }
+  for (const row of rows) {
+    if (row.storageKey) keys.add(row.storageKey);
+    const fromUrl = extractStorageKeyFromUrl(row.url);
+    if (fromUrl) keys.add(fromUrl);
+  }
+  return keys;
 }
 
 export async function GET(
@@ -412,7 +438,10 @@ export async function PUT(
               : existing.contactText,
         images: images !== undefined ? JSON.stringify(images) : existing.images,
         profileImage: profileImage !== undefined ? profileImage || null : (existing as any).profileImage,
-        galleryImages: galleryImages !== undefined ? JSON.stringify(galleryImages) : (existing as any).galleryImages,
+        galleryImages:
+          galleryImages !== undefined
+            ? JSON.stringify(normalizeGalleryUrlList(galleryImages))
+            : (existing as any).galleryImages,
         categoryId,
         subcategoryId,
         countryId,
@@ -435,16 +464,60 @@ export async function PUT(
     }
 
     const galleryUrls = Array.isArray(galleryImages)
-      ? galleryImages.map(String).filter(Boolean)
+      ? normalizeGalleryUrlList(galleryImages)
       : undefined;
 
-    if (
-      (Array.isArray(uploadResults) && uploadResults.length > 0) ||
-      (galleryUrls && galleryUrls.length > 0)
-    ) {
-      await persistListingImages(id, {
-        galleryImages: galleryUrls,
-        uploadResults: Array.isArray(uploadResults) ? uploadResults : [],
+    const previousGallery = normalizeGalleryUrlList(
+      safeJsonParse((existing as any).galleryImages, []),
+    );
+    const incomingGallery = galleryUrls ?? previousGallery;
+    const existingDbImages = await db.listingImage.findMany({
+      where: { listingId: id },
+      select: { storageKey: true, url: true },
+    });
+    const knownKeys = collectKnownStorageKeys(previousGallery, existingDbImages);
+    const addedGalleryUrls = incomingGallery.filter((url) => {
+      const key = extractStorageKeyFromUrl(url);
+      return Boolean(key && !knownKeys.has(key));
+    });
+
+    const normalizedUploadResults = Array.isArray(uploadResults) ? uploadResults : [];
+
+    const shouldPersist =
+      normalizedUploadResults.length > 0 || addedGalleryUrls.length > 0;
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("[PUT /api/listings/[id]] image persist", {
+        listingId: id,
+        galleryCount: galleryUrls?.length ?? 0,
+        addedGalleryCount: addedGalleryUrls.length,
+        uploadResultsCount: normalizedUploadResults.length,
+        uploadResults: normalizedUploadResults.map((r: Record<string, unknown>) => ({
+          url: r.url,
+          storageKey: r.storageKey || r.key,
+        })),
+        addedGalleryUrls,
+        shouldPersist,
+      });
+    }
+
+    let persistedCount = 0;
+    if (shouldPersist) {
+      persistedCount = await persistListingImages(id, {
+        galleryImages: addedGalleryUrls,
+        uploadResults: normalizedUploadResults,
+      });
+    }
+
+    const pendingForListing = await db.listingImage.count({
+      where: { listingId: id, moderationStatus: "pending" },
+    });
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("[PUT /api/listings/[id]] persistListingImages result", {
+        listingId: id,
+        persistedCount,
+        pendingForListing,
       });
     }
 
@@ -456,6 +529,9 @@ export async function PUT(
         status: updated.status,
         userId: updated.userId,
       },
+      _debug: process.env.NODE_ENV === "development"
+        ? { persistedCount, pendingForListing }
+        : undefined,
     });
   } catch (error) {
     logError(error, { component: "route:api/listings/[id]" });

@@ -73,6 +73,11 @@ export function extractStorageKeyFromUrl(url: string): string | null {
     if (parsed.pathname.startsWith("/uploads/")) {
       return parsed.pathname.slice("/uploads/".length);
     }
+
+    const listingsIdx = parsed.pathname.indexOf("/listings/");
+    if (listingsIdx >= 0) {
+      return parsed.pathname.slice(listingsIdx + 1);
+    }
   } catch {
     return null;
   }
