@@ -81,6 +81,8 @@ const CMS_PAGES = [
   { title: "Contact", slug: "contact", excerpt: "Contact Secretza support.", content: "<p>For support, moderation, or business inquiries, contact the Secretza admin team.</p>" },
   { title: "Safety Tips", slug: "safety-tips", excerpt: "Practical safety guidance.", content: "<p>Always verify information, protect your privacy, and report suspicious behavior to moderators.</p>" },
   { title: "FAQ", slug: "faq", excerpt: "Common Secretza questions.", content: "<p>Find answers about listings, moderation, upgrades, payments, and account safety.</p>" },
+  { title: "DMCA", slug: "dmca", excerpt: "Copyright and takedown policy.", content: "<p>Secretza respects intellectual property rights. To submit a DMCA notice, contact our admin team with proof of ownership and the infringing URL.</p>" },
+  { title: "Advertise", slug: "advertise", excerpt: "Promote your business on Secretza.", content: "<p>Reach premium audiences with featured listings, boosts, and banner placements. Contact us for advertising packages and partnership opportunities.</p>" },
 ];
 
 // ==========================================
@@ -251,6 +253,24 @@ async function seedCmsPages() {
   console.log("   ✅ CMS pages ready");
 }
 
+async function seedSocialSettings() {
+  const { DEFAULT_SOCIAL_URLS, SOCIAL_SETTING_KEYS } = await import("../src/lib/footer-routes");
+  const entries = [
+    [SOCIAL_SETTING_KEYS.twitter, DEFAULT_SOCIAL_URLS.twitter],
+    [SOCIAL_SETTING_KEYS.instagram, DEFAULT_SOCIAL_URLS.instagram],
+    [SOCIAL_SETTING_KEYS.youtube, DEFAULT_SOCIAL_URLS.youtube],
+    [SOCIAL_SETTING_KEYS.website, DEFAULT_SOCIAL_URLS.website],
+  ] as const;
+  for (const [key, value] of entries) {
+    await db.siteSettings.upsert({
+      where: { key },
+      create: { key, value },
+      update: { value },
+    });
+  }
+  console.log("   ✅ Social settings ready");
+}
+
 async function main() {
   console.log("🌱 Secretza Master Seed\n");
 
@@ -266,6 +286,7 @@ async function main() {
   // 3. Seed pricing and CMS defaults
   await seedPricingPlans();
   await seedCmsPages();
+  await seedSocialSettings();
 
   console.log("\n🎉 All seed data complete!");
 }
