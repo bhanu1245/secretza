@@ -1,0 +1,241 @@
+{
+  "generatedAt": "2026-05-31",
+  "currentState": {
+    "reactComponents": [
+      {
+        "file": "src/components/brand/LogoMark.tsx",
+        "role": "Single source of truth for the SVG icon",
+        "shape": "Shield (tapers to point at bottom — reads as location pin)",
+        "elements": ["Gradient shield", "SZ strokes 2.35px", "Negative-space silhouette cutout", "Checkmark circle at bottom tip"],
+        "issues": [
+          "Shield tip reads as map pin at all sizes",
+          "SZ strokes invisible below 24px render",
+          "Silhouette is 10px wide cutout — disappears at favicon sizes",
+          "Checkmark at cy=48.5 unrecognizable at any favicon size",
+          "Light-theme silhouette = white cutout on white shield interior (invisible)"
+        ]
+      },
+      {
+        "file": "src/components/brand/BrandWordmark.tsx",
+        "role": "SecretZa text with S/Z color emphasis",
+        "font": "system-ui / -apple-system",
+        "issues": [
+          "No letter-spacing / tracking",
+          "Generic system font has no luxury feel",
+          "S and Z color accent works but needs refinement"
+        ]
+      },
+      {
+        "file": "src/components/brand/Logo.tsx",
+        "role": "Composes LogoIcon + BrandWordmark by variant",
+        "issues": ["None — composition logic is sound"]
+      },
+      {
+        "file": "src/components/brand/LogoIcon.tsx",
+        "role": "Thin wrapper around LogoMark",
+        "issues": ["None"]
+      }
+    ],
+    "staticSVGs": [
+      {
+        "path": "public/brand/favicon.svg",
+        "viewBox": "0 0 64 64",
+        "description": "Shield mark used as browser tab favicon",
+        "issues": ["Pin shape at 16px", "Brand unrecognizable"]
+      },
+      {
+        "path": "public/brand/icon-192.svg",
+        "viewBox": "0 0 64 64",
+        "description": "PWA icon 192×192",
+        "issues": ["Same shield design", "Looks like location pin on home screen"]
+      },
+      {
+        "path": "public/brand/icon-512.svg",
+        "viewBox": "0 0 64 64",
+        "description": "PWA icon 512×512",
+        "issues": ["Same shield design"]
+      },
+      {
+        "path": "public/brand/logo-icon-dark.svg",
+        "viewBox": "0 0 64 64",
+        "description": "Standalone icon for dark backgrounds",
+        "issues": ["Shield shape", "Dark silhouette cutout OK but mark lacks elegance"]
+      },
+      {
+        "path": "public/brand/logo-icon-light.svg",
+        "viewBox": "0 0 64 64",
+        "description": "Standalone icon for light backgrounds",
+        "issues": [
+          "CRITICAL: Silhouette cutout = white fill on gradient shield",
+          "Silhouette completely disappears against white page backgrounds",
+          "The cutout trick only works when the page bg matches cutout color"
+        ]
+      },
+      {
+        "path": "public/brand/logo-full-dark.svg",
+        "viewBox": "0 0 300 64",
+        "description": "Horizontal logo: shield + SecretZa text",
+        "issues": ["Shield mark issues carry over", "SVG <text> with system-ui renders inconsistently cross-browser"]
+      },
+      {
+        "path": "public/brand/logo-full-light.svg",
+        "viewBox": "0 0 300 64",
+        "description": "Horizontal logo for light backgrounds",
+        "issues": ["Same + silhouette invisible issue"]
+      },
+      {
+        "path": "public/brand/logo-mobile-dark.svg",
+        "viewBox": "0 0 ???",
+        "description": "Compact horizontal logo for mobile headers",
+        "issues": ["Shield mark, small size makes it less legible"]
+      },
+      {
+        "path": "public/brand/og-image.svg",
+        "viewBox": "0 0 1200 630",
+        "description": "Open Graph social share image",
+        "issues": [
+          "Shield mark scaled 4.2× — shape is prominent but still pin-like",
+          "Text uses system-ui — renders differently in OG crawlers",
+          "No brand tagline positioning optimized for 1200×630 preview"
+        ]
+      },
+      {
+        "path": "public/logo.svg",
+        "viewBox": "0 0 64 64",
+        "description": "Legacy root path — duplicate of logo-icon-dark.svg",
+        "issues": ["Same shield issues"]
+      }
+    ],
+    "touchpoints": [
+      { "location": "Header desktop",    "file": "src/components/secretza/layout/Header.tsx:133",       "component": "<Logo variant='full' theme='dark'>",        "iconSize": 36, "method": "React" },
+      { "location": "Header mobile",     "file": "src/components/secretza/layout/Header.tsx:366",       "component": "<Logo variant='mobile' theme='dark' iconSize={32}>", "iconSize": 32, "method": "React" },
+      { "location": "Footer",            "file": "src/components/secretza/layout/Footer.tsx:59",        "component": "<Logo variant='full' theme='dark'>",        "iconSize": 36, "method": "React" },
+      { "location": "Admin sidebar",     "file": "src/components/secretza/admin/routes/AdminShell.tsx:44", "component": "<Logo variant='icon' theme='dark' iconSize={32}>", "iconSize": 32, "method": "React" },
+      { "location": "Auth modal",        "file": "src/components/secretza/auth/AuthModal.tsx:771",      "component": "<Logo variant='icon' theme='dark' iconSize={44}>", "iconSize": 44, "method": "React" },
+      { "location": "404 page",          "file": "src/app/not-found.tsx:18",                            "component": "<img src={BRAND_ASSETS.logoIconDark}>",    "iconSize": null, "method": "static SVG" },
+      { "location": "Global error",      "file": "src/app/global-error.tsx:31",                         "component": "<img src={BRAND_ASSETS.logoIconDark}>",    "iconSize": null, "method": "static SVG" },
+      { "location": "Browser favicon",   "file": "src/app/layout.tsx:51",                               "component": "BRAND_ASSETS.favicon",                     "iconSize": "16–64px", "method": "meta tag" },
+      { "location": "OG / Twitter card", "file": "src/app/layout.tsx:63-69",                            "component": "BRAND_ASSETS.ogImage",                     "iconSize": "1200×630", "method": "meta tag" },
+      { "location": "PWA manifest",      "file": "src/app/manifest.ts:15-27",                           "component": "favicon + icon192 + icon512",              "iconSize": "32/192/512", "method": "manifest" },
+      { "location": "Email header",      "file": "src/lib/email.ts via brand.ts:43",                    "component": "emailBrandHeader() → img logoIconDark",    "iconSize": 48, "method": "HTML email img" },
+      { "location": "SEO img fallback",  "file": "src/lib/seo-images.ts:3",                             "component": "/brand/logo-icon-dark.svg",                "iconSize": "thumbnail", "method": "static SVG" }
+    ]
+  },
+  "newAssetSet": {
+    "coreDesignSystem": {
+      "markShape": "Circle (64×64 viewBox, r=30 centered at 32,32)",
+      "gradient": "linear: #1E40AF → #4F46E5 → #7C3AED (135deg) — richer/deeper than current",
+      "silhouette": "Positive white female profile (right-facing side view: forehead, nose, lips, chin-neck) — solid fill, NOT a cutout",
+      "ring": "1px stroke at rgba(255,255,255,0.25) — definition ring for non-dark contexts",
+      "rationale": [
+        "Circle = modern app icon standard (all major platforms)",
+        "Gradient circle readable at 16px as colored dot = instant brand recognition",
+        "Positive silhouette (not cutout) works on ALL backgrounds — no dark/light variant needed for the mark itself",
+        "Removing SZ letters from the mark simplifies it — they belong only in the wordmark"
+      ]
+    },
+    "files": [
+      {
+        "path": "src/components/brand/LogoMark.tsx",
+        "action": "REPLACE",
+        "description": "New circle mark with gradient background + feminine profile silhouette. No SZ letters in the mark.",
+        "props": "size, theme, className, idPrefix — same API, no breaking changes"
+      },
+      {
+        "path": "src/components/brand/BrandWordmark.tsx",
+        "action": "UPDATE",
+        "description": "Add letter-spacing: 0.03em (tracking-wide), increase font-weight to 800, keep S/Z color emphasis. Add optional tagline prop for OG context.",
+        "changes": ["tracking-wider class", "font-weight: 800", "S=blue Z=violet unchanged"]
+      },
+      {
+        "path": "public/brand/favicon.svg",
+        "action": "REPLACE",
+        "viewBox": "0 0 64 64",
+        "description": "Gradient circle mark only. No text. Renders cleanly at 16px.",
+        "source": "Regenerated from new LogoMark"
+      },
+      {
+        "path": "public/brand/icon-192.svg",
+        "action": "REPLACE",
+        "viewBox": "0 0 64 64",
+        "description": "Full circle mark with silhouette. PWA icon.",
+        "source": "Regenerated from new LogoMark"
+      },
+      {
+        "path": "public/brand/icon-512.svg",
+        "action": "REPLACE",
+        "viewBox": "0 0 64 64",
+        "description": "Full circle mark with silhouette. Large PWA icon.",
+        "source": "Regenerated from new LogoMark"
+      },
+      {
+        "path": "public/brand/logo-icon-dark.svg",
+        "action": "REPLACE",
+        "viewBox": "0 0 64 64",
+        "description": "Circle mark on transparent bg. Used by error pages + email.",
+        "source": "Regenerated"
+      },
+      {
+        "path": "public/brand/logo-icon-light.svg",
+        "action": "REPLACE",
+        "viewBox": "0 0 64 64",
+        "description": "Same circle mark — IDENTICAL to dark version (gradient circle is self-contained, no bg dependency). Fixes the current invisible-silhouette defect.",
+        "source": "Regenerated"
+      },
+      {
+        "path": "public/brand/logo-full-dark.svg",
+        "action": "REPLACE",
+        "viewBox": "0 0 320 64",
+        "description": "Horizontal: circle mark (64×64) + SecretZa wordmark. Dark background variant (text color #F5F5F7).",
+        "source": "Regenerated"
+      },
+      {
+        "path": "public/brand/logo-full-light.svg",
+        "action": "REPLACE",
+        "viewBox": "0 0 320 64",
+        "description": "Horizontal: circle mark (64×64) + SecretZa wordmark. Light background variant (text color #111827).",
+        "source": "Regenerated"
+      },
+      {
+        "path": "public/brand/logo-mobile-dark.svg",
+        "action": "REPLACE",
+        "viewBox": "0 0 200 48",
+        "description": "Compact horizontal: 48×48 circle mark + SecretZa text at reduced size.",
+        "source": "Regenerated"
+      },
+      {
+        "path": "public/brand/og-image.svg",
+        "action": "REPLACE",
+        "viewBox": "0 0 1200 630",
+        "description": "1200×630 OG card: dark gradient bg + large circle mark (256×256) centered left, SecretZa wordmark + tagline right-aligned.",
+        "source": "Regenerated"
+      },
+      {
+        "path": "public/logo.svg",
+        "action": "REPLACE",
+        "description": "Keep as alias, same content as logo-icon-dark.svg.",
+        "source": "Regenerated"
+      },
+      {
+        "path": "scripts/generate-brand-assets.mjs",
+        "action": "UPDATE",
+        "description": "Update to emit new circle mark SVGs using the revised LogoMark geometry."
+      }
+    ],
+    "noCodeChangesRequired": [
+      "src/components/brand/Logo.tsx — composition unchanged",
+      "src/components/brand/LogoIcon.tsx — thin wrapper, unchanged",
+      "src/components/secretza/layout/Header.tsx — uses <Logo>, auto-picks up new mark",
+      "src/components/secretza/layout/Footer.tsx — same",
+      "src/components/secretza/admin/routes/AdminShell.tsx — same",
+      "src/components/secretza/auth/AuthModal.tsx — same",
+      "src/app/not-found.tsx — uses BRAND_ASSETS.logoIconDark, auto-picks up new static SVG",
+      "src/app/global-error.tsx — same",
+      "src/app/layout.tsx — meta tags reference BRAND_ASSETS paths, auto-picks up",
+      "src/app/manifest.ts — same",
+      "src/lib/email.ts — emailBrandHeader() references logoIconDark path, auto-picks up",
+      "src/lib/seo-images.ts — hardcoded path /brand/logo-icon-dark.svg, will update automatically",
+      "src/lib/brand.ts — BRAND_ASSETS paths are unchanged, colors unchanged"
+    ]
+  }
+}

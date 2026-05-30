@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecretZa Brand Audit & Redesign Plan</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #09090B; color: #F4F4F5; font-family: system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.6; }
+  .page { max-width: 1100px; margin: 0 auto; padding: 48px 24px; }
+
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 6px; }
+  h2 { font-size: 18px; font-weight: 700; color: #A1A1AA; margin-bottom: 20px; margin-top: 48px; letter-spacing: 0.06em; text-transform: uppercase; }
+  h3 { font-size: 13px; font-weight: 600; color: #A1A1AA; margin-bottom: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
+  p  { color: #A1A1AA; margin-bottom: 12px; }
+
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .pill-red    { background: rgba(239,68,68,0.15); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.3); }
+  .pill-amber  { background: rgba(245,158,11,0.15); color: #FCD34D; border: 1px solid rgba(245,158,11,0.3); }
+  .pill-green  { background: rgba(34,197,94,0.15); color: #86EFAC; border: 1px solid rgba(34,197,94,0.3); }
+  .pill-blue   { background: rgba(99,102,241,0.15); color: #A5B4FC; border: 1px solid rgba(99,102,241,0.3); }
+
+  .card { background: #18181B; border: 1px solid #27272A; border-radius: 12px; padding: 24px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+
+  .section { margin-bottom: 52px; }
+  .divider { height: 1px; background: #27272A; margin: 40px 0; }
+
+  /* Logo preview panels */
+  .logo-stage { display: flex; flex-direction: column; gap: 4px; }
+  .logo-stage-label { font-size: 11px; color: #71717A; font-weight: 500; }
+  .logo-bg-dark  { background: #0B0B0F; border: 1px solid #27272A; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 20px; gap: 12px; min-height: 100px; }
+  .logo-bg-light { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 20px; gap: 12px; min-height: 100px; }
+  .logo-bg-card  { background: #1C1C1E; border: 1px solid #27272A; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 20px; gap: 12px; min-height: 100px; }
+
+  /* Issue list */
+  .issue-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .issue-list li { display: flex; gap: 10px; align-items: flex-start; }
+  .issue-list li .dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; }
+  .dot-red   { background: #EF4444; }
+  .dot-amber { background: #F59E0B; }
+  .dot-green { background: #22C55E; }
+
+  /* Touchpoint table */
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; font-weight: 600; color: #71717A; letter-spacing: 0.06em; text-transform: uppercase; padding: 8px 12px; border-bottom: 1px solid #27272A; }
+  td { padding: 10px 12px; border-bottom: 1px solid #18181B; font-size: 12px; color: #D4D4D8; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td code { background: #27272A; padding: 1px 5px; border-radius: 4px; font-size: 11px; color: #A1A1AA; }
+
+  /* Phase cards */
+  .phase-list { display: flex; flex-direction: column; gap: 16px; }
+  .phase-card { background: #18181B; border: 1px solid #27272A; border-radius: 10px; padding: 20px 24px; display: grid; grid-template-columns: 56px 1fr; gap: 16px; align-items: flex-start; }
+  .phase-num { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3B82F6, #6366F1); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; flex-shrink: 0; }
+  .phase-body h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .phase-body .meta { font-size: 11px; color: #71717A; margin-bottom: 10px; display: flex; gap: 12px; }
+  .phase-body ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+  .phase-body ul li { font-size: 12px; color: #A1A1AA; padding-left: 14px; position: relative; }
+  .phase-body ul li::before { content: "→"; position: absolute; left: 0; color: #6366F1; }
+
+  /* Colour swatches */
+  .swatch-row { display: flex; gap: 12px; }
+  .swatch { width: 48px; height: 48px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
+
+  /* Comparison section */
+  .compare-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px; }
+  .compare-label.bad  { color: #F87171; }
+  .compare-label.good { color: #86EFAC; }
+
+  footer { margin-top: 80px; padding-top: 24px; border-top: 1px solid #27272A; color: #52525B; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:40px;">
+    <div>
+      <h1>SecretZa Brand Audit</h1>
+      <p style="color:#71717A; margin-top:4px;">Logo assets · branding touchpoints · redesign plan · 2026-05-31</p>
+    </div>
+    <div style="text-align:right;">
+      <span class="pill pill-amber">Audit Complete</span><br>
+      <span style="font-size:11px;color:#71717A;margin-top:6px;display:block;">Do not modify code yet</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 1: Current mark problems           -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <h2>1 · Current Logo — Audit Findings</h2>
+
+    <div class="grid2" style="margin-bottom:24px;">
+      <div class="card">
+        <h3>Current mark at all sizes</h3>
+        <!-- Current shield mark at various simulated sizes -->
+        <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap; padding:16px 0;">
+          <!-- 64px -->
+          <div class="logo-stage">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="c-g" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#3B82F6"/><stop offset="0.5" stop-color="#6366F1"/><stop offset="1" stop-color="#7C3AED"/>
+                </linearGradient>
+                <filter id="c-f" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <ellipse cx="32" cy="34" rx="22" ry="20" fill="#6366F1" opacity="0.14" filter="url(#c-f)"/>
+              <path d="M32 6 C32 6 50 10 50 24 C50 38 42 48 32 58 C22 48 14 38 14 24 C14 10 32 6 32 6 Z" fill="url(#c-g)" stroke="rgba(255,255,255,0.22)" stroke-width="0.85" filter="url(#c-f)"/>
+              <path d="M19.5 24.5c0-3.2 2.8-5.8 7-5.8s7 2.6 7 5.8c0 2.5-1.8 4.2-5.2 5-2.8 0.7-4.3 1.6-4.3 3.2s2 2.8 5.5 2.8 5.7-1.6 5.7-4" stroke="#FFF" stroke-width="2.35" stroke-linecap="round" fill="none"/>
+              <path d="M34.5 20h13M34.5 27.5L47.5 20M34.5 27.5h13" stroke="#FFF" stroke-width="2.35" stroke-linecap="round"/>
+              <path d="M29.5 21 C31.5 19 34 18.5 35.5 20 C36.8 21.2 37.2 22.6 36.8 24 C36.4 25.2 35.5 26 34.8 26.8 C34.1 27.6 33.6 28.8 34 30 C34.4 31.2 35.2 32.2 36.2 32.8 C37.2 33.4 37.8 34.4 37.6 35.4 C37.4 36.4 36.5 37.2 35.2 37.4 C33.9 37.6 33 36.8 32.6 35.8 C32.2 34.8 32 33.6 31.8 32.4 C31.6 31.2 31.3 30 31 28.8 C30.7 27.6 31 25.2 29.5 21 Z" fill="#0B0B0F"/>
+              <circle cx="32" cy="48.5" r="4.5" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.28)" stroke-width="0.55"/>
+              <path d="M29.5 48.5l1.3 1.3 3-3.6" stroke="#93C5FD" stroke-width="1.15" stroke-linecap="round"/>
+            </svg>
+            <span class="logo-stage-label">64px</span>
+          </div>
+          <!-- 32px -->
+          <div class="logo-stage">
+            <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="c-g2" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse"><stop stop-color="#3B82F6"/><stop offset="0.5" stop-color="#6366F1"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs>
+              <path d="M32 6 C32 6 50 10 50 24 C50 38 42 48 32 58 C22 48 14 38 14 24 C14 10 32 6 32 6 Z" fill="url(#c-g2)"/>
+              <path d="M19.5 24.5c0-3.2 2.8-5.8 7-5.8s7 2.6 7 5.8c0 2.5-1.8 4.2-5.2 5-2.8 0.7-4.3 1.6-4.3 3.2s2 2.8 5.5 2.8 5.7-1.6 5.7-4" stroke="#FFF" stroke-width="2.35" stroke-linecap="round" fill="none"/>
+              <path d="M34.5 20h13M34.5 27.5L47.5 20M34.5 27.5h13" stroke="#FFF" stroke-width="2.35" stroke-linecap="round"/>
+            </svg>
+            <span class="logo-stage-label">32px — SZ barely readable</span>
+          </div>
+          <!-- 16px -->
+          <div class="logo-stage">
+            <svg width="16" height="16" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="c-g3" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse"><stop stop-color="#3B82F6"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs>
+              <path d="M32 6 C32 6 50 10 50 24 C50 38 42 48 32 58 C22 48 14 38 14 24 C14 10 32 6 32 6 Z" fill="url(#c-g3)"/>
+            </svg>
+            <span class="logo-stage-label">16px — just a gradient pin</span>
+          </div>
+        </div>
+        <p style="font-size:12px;color:#71717A;margin-top:8px;">At 16px the mark becomes an anonymous gradient location-pin. No brand recognition.</p>
+      </div>
+
+      <div class="card">
+        <h3>Current mark on light background</h3>
+        <div class="logo-bg-light" style="flex-direction:column;gap:16px;">
+          <!-- Light bg — silhouette cutout = white on white -->
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="cl-g" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#3B82F6"/><stop offset="0.5" stop-color="#6366F1"/><stop offset="1" stop-color="#7C3AED"/>
+              </linearGradient>
+            </defs>
+            <path d="M32 6 C32 6 50 10 50 24 C50 38 42 48 32 58 C22 48 14 38 14 24 C14 10 32 6 32 6 Z" fill="url(#cl-g)"/>
+            <path d="M19.5 24.5c0-3.2 2.8-5.8 7-5.8s7 2.6 7 5.8c0 2.5-1.8 4.2-5.2 5-2.8 0.7-4.3 1.6-4.3 3.2s2 2.8 5.5 2.8 5.7-1.6 5.7-4" stroke="#FFF" stroke-width="2.35" stroke-linecap="round" fill="none"/>
+            <path d="M34.5 20h13M34.5 27.5L47.5 20M34.5 27.5h13" stroke="#FFF" stroke-width="2.35" stroke-linecap="round"/>
+            <!-- Light theme: silhouette fill = white = INVISIBLE -->
+            <path d="M29.5 21 C31.5 19 34 18.5 35.5 20 C36.8 21.2 37.2 22.6 36.8 24 C36.4 25.2 35.5 26 34.8 26.8 C34.1 27.6 33.6 28.8 34 30 C34.4 31.2 35.2 32.2 36.2 32.8 C37.2 33.4 37.8 34.4 37.6 35.4 C37.4 36.4 36.5 37.2 35.2 37.4 C33.9 37.6 33 36.8 32.6 35.8 C32.2 34.8 32 33.6 31.8 32.4 C31.6 31.2 31.3 30 31 28.8 C30.7 27.6 31 25.2 29.5 21 Z" fill="#FFFFFF"/>
+          </svg>
+          <p style="font-size:11px;color:#9CA3AF;text-align:center;">Silhouette fill=#FFFFFF on light bg = invisible<br><span style="color:#EF4444;font-weight:600;">CRITICAL DEFECT</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Issues table -->
+    <div class="card">
+      <h3>Issues found</h3>
+      <ul class="issue-list" style="margin-top:12px;">
+        <li><span class="dot dot-red"></span><div><strong>Location-pin shape:</strong> The shield path tapers to a point at y=58. At small sizes it reads as a map/location marker with no brand identity.</div></li>
+        <li><span class="dot dot-red"></span><div><strong>SZ letters invisible at favicon sizes:</strong> The SZ strokes are 2.35px on a 64-unit canvas. At 16px render, they disappear completely.</div></li>
+        <li><span class="dot dot-red"></span><div><strong>Light-theme silhouette defect:</strong> <code>logo-icon-light.svg</code> uses <code>fill="#FFFFFF"</code> for the silhouette cutout — it becomes invisible against light backgrounds. </div></li>
+        <li><span class="dot dot-red"></span><div><strong>Checkmark unrecognizable:</strong> The verification circle at cy=48.5 is at the bottom tip of the shield. Invisible below 48px render, adds visual noise above it.</div></li>
+        <li><span class="dot dot-amber"></span><div><strong>Overcrowded mark:</strong> Shield + SZ monogram + feminine silhouette cutout + checkmark = 4 competing elements in 64×64 pixels. Luxury marks are minimal.</div></li>
+        <li><span class="dot dot-amber"></span><div><strong>Silhouette barely recognizable:</strong> The "feminine silhouette" is a narrow 10px-wide negative-space cutout. At any size below 128px, it reads as a random squiggle.</div></li>
+        <li><span class="dot dot-amber"></span><div><strong>Typography not luxury:</strong> <code>BrandWordmark</code> uses default <code>font-bold</code> (700) without letter-spacing. Luxury wordmarks use 800 weight + wide tracking.</div></li>
+        <li><span class="dot dot-green"></span><div><strong>Component architecture is good:</strong> Single <code>LogoMark.tsx</code> source of truth, <code>BRAND_ASSETS</code> paths used consistently, no stray hardcoded paths.</div></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 2: Proposed new mark               -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <h2>2 · Proposed New Mark — Preview</h2>
+    <p>The new mark replaces the shield with a <strong>gradient circle</strong> and a <strong>positive white feminine profile</strong>. The circle is the universal modern app icon standard — reads as a recognisable colour blob at 16px and a detailed brand mark at 64px+.</p>
+
+    <div class="grid2" style="margin-bottom:24px;">
+      <div class="card">
+        <h3>New mark at all sizes</h3>
+        <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap; padding:16px 0;">
+          <!-- 64px new mark -->
+          <div class="logo-stage">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="n-g" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#3B82F6"/>
+                  <stop offset="0.45" stop-color="#4F46E5"/>
+                  <stop offset="1" stop-color="#7C3AED"/>
+                </linearGradient>
+                <filter id="n-glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <!-- Outer glow -->
+              <circle cx="32" cy="32" r="30" fill="#4F46E5" opacity="0.2" filter="url(#n-glow)"/>
+              <!-- Gradient circle -->
+              <circle cx="32" cy="32" r="29" fill="url(#n-g)"/>
+              <!-- Definition ring -->
+              <circle cx="32" cy="32" r="29" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+              <!-- Elegant feminine profile silhouette — right-facing side view -->
+              <!-- Head: starts at top, forehead curves, down to nose, lips, chin, neck, shoulder -->
+              <path
+                d="
+                  M 35 10
+                  C 39 10 43 13 43 18
+                  C 43 21 41.5 23.5 40 25
+                  C 41.5 25.8 43 26.8 43.5 28.5
+                  C 44 30.5 43 32 41.5 33
+                  C 42.5 34 43 35.5 43 37
+                  C 43 40 40 42 37 42.5
+                  L 37 46
+                  C 37 48 36 49.5 34.5 50.5
+                  L 26 54
+                  C 24 55 22 54 22 52
+                  L 22 50
+                  C 22 48.5 23 47.5 24.5 47.5
+                  L 30 47
+                  L 30 42.5
+                  C 27 42 25 40.5 25 38.5
+                  C 25 37 26 36 27.5 35.5
+                  C 26.5 34.5 26 33.2 26 32
+                  C 26 29 28 27 30 26.5
+                  C 29 25.5 28 23.5 28 21.5
+                  C 28 17 30 13 33 11
+                  Z
+                "
+                fill="rgba(255,255,255,0.9)"
+              />
+              <!-- Hair highlight -->
+              <path
+                d="M 33 10 C 38 9 43 12 43.5 17 C 43.5 14 42 11 39 10 C 37 9 35 9.5 33 10 Z"
+                fill="rgba(255,255,255,0.3)"
+              />
+            </svg>
+            <span class="logo-stage-label">64px</span>
+          </div>
+          <!-- 32px new mark -->
+          <div class="logo-stage">
+            <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="n-g2" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#3B82F6"/>
+                  <stop offset="0.45" stop-color="#4F46E5"/>
+                  <stop offset="1" stop-color="#7C3AED"/>
+                </linearGradient>
+              </defs>
+              <circle cx="32" cy="32" r="29" fill="url(#n-g2)"/>
+              <circle cx="32" cy="32" r="29" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+              <path d="M 35 10 C 39 10 43 13 43 18 C 43 21 41.5 23.5 40 25 C 41.5 25.8 43 26.8 43.5 28.5 C 44 30.5 43 32 41.5 33 C 42.5 34 43 35.5 43 37 C 43 40 40 42 37 42.5 L 37 46 C 37 48 36 49.5 34.5 50.5 L 26 54 C 24 55 22 54 22 52 L 22 50 C 22 48.5 23 47.5 24.5 47.5 L 30 47 L 30 42.5 C 27 42 25 40.5 25 38.5 C 25 37 26 36 27.5 35.5 C 26.5 34.5 26 33.2 26 32 C 26 29 28 27 30 26.5 C 29 25.5 28 23.5 28 21.5 C 28 17 30 13 33 11 Z" fill="rgba(255,255,255,0.9)"/>
+            </svg>
+            <span class="logo-stage-label">32px — silhouette readable</span>
+          </div>
+          <!-- 16px new mark -->
+          <div class="logo-stage">
+            <svg width="16" height="16" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="n-g3" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#3B82F6"/>
+                  <stop offset="1" stop-color="#7C3AED"/>
+                </linearGradient>
+              </defs>
+              <circle cx="32" cy="32" r="29" fill="url(#n-g3)"/>
+            </svg>
+            <span class="logo-stage-label">16px — clean gradient circle</span>
+          </div>
+        </div>
+        <p style="font-size:12px;color:#22C55E;margin-top:8px;">✓ Circle reads as a premium brand at all sizes. No pin confusion.</p>
+      </div>
+
+      <div class="card">
+        <h3>New mark on light background</h3>
+        <div class="logo-bg-light" style="flex-direction:column;gap:16px;">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="nl-g" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#3B82F6"/>
+                <stop offset="0.45" stop-color="#4F46E5"/>
+                <stop offset="1" stop-color="#7C3AED"/>
+              </linearGradient>
+            </defs>
+            <!-- Same mark — gradient circle is self-contained, no bg dependency -->
+            <circle cx="32" cy="32" r="29" fill="url(#nl-g)"/>
+            <circle cx="32" cy="32" r="29" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+            <path d="M 35 10 C 39 10 43 13 43 18 C 43 21 41.5 23.5 40 25 C 41.5 25.8 43 26.8 43.5 28.5 C 44 30.5 43 32 41.5 33 C 42.5 34 43 35.5 43 37 C 43 40 40 42 37 42.5 L 37 46 C 37 48 36 49.5 34.5 50.5 L 26 54 C 24 55 22 54 22 52 L 22 50 C 22 48.5 23 47.5 24.5 47.5 L 30 47 L 30 42.5 C 27 42 25 40.5 25 38.5 C 25 37 26 36 27.5 35.5 C 26.5 34.5 26 33.2 26 32 C 26 29 28 27 30 26.5 C 29 25.5 28 23.5 28 21.5 C 28 17 30 13 33 11 Z" fill="rgba(255,255,255,0.9)"/>
+          </svg>
+          <p style="font-size:11px;color:#6B7280;text-align:center;">Positive white silhouette on gradient circle<br><span style="color:#22C55E;font-weight:600;">Works on any background ✓</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full horizontal logo preview -->
+    <div class="card" style="margin-bottom:20px;">
+      <h3>New horizontal logo (dark bg)</h3>
+      <div class="logo-bg-dark" style="justify-content:flex-start; gap:16px; padding:28px 32px;">
+        <!-- Circle mark -->
+        <svg width="44" height="44" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="h-g" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#3B82F6"/>
+              <stop offset="0.45" stop-color="#4F46E5"/>
+              <stop offset="1" stop-color="#7C3AED"/>
+            </linearGradient>
+          </defs>
+          <circle cx="32" cy="32" r="29" fill="url(#h-g)"/>
+          <circle cx="32" cy="32" r="29" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+          <path d="M 35 10 C 39 10 43 13 43 18 C 43 21 41.5 23.5 40 25 C 41.5 25.8 43 26.8 43.5 28.5 C 44 30.5 43 32 41.5 33 C 42.5 34 43 35.5 43 37 C 43 40 40 42 37 42.5 L 37 46 C 37 48 36 49.5 34.5 50.5 L 26 54 C 24 55 22 54 22 52 L 22 50 C 22 48.5 23 47.5 24.5 47.5 L 30 47 L 30 42.5 C 27 42 25 40.5 25 38.5 C 25 37 26 36 27.5 35.5 C 26.5 34.5 26 33.2 26 32 C 26 29 28 27 30 26.5 C 29 25.5 28 23.5 28 21.5 C 28 17 30 13 33 11 Z" fill="rgba(255,255,255,0.9)"/>
+        </svg>
+        <!-- Wordmark -->
+        <div style="display:flex;flex-direction:column;gap:0;">
+          <span style="font-family:system-ui,-apple-system,sans-serif;font-size:22px;font-weight:800;letter-spacing:0.03em;color:#F4F4F5;line-height:1;">
+            <span style="color:#3B82F6;">S</span>ecret<span style="color:#6366F1;">Z</span>a
+          </span>
+          <span style="font-size:10px;color:#71717A;letter-spacing:0.1em;font-weight:500;margin-top:3px;">PREMIUM · VERIFIED · DISCREET</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>New horizontal logo (light bg)</h3>
+      <div class="logo-bg-light" style="justify-content:flex-start; gap:16px; padding:28px 32px;">
+        <!-- Same circle mark works perfectly -->
+        <svg width="44" height="44" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="hl-g" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#3B82F6"/>
+              <stop offset="0.45" stop-color="#4F46E5"/>
+              <stop offset="1" stop-color="#7C3AED"/>
+            </linearGradient>
+          </defs>
+          <circle cx="32" cy="32" r="29" fill="url(#hl-g)"/>
+          <circle cx="32" cy="32" r="29" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+          <path d="M 35 10 C 39 10 43 13 43 18 C 43 21 41.5 23.5 40 25 C 41.5 25.8 43 26.8 43.5 28.5 C 44 30.5 43 32 41.5 33 C 42.5 34 43 35.5 43 37 C 43 40 40 42 37 42.5 L 37 46 C 37 48 36 49.5 34.5 50.5 L 26 54 C 24 55 22 54 22 52 L 22 50 C 22 48.5 23 47.5 24.5 47.5 L 30 47 L 30 42.5 C 27 42 25 40.5 25 38.5 C 25 37 26 36 27.5 35.5 C 26.5 34.5 26 33.2 26 32 C 26 29 28 27 30 26.5 C 29 25.5 28 23.5 28 21.5 C 28 17 30 13 33 11 Z" fill="rgba(255,255,255,0.9)"/>
+        </svg>
+        <div style="display:flex;flex-direction:column;gap:0;">
+          <span style="font-family:system-ui,-apple-system,sans-serif;font-size:22px;font-weight:800;letter-spacing:0.03em;color:#111827;line-height:1;">
+            <span style="color:#2563EB;">S</span>ecret<span style="color:#4F46E5;">Z</span>a
+          </span>
+          <span style="font-size:10px;color:#9CA3AF;letter-spacing:0.1em;font-weight:500;margin-top:3px;">PREMIUM · VERIFIED · DISCREET</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 3: Colour system                   -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <h2>3 · Colour System — No Changes Required</h2>
+    <p>The existing <code>BRAND_COLORS</code> in <code>brand.ts</code> is unchanged. Only the gradient depth in the mark SVG changes slightly (start stop deepened from #3B82F6 to #3B82F6 — same as current, but the circle shape makes it feel richer).</p>
+
+    <div class="card" style="margin-top:16px;">
+      <h3>Gradient</h3>
+      <div class="swatch-row" style="margin-top:12px;align-items:center;gap:16px;">
+        <div class="swatch" style="background:#3B82F6;"></div>
+        <span style="font-size:12px;color:#71717A;">→</span>
+        <div class="swatch" style="background:#4F46E5;"></div>
+        <span style="font-size:12px;color:#71717A;">→</span>
+        <div class="swatch" style="background:#7C3AED;"></div>
+        <div style="width:160px;height:48px;border-radius:8px;background:linear-gradient(135deg,#3B82F6,#4F46E5,#7C3AED);"></div>
+        <span style="font-size:12px;color:#71717A;">Applied to circle background</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 4: Touchpoint map                  -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <h2>4 · Touchpoint Map</h2>
+    <p>All 11 brand touchpoints. Only 2 files need code changes (<code>LogoMark.tsx</code> + <code>BrandWordmark.tsx</code>). The remaining 9 pick up changes automatically.</p>
+
+    <div class="card" style="margin-top:16px;padding:0;overflow:hidden;">
+      <table>
+        <thead>
+          <tr>
+            <th>Surface</th>
+            <th>File</th>
+            <th>Method</th>
+            <th>Update required</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Header desktop</td><td><code>Header.tsx:133</code></td><td>React &lt;Logo&gt;</td><td><span class="pill pill-green">Auto</span></td></tr>
+          <tr><td>Header mobile</td><td><code>Header.tsx:366</code></td><td>React &lt;Logo&gt;</td><td><span class="pill pill-green">Auto</span></td></tr>
+          <tr><td>Footer</td><td><code>Footer.tsx:59</code></td><td>React &lt;Logo&gt;</td><td><span class="pill pill-green">Auto</span></td></tr>
+          <tr><td>Admin sidebar</td><td><code>AdminShell.tsx:44</code></td><td>React &lt;Logo&gt;</td><td><span class="pill pill-green">Auto</span></td></tr>
+          <tr><td>Auth modal</td><td><code>AuthModal.tsx:771</code></td><td>React &lt;Logo&gt;</td><td><span class="pill pill-green">Auto</span></td></tr>
+          <tr><td>404 / Error pages</td><td><code>not-found.tsx, global-error.tsx</code></td><td>static SVG &lt;img&gt;</td><td><span class="pill pill-green">Auto via new SVG</span></td></tr>
+          <tr><td>Browser favicon</td><td><code>layout.tsx</code></td><td>meta link</td><td><span class="pill pill-green">Auto via new SVG</span></td></tr>
+          <tr><td>OG / Twitter card</td><td><code>layout.tsx</code></td><td>meta og:image</td><td><span class="pill pill-green">Auto via new SVG</span></td></tr>
+          <tr><td>PWA manifest icons</td><td><code>manifest.ts</code></td><td>manifest.json</td><td><span class="pill pill-green">Auto via new SVG</span></td></tr>
+          <tr><td>Email header</td><td><code>email.ts → brand.ts</code></td><td>HTML &lt;img&gt;</td><td><span class="pill pill-green">Auto via new SVG</span></td></tr>
+          <tr><td>SEO img fallback</td><td><code>seo-images.ts:3</code></td><td>hardcoded path</td><td><span class="pill pill-green">Auto via new SVG at same path</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 5: Implementation plan             -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <h2>5 · Implementation Plan</h2>
+    <div class="phase-list">
+      <div class="phase-card">
+        <div class="phase-num">1</div>
+        <div class="phase-body">
+          <h4>Redesign LogoMark.tsx</h4>
+          <div class="meta"><span class="pill pill-red" style="font-size:10px;">P0 Critical</span><span style="color:#71717A;">~2h</span></div>
+          <ul>
+            <li>Replace shield path with circle (cx=32 cy=32 r=29)</li>
+            <li>Apply gradient fill to circle</li>
+            <li>Add positive feminine profile silhouette path (solid white fill)</li>
+            <li>Add definition ring (rgba(255,255,255,0.2) stroke)</li>
+            <li>Remove SZ letter strokes, checkmark circle, ellipse glow</li>
+            <li>Keep all props unchanged: size, theme, className, idPrefix</li>
+          </ul>
+        </div>
+      </div>
+      <div class="phase-card">
+        <div class="phase-num">2</div>
+        <div class="phase-body">
+          <h4>Refine BrandWordmark.tsx</h4>
+          <div class="meta"><span class="pill pill-blue" style="font-size:10px;">P1 High</span><span style="color:#71717A;">~15min</span></div>
+          <ul>
+            <li>Change font-bold to font-extrabold (weight 800)</li>
+            <li>Add tracking-wider class (letter-spacing 0.05em)</li>
+            <li>Keep S=blue (#3B82F6), Z=violet (#6366F1)</li>
+            <li>No API changes</li>
+          </ul>
+        </div>
+      </div>
+      <div class="phase-card">
+        <div class="phase-num">3</div>
+        <div class="phase-body">
+          <h4>Update generate-brand-assets.mjs &amp; regenerate SVGs</h4>
+          <div class="meta"><span class="pill pill-red" style="font-size:10px;">P0 Critical</span><span style="color:#71717A;">~1h</span></div>
+          <ul>
+            <li>Update script to emit new circle mark geometry</li>
+            <li>Regenerate all 10 SVG files in public/brand/</li>
+            <li>favicon.svg · icon-192 · icon-512 · logo-icon-dark · logo-icon-light</li>
+            <li>logo-full-dark · logo-full-light · logo-mobile-dark · og-image · logo.svg</li>
+            <li>logo-icon-light.svg = same as dark (fixes critical light-bg defect)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="phase-card">
+        <div class="phase-num">4</div>
+        <div class="phase-body">
+          <h4>Visual verification + build</h4>
+          <div class="meta"><span class="pill pill-red" style="font-size:10px;">P0 Critical</span><span style="color:#71717A;">~30min</span></div>
+          <ul>
+            <li>npx tsc --noEmit → 0 errors</li>
+            <li>bun run build → clean</li>
+            <li>Visual check: Header, Footer, Admin, Auth, 404, favicon</li>
+            <li>Check light theme: open a page with white bg</li>
+            <li>Check email: send test email, verify logo renders</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 6: Asset Map                       -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <h2>6 · Complete Asset Map</h2>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table>
+        <thead>
+          <tr><th>File</th><th>ViewBox</th><th>Use</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>src/components/brand/LogoMark.tsx</code></td><td>0 0 64 64</td><td>React source of truth for all icon renders</td><td><span class="pill pill-red">REPLACE design</span></td></tr>
+          <tr><td><code>src/components/brand/BrandWordmark.tsx</code></td><td>—</td><td>Wordmark text component</td><td><span class="pill pill-amber">UPDATE weight + tracking</span></td></tr>
+          <tr><td><code>src/components/brand/Logo.tsx</code></td><td>—</td><td>Composition component</td><td><span class="pill pill-green">NO CHANGE</span></td></tr>
+          <tr><td><code>src/components/brand/LogoIcon.tsx</code></td><td>—</td><td>Thin wrapper</td><td><span class="pill pill-green">NO CHANGE</span></td></tr>
+          <tr><td><code>scripts/generate-brand-assets.mjs</code></td><td>—</td><td>Static SVG generator script</td><td><span class="pill pill-amber">UPDATE geometry</span></td></tr>
+          <tr><td><code>public/brand/favicon.svg</code></td><td>0 0 64 64</td><td>Browser tab, 16–64px</td><td><span class="pill pill-red">REPLACE</span></td></tr>
+          <tr><td><code>public/brand/icon-192.svg</code></td><td>0 0 64 64</td><td>PWA home screen</td><td><span class="pill pill-red">REPLACE</span></td></tr>
+          <tr><td><code>public/brand/icon-512.svg</code></td><td>0 0 64 64</td><td>PWA large icon</td><td><span class="pill pill-red">REPLACE</span></td></tr>
+          <tr><td><code>public/brand/logo-icon-dark.svg</code></td><td>0 0 64 64</td><td>Error pages, email, SEO fallback</td><td><span class="pill pill-red">REPLACE</span></td></tr>
+          <tr><td><code>public/brand/logo-icon-light.svg</code></td><td>0 0 64 64</td><td>Light-bg contexts</td><td><span class="pill pill-red">REPLACE (critical fix)</span></td></tr>
+          <tr><td><code>public/brand/logo-full-dark.svg</code></td><td>0 0 320 64</td><td>Full horizontal logo dark</td><td><span class="pill pill-red">REPLACE</span></td></tr>
+          <tr><td><code>public/brand/logo-full-light.svg</code></td><td>0 0 320 64</td><td>Full horizontal logo light</td><td><span class="pill pill-red">REPLACE</span></td></tr>
+          <tr><td><code>public/brand/logo-mobile-dark.svg</code></td><td>0 0 200 48</td><td>Mobile header compact</td><td><span class="pill pill-red">REPLACE</span></td></tr>
+          <tr><td><code>public/brand/og-image.svg</code></td><td>0 0 1200 630</td><td>OG / Twitter card</td><td><span class="pill pill-red">REPLACE</span></td></tr>
+          <tr><td><code>public/logo.svg</code></td><td>0 0 64 64</td><td>Legacy alias</td><td><span class="pill pill-red">REPLACE (keep path)</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    <p>SecretZa Brand Audit · Generated 2026-05-31 · No code modified · Plan only</p>
+  </footer>
+</div>
+</body>
+</html>

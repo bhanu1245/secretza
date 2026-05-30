@@ -1,0 +1,134 @@
+{
+  "title": "SecretZa Brand System Redesign — Implementation Plan",
+  "generatedAt": "2026-05-31",
+  "designDecision": {
+    "markShape": "CIRCLE (replaces shield/pin)",
+    "reasoning": "The current shield tapers to a point at the bottom, creating a location-pin silhouette. A circle is the universal modern app icon standard, renders identically at all sizes, and eliminates the 'map pin' association. The gradient circle reads as a confident brand colour blob at 16px — the minimum favicon requirement.",
+    "sihouetteStrategy": "POSITIVE (white solid fill) instead of NEGATIVE (cutout). A white solid profile works on any background because the gradient circle provides the coloured stage. The current cutout approach breaks on light backgrounds (white on white = invisible).",
+    "typoStrategy": "Keep S/Z colour differentiation. Add tracking-wider + font-weight 800 for luxury feel. Keep system-ui/sans-serif for universal rendering without font-embed complexity."
+  },
+  "phases": [
+    {
+      "phase": 1,
+      "title": "Redesign LogoMark.tsx",
+      "priority": "P0",
+      "effort": "Medium",
+      "description": "Replace the shield SVG with a circle mark. This is the single source of truth — all React renders and static SVG generation flow from here.",
+      "steps": [
+        "Remove the shield path (M32 6 C32 6 50 10 50 24...)",
+        "Remove the SZ stroke paths (keep only in BrandWordmark)",
+        "Remove the checkmark circle",
+        "Add circle background (cx=32 cy=32 r=30) with gradient fill",
+        "Add feminine profile silhouette as a positive white path — elegant side-view (forehead → nose → lip → chin → neck flowing curve)",
+        "Add 1px definition ring at rgba(255,255,255,0.2)",
+        "Keep idPrefix prop pattern for defs collision prevention",
+        "Ensure theme prop still accepted (used by callers) — but circle mark is background-agnostic"
+      ],
+      "files": ["src/components/brand/LogoMark.tsx"]
+    },
+    {
+      "phase": 2,
+      "title": "Refine BrandWordmark.tsx",
+      "priority": "P1",
+      "effort": "Low",
+      "description": "Improve typography for luxury positioning.",
+      "steps": [
+        "Add tracking-wider (letter-spacing: 0.05em) to the wordmark span",
+        "Increase font-weight from 700 (bold) to 800 (extrabold) — use font-extrabold class",
+        "Keep S in text-[#3B82F6], Z in text-[#6366F1]",
+        "Ensure compact prop still works at smaller scale",
+        "Keep BRAND_NAME import — no hardcoding"
+      ],
+      "files": ["src/components/brand/BrandWordmark.tsx"]
+    },
+    {
+      "phase": 3,
+      "title": "Regenerate all static SVG assets",
+      "priority": "P0",
+      "effort": "Medium",
+      "description": "Run generate-brand-assets.mjs (after updating it to reflect new LogoMark geometry) to output all 10 static SVG files in public/brand/.",
+      "steps": [
+        "Update scripts/generate-brand-assets.mjs to emit circle mark geometry",
+        "Generate favicon.svg (64×64 circle, no text)",
+        "Generate icon-192.svg (64×64 circle + silhouette)",
+        "Generate icon-512.svg (64×64 circle + silhouette)",
+        "Generate logo-icon-dark.svg (circle mark, dark text context)",
+        "Generate logo-icon-light.svg (SAME circle mark — gradient is bg-agnostic, fixes light-theme defect)",
+        "Generate logo-full-dark.svg (300×64, circle + dark wordmark)",
+        "Generate logo-full-light.svg (300×64, circle + light wordmark)",
+        "Generate logo-mobile-dark.svg (compact horizontal)",
+        "Generate og-image.svg (1200×630 OG card)",
+        "Update public/logo.svg (alias of logo-icon-dark)"
+      ],
+      "files": [
+        "scripts/generate-brand-assets.mjs",
+        "public/brand/favicon.svg",
+        "public/brand/icon-192.svg",
+        "public/brand/icon-512.svg",
+        "public/brand/logo-icon-dark.svg",
+        "public/brand/logo-icon-light.svg",
+        "public/brand/logo-full-dark.svg",
+        "public/brand/logo-full-light.svg",
+        "public/brand/logo-mobile-dark.svg",
+        "public/brand/og-image.svg",
+        "public/logo.svg"
+      ]
+    },
+    {
+      "phase": 4,
+      "title": "Verify all touchpoints",
+      "priority": "P0",
+      "effort": "Low",
+      "description": "All touchpoints use BRAND_ASSETS paths or the <Logo> component — they pick up changes automatically. A verification pass confirms each surface.",
+      "touchpoints": [
+        { "surface": "Header desktop",    "method": "React <Logo>",      "change": "Auto — new LogoMark" },
+        { "surface": "Header mobile",     "method": "React <Logo>",      "change": "Auto" },
+        { "surface": "Footer",            "method": "React <Logo>",      "change": "Auto" },
+        { "surface": "Admin sidebar",     "method": "React <Logo>",      "change": "Auto" },
+        { "surface": "Auth modal",        "method": "React <Logo>",      "change": "Auto" },
+        { "surface": "404 / Error pages", "method": "static SVG img",    "change": "Auto — new logo-icon-dark.svg" },
+        { "surface": "Browser favicon",   "method": "BRAND_ASSETS path", "change": "Auto — new favicon.svg" },
+        { "surface": "OG / Twitter card", "method": "BRAND_ASSETS path", "change": "Auto — new og-image.svg" },
+        { "surface": "PWA manifest",      "method": "BRAND_ASSETS path", "change": "Auto — new icon-192 / icon-512" },
+        { "surface": "Email header",      "method": "img logoIconDark",  "change": "Auto — new logo-icon-dark.svg" },
+        { "surface": "SEO img fallback",  "method": "hardcoded path",    "change": "Auto — new logo-icon-dark.svg at same path" }
+      ],
+      "files": []
+    },
+    {
+      "phase": 5,
+      "title": "Run full build verification",
+      "priority": "P0",
+      "effort": "Low",
+      "steps": [
+        "npx tsc --noEmit — confirm 0 TypeScript errors",
+        "bun run build — confirm clean production build",
+        "Visual spot-check: Header, Footer, Admin, Auth, 404 in browser"
+      ],
+      "files": []
+    }
+  ],
+  "colorTokens": {
+    "unchanged": true,
+    "note": "BRAND_COLORS in brand.ts remains the same — only the mark shape and silhouette strategy change",
+    "gradientStops": [
+      { "offset": "0%",   "color": "#3B82F6", "name": "primary blue" },
+      { "offset": "50%",  "color": "#6366F1", "name": "indigo" },
+      { "offset": "100%", "color": "#7C3AED", "name": "violet" }
+    ],
+    "recommendation": "Optionally deepen the gradient start from #3B82F6 to #1D4ED8 for a richer luxury feel without changing brand.ts constants (just update generate-brand-assets.mjs)"
+  },
+  "riskAssessment": {
+    "breakingChanges": "NONE — all touchpoints use BRAND_ASSETS paths or React components; API shape of Logo, LogoIcon, LogoMark components is unchanged",
+    "emailClients": "LOW — email uses static SVG <img> tag; circle mark renders cleanly in all mail clients that support img tags",
+    "faviconCaching": "LOW RISK — browsers cache favicons; users may see old pin icon for up to 24h after deployment. Add ?v=2 cache-bust query to favicon URL in layout.tsx if needed.",
+    "lightThemeDefect": "FIXED by moving to circle mark — no more white-on-white silhouette"
+  },
+  "estimatedWork": {
+    "LogoMark.tsx redesign": "2h — SVG path design for circle + profile",
+    "BrandWordmark.tsx refinement": "15min",
+    "generate-brand-assets.mjs update": "1h",
+    "Verification": "30min",
+    "Total": "~4h"
+  }
+}
