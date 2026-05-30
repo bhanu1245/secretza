@@ -18,6 +18,9 @@ const adminApiRoutes = ["/api/admin/"];
 /** Routes that require `moderator` or `admin` role */
 const moderatorApiRoutes = ["/api/cron/", "/api/upload/moderate"];
 
+/** Admin API routes moderators may access (listing moderation) */
+const moderatorAdminApiRoutes = ["/api/admin/listings"];
+
 /** Routes exempt from CSRF validation */
 const csrfExemptRoutes = [
   "/api/auth/",
@@ -27,6 +30,7 @@ const csrfExemptRoutes = [
   "/api/listings/",
   "/api/upload",
   "/api/upload/",
+  "/api/upload/moderate",
   "/api/payments/",
 ];
 
@@ -102,7 +106,7 @@ export async function proxy(request: NextRequest) {
 
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     const payload = await verifySessionToken(request);
-    if (!hasMinRole(payload, "admin")) {
+    if (!hasMinRole(payload, "moderator")) {
       return NextResponse.redirect(new URL("/", request.url));
     }
   }
@@ -112,7 +116,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next();
     }
 
-    // Public file serving — uploaded listing images must load without auth
+    // Listing images — moderation gate enforced in route handler
     if (pathname.startsWith("/api/upload/file")) {
       return NextResponse.next();
     }
@@ -180,10 +184,15 @@ export async function proxy(request: NextRequest) {
       }
 
       if (isAdminRoute && !hasMinRole(payload, "admin")) {
-        return NextResponse.json(
-          { error: "Insufficient permissions" },
-          { status: 403 },
+        const modAdminOk = moderatorAdminApiRoutes.some((route) =>
+          pathname.startsWith(route),
         );
+        if (!modAdminOk || !hasMinRole(payload, "moderator")) {
+          return NextResponse.json(
+            { error: "Insufficient permissions" },
+            { status: 403 },
+          );
+        }
       }
 
       if (isModRoute && !hasMinRole(payload, "moderator")) {

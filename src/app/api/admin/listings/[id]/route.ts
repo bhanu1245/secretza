@@ -12,9 +12,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const admin = await requireMinRole("admin");
+    const admin = await requireMinRole("moderator");
     if (!admin) {
-      return NextResponse.json({ error: "Admin access required" }, { status: 401 });
+      return NextResponse.json({ error: "Moderator access required" }, { status: 401 });
     }
 
     const { id } = await params;

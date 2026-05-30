@@ -27,6 +27,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const session = await getServerSession(authOptions);
 
   const listing = await db.listing.findUnique({
     where: { id },
@@ -39,7 +40,6 @@ export async function GET(
       city: true,
       areaRelation: true,
       listingImages: {
-        where: { moderationStatus: { in: ["pending", "approved"] } },
         orderBy: { sortOrder: "asc" },
         select: {
           id: true,
@@ -61,12 +61,21 @@ export async function GET(
     return NextResponse.json({ error: "Listing not found" }, { status: 404 });
   }
 
-  // Status-based access control: only owners/admins can see non-approved listings
-  const session = await getServerSession(authOptions);
-  const isOwnerOrAdmin = session?.user?.id && (session.user.id === listing.userId || session.user.role === "admin");
-  if (!isOwnerOrAdmin && listing.status !== "approved") {
+  const isOwnerOrStaff =
+    session?.user?.id &&
+    (session.user.id === listing.userId ||
+      session.user.role === "admin" ||
+      session.user.role === "moderator");
+
+  if (!isOwnerOrStaff && listing.status !== "approved") {
     return NextResponse.json({ error: "Listing not found" }, { status: 404 });
   }
+
+  const visibleImages = listing.listingImages.filter((img) =>
+    isOwnerOrStaff
+      ? img.moderationStatus === "pending" || img.moderationStatus === "approved"
+      : img.moderationStatus === "approved",
+  );
 
   const rankInput = {
     id: listing.id,
@@ -102,20 +111,18 @@ export async function GET(
     price: listing.price,
     currency: listing.currency,
     ...contactFields,
-    images: safeJsonParse(listing.images, []),
-    profileImage: (listing as any).profileImage,
-    galleryImages: safeJsonParse((listing as any).galleryImages, []),
+    images: isOwnerOrStaff ? safeJsonParse(listing.images, []) : [],
+    profileImage: isOwnerOrStaff ? (listing as any).profileImage : null,
+    galleryImages: isOwnerOrStaff ? safeJsonParse((listing as any).galleryImages, []) : [],
     coverImage:
-      listing.listingImages[0]?.thumbnailUrl ||
-      listing.listingImages[0]?.url ||
-      (listing as any).profileImage ||
-      (safeJsonParse((listing as any).galleryImages, []) as any[])[0] ||
-      (safeJsonParse(listing.images, []) as any[])[0]?.url ||
+      visibleImages[0]?.thumbnailUrl ||
+      visibleImages[0]?.url ||
+      (isOwnerOrStaff ? (listing as any).profileImage : null) ||
       null,
     age: (listing as any).age,
     whatsapp: contactFields.whatsapp,
     telegram: contactFields.telegram,
-    listingImages: listing.listingImages.map((img) => ({
+    listingImages: visibleImages.map((img) => ({
       id: img.id,
       url: img.url,
       thumbnailUrl: img.thumbnailUrl,

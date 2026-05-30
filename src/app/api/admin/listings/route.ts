@@ -6,7 +6,7 @@ import { logError } from "@/lib/monitoring";
 
 export async function GET(request: Request) {
   try {
-    const admin = await requireMinRole("admin");
+    const admin = await requireMinRole("moderator");
     if (!admin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -53,6 +53,13 @@ export async function GET(request: Request) {
               icon: true,
             },
           },
+          subcategory: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
           country: {
             select: {
               id: true,
@@ -72,13 +79,20 @@ export async function GET(request: Request) {
               name: true,
             },
           },
+          areaRelation: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
           _count: {
             select: {
               reports: true,
             },
           },
           listingImages: {
-            where: { moderationStatus: { in: ["pending", "approved"] } },
+            where: { moderationStatus: "approved" },
             orderBy: { sortOrder: "asc" },
             take: 1,
             select: {
@@ -103,8 +117,10 @@ export async function GET(request: Request) {
         currency: l.currency,
         isFeatured: l.isFeatured,
         isBoosted: l.isBoosted,
+        isPremium: (l as any).isPremium,
         priorityScore: l.priorityScore,
         viewCount: l.viewCount,
+        views: (l as any).views,
         reportCount: l._count.reports,
         riskScore: l.riskScore,
         expiresAt: l.expiresAt?.toISOString() ?? null,
@@ -114,9 +130,12 @@ export async function GET(request: Request) {
         updatedAt: l.updatedAt.toISOString(),
         user: l.user ? { ...l.user, role: l.user.role.toLowerCase() } : null,
         category: l.category,
+        subcategory: (l as any).subcategory,
         country: l.country,
         state: l.state,
         city: l.city,
+        area: (l as any).area,
+        areaRelation: (l as any).areaRelation,
         listingImages: l.listingImages,
       })),
       total,

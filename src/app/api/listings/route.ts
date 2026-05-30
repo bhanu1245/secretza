@@ -161,7 +161,9 @@ export async function GET(request: Request) {
         areaRelation: true,
         _count: { select: { reviews: { where: { status: "approved" } } } },
         listingImages: {
-          where: { moderationStatus: { in: ["pending", "approved"] } },
+          where: userId
+            ? { moderationStatus: { in: ["pending", "approved"] } }
+            : { moderationStatus: "approved" },
           orderBy: { sortOrder: "asc" },
           select: {
             id: true,
@@ -289,9 +291,6 @@ export async function GET(request: Request) {
       coverImage:
         l.listingImages[0]?.thumbnailUrl ||
         l.listingImages[0]?.url ||
-        (l as any).profileImage ||
-        galleryImages[0] ||
-        (typeof legacyImages[0] === "string" ? legacyImages[0] : legacyImages[0]?.url) ||
         null,
       status: l.status,
       isFeatured: l.isFeatured,

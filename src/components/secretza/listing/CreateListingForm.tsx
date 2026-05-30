@@ -130,6 +130,59 @@ function splitCsv(value: string) {
     .filter(Boolean);
 }
 
+function storageKeyFromClientUrl(url: string): string | null {
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.startsWith("blob:")) return null;
+  if (trimmed.startsWith("listings/")) return trimmed;
+
+  try {
+    const parsed = new URL(trimmed, "http://localhost");
+    if (parsed.pathname === "/api/upload/file") {
+      return parsed.searchParams.get("key");
+    }
+    if (parsed.pathname.startsWith("/uploads/")) {
+      return parsed.pathname.slice("/uploads/".length);
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function buildUploadResultsForSubmit(
+  images: UploadedImage[],
+  existingImageKeys: Set<string>,
+) {
+  return images
+    .filter(
+      (image) =>
+        !image.isUploading &&
+        !image.error &&
+        image.url &&
+        !image.url.startsWith("blob:"),
+    )
+    .filter((image) => {
+      if (image.uploadResult) return true;
+      return (
+        !existingImageKeys.has(image.id) && !existingImageKeys.has(image.url)
+      );
+    })
+    .map((image) => {
+      if (image.uploadResult) return image.uploadResult;
+      const storageKey = storageKeyFromClientUrl(image.url);
+      return {
+        id: image.id,
+        key: storageKey || "",
+        storageKey: storageKey || "",
+        url: image.url,
+        sizeBytes: 0,
+        mimeType: "image/jpeg",
+      };
+    })
+    .filter((result) => result.url && (result.storageKey || result.key));
+}
+
 export default function CreateListingForm({
   editListingId = null,
   editMode = false,
@@ -147,6 +200,7 @@ export default function CreateListingForm({
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const latestValuesRef = useRef(values);
   const restoredDraftRef = useRef(false);
+  const existingImageKeysRef = useRef<Set<string>>(new Set());
 
   const selectedCategory = categories.find((category) => category.slug === values.categorySlug);
   const selectedCountry = countries.find((country) => country.slug === values.countrySlug);
@@ -178,6 +232,7 @@ export default function CreateListingForm({
 
   useEffect(() => {
     restoredDraftRef.current = false;
+    existingImageKeysRef.current = new Set();
 
     try {
       const storedDraft = window.localStorage.getItem(draftKey);
@@ -197,13 +252,13 @@ export default function CreateListingForm({
   }, [draftKey]);
 
   useEffect(() => {
-    if (!hydrated || !editMode || !editListingId || restoredDraftRef.current) return;
+    if (!hydrated || !editMode || !editListingId) return;
 
     let cancelled = false;
 
     async function loadListingForEdit() {
       try {
-        setLoading(true);
+        if (!restoredDraftRef.current) setLoading(true);
         const response = await fetch(`/api/listings/${editListingId}`);
         const listing = await response.json();
 
@@ -212,6 +267,14 @@ export default function CreateListingForm({
         }
 
         if (cancelled) return;
+
+        existingImageKeysRef.current = new Set(
+          (listing.listingImages || []).flatMap((img: UploadedImage) =>
+            [img.id, img.url].filter(Boolean),
+          ),
+        );
+
+        if (restoredDraftRef.current) return;
 
         setValues({
           ...emptyValues,
@@ -243,7 +306,7 @@ export default function CreateListingForm({
         toast.error(error instanceof Error ? error.message : "Failed to load listing");
         navigate("dashboard", { tab: "listings" });
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && !restoredDraftRef.current) setLoading(false);
       }
     }
 
@@ -326,9 +389,10 @@ export default function CreateListingForm({
       const galleryImages = values.images
         .filter((image) => !image.isUploading && !image.error && image.url)
         .map((image) => image.url);
-      const uploadResults = values.images
-        .map((image) => image.uploadResult)
-        .filter(Boolean);
+      const uploadResults = buildUploadResultsForSubmit(
+        values.images,
+        editMode ? existingImageKeysRef.current : new Set<string>(),
+      );
 
       const payload = {
         title: values.title,

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { createStorageService } from "@/lib/storage";
+import { canAccessListingImageFile } from "@/lib/image-moderation";
 
 export async function GET(request: Request) {
   try {
@@ -8,6 +11,16 @@ export async function GET(request: Request) {
 
     if (!key) {
       return NextResponse.json({ error: "Missing file key" }, { status: 400 });
+    }
+
+    const session = await getServerSession(authOptions);
+    const viewer = session?.user
+      ? { id: session.user.id, role: session.user.role as string }
+      : undefined;
+
+    const allowed = await canAccessListingImageFile(key, viewer);
+    if (!allowed) {
+      return NextResponse.json({ error: "Image not available" }, { status: 403 });
     }
 
     const storage = createStorageService();
@@ -32,7 +45,8 @@ export async function GET(request: Request) {
     return new NextResponse(file, {
       headers: {
         "Content-Type": contentTypeFor(key),
-        "Cache-Control": "public, max-age=31536000, immutable",
+        "Cache-Control":
+          key.startsWith("listings/") ? "private, max-age=3600" : "public, max-age=31536000, immutable",
       },
     });
   } catch (error) {
@@ -42,7 +56,9 @@ export async function GET(request: Request) {
 }
 
 function contentTypeFor(key: string) {
+  if (key.endsWith(".svg")) return "image/svg+xml";
   if (key.endsWith(".png")) return "image/png";
   if (key.endsWith(".webp")) return "image/webp";
-  return "image/jpeg";
+  if (key.endsWith(".jpg") || key.endsWith(".jpeg")) return "image/jpeg";
+  return "application/octet-stream";
 }

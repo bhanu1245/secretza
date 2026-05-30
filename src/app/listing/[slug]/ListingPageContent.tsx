@@ -27,7 +27,7 @@ import { normalizeListingContact } from "@/lib/listing-contact";
 import { buildCategoryUrl } from "@/lib/seo-ssr";
 import { cn } from "@/lib/utils";
 import {
-  getListingImages,
+  getPublicListingImages,
   getListingCoverImageWithPlaceholder,
 } from "@/lib/listing-images";
 
@@ -91,7 +91,7 @@ function useImages(listing?: SerializedListing) {
     return [];
   }
 
-  const resolved = getListingImages({
+  const resolved = getPublicListingImages({
     ...listing,
     images: listing.legacyImages,
   });
@@ -100,7 +100,7 @@ function useImages(listing?: SerializedListing) {
     return resolved;
   }
 
-  return [getListingCoverImageWithPlaceholder(listing)];
+  return [getListingCoverImageWithPlaceholder(listing, { publicOnly: true })];
 }
 
 // ------------------------------------------------------------------

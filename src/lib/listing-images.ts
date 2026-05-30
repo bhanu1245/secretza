@@ -8,6 +8,7 @@ export type ListingImageCandidate = {
   blurHash?: string | null;
   width?: number | null;
   height?: number | null;
+  moderationStatus?: string | null;
 };
 
 export type ListingLikeWithImages = {
@@ -143,15 +144,21 @@ function fromUnknownImage(value: unknown, title: string): ResolvedListingImage |
   };
 }
 
-export function getListingImages(listing: ListingLikeWithImages): ResolvedListingImage[] {
+export function getListingImages(
+  listing: ListingLikeWithImages,
+  options?: { publicOnly?: boolean },
+): ResolvedListingImage[] {
   const title = listing.title || "Listing image";
+  const publicOnly = options?.publicOnly ?? false;
   const resolved: ResolvedListingImage[] = [];
 
-  const dbImages = [...(listing.listingImages || [])].sort((a, b) => {
-    if (a.isPrimary && !b.isPrimary) return -1;
-    if (!a.isPrimary && b.isPrimary) return 1;
-    return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
-  });
+  const dbImages = [...(listing.listingImages || [])]
+    .filter((image) => !publicOnly || image.moderationStatus === "approved" || !image.moderationStatus)
+    .sort((a, b) => {
+      if (a.isPrimary && !b.isPrimary) return -1;
+      if (!a.isPrimary && b.isPrimary) return 1;
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    });
 
   for (const image of dbImages) {
     const url = normalizeUrl(image.url);
@@ -165,6 +172,10 @@ export function getListingImages(listing: ListingLikeWithImages): ResolvedListin
       width: image.width || undefined,
       height: image.height || undefined,
     });
+  }
+
+  if (publicOnly) {
+    return resolved;
   }
 
   const profileImage = normalizeUrl(listing.profileImage);
@@ -194,14 +205,23 @@ export function getListingImages(listing: ListingLikeWithImages): ResolvedListin
   return resolved;
 }
 
-export function getListingCoverImage(listing: ListingLikeWithImages): ResolvedListingImage | null {
-  return getListingImages(listing)[0] || null;
+/** Approved DB images only — safe for public listing pages. */
+export function getPublicListingImages(listing: ListingLikeWithImages): ResolvedListingImage[] {
+  return getListingImages(listing, { publicOnly: true });
+}
+
+export function getListingCoverImage(
+  listing: ListingLikeWithImages,
+  options?: { publicOnly?: boolean },
+): ResolvedListingImage | null {
+  return getListingImages(listing, options)[0] || null;
 }
 
 export function getListingCoverImageWithPlaceholder(
   listing: ListingLikeWithImages,
+  options?: { publicOnly?: boolean },
 ): ResolvedListingImage {
-  const cover = getListingCoverImage(listing);
+  const cover = getListingCoverImage(listing, options);
   if (cover) return cover;
 
   const title = listing.title || "Listing";
