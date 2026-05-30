@@ -18,8 +18,8 @@ const adminApiRoutes = ["/api/admin/"];
 /** Routes that require `moderator` or `admin` role */
 const moderatorApiRoutes = ["/api/cron/", "/api/upload/moderate"];
 
-/** Admin API routes moderators may access (listing moderation) */
-const moderatorAdminApiRoutes = ["/api/admin/listings"];
+/** Admin API routes moderators may access (listing + review moderation) */
+const moderatorAdminApiRoutes = ["/api/admin/listings", "/api/admin/reviews"];
 
 /** Routes exempt from CSRF validation */
 const csrfExemptRoutes = [
