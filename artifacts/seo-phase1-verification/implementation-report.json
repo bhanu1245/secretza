@@ -1,0 +1,74 @@
+{
+  "phase": "SEO Architecture Phase 1",
+  "generatedAt": "2026-05-31T00:00:00.000Z",
+  "verdict": "COMPLETE",
+  "verificationScore": "14/14 (100%)",
+
+  "filesModified": [
+    {
+      "file": "src/lib/seo-city-content-v5.ts",
+      "changes": [
+        "Added `stateSlug: string` and `countrySlug: string` fields to V5Context interface",
+        "Updated ctx() to accept stateSlug + countrySlug and embed them in V5Context",
+        "Added buildH2Label() — maps each of the 24 SectionDef labels to a keyword-bearing H2 string that includes the city name and relevant service terms",
+        "Modified sectionWrapper() — signature changed from (body, c, sectionId: number) to (body, c, section: SectionDef); now prepends '##H2::{label}##\\n\\n' before the section opener+body",
+        "Fixed buildV5InternalLinks() — replaced /escorts/{slug}, /{cat}/{slug}, /adult-services/{slug} with correct live routes",
+        "Fixed related city anchor text — was '{city} ← {current}', now 'escorts in {city}'",
+        "Fixed category links — now use /category/{slug} route (e.g. /category/escorts, /category/massage)",
+        "Fixed architecture anchor links — now point to /{country}/{state}/{city} canonical URL",
+        "Updated buildV5CityContent() signature to accept stateSlug (default '') and countrySlug (default 'in')",
+        "Updated generateV5CitySEO() to pass stateSlug to buildV5CityContent()",
+        "Updated call site: sectionWrapper(core, c, s) instead of sectionWrapper(core, c, s.id)"
+      ]
+    },
+    {
+      "file": "src/components/seo/SeoPageView.tsx",
+      "changes": [
+        "Added ParsedSection type",
+        "Added parseIntroSections() — splits introContent on '\\n\\n' and extracts ##H2:: sentinels into structured sections with h2 and body fields; backward-compatible (pages without sentinels render as flat paragraphs)",
+        "Added SeoIntroContent component — if any sections have an h2, renders <h2> + <p> pairs; otherwise falls back to the legacy flat paragraph renderer",
+        "Replaced inline intro rendering block with <SeoIntroContent intro={intro} />"
+      ]
+    }
+  ],
+
+  "requirements": [
+    {
+      "req": "Render H2 headings in SeoPageView.tsx",
+      "status": "DONE",
+      "detail": "SeoIntroContent component parses ##H2:: sentinels and renders <h2 class='text-base sm:text-lg font-semibold text-foreground'> for each section"
+    },
+    {
+      "req": "Replace generic section labels with keyword-bearing H2 labels",
+      "status": "DONE",
+      "detail": "buildH2Label() maps all 24 SECTION_POOL labels to keyword-rich headings that include city name + service terms (e.g. 'Escorts for Business Travellers in Bandra, Mumbai')"
+    },
+    {
+      "req": "Fix internal link URL generation to use live route builders",
+      "status": "DONE",
+      "detail": "Architecture anchors now use /{country}/{state}/{city}; category links use /category/{slug}; neighbourhood links use city canonical URL. Removed all broken /escorts/{slug}, /{cat}/{slug}, /adult-services/{slug} patterns"
+    },
+    {
+      "req": "Fix related city anchor text to 'Escorts in {city}'",
+      "status": "DONE",
+      "detail": "Was: '{city} ← {current city}'. Now: 'escorts in {city}'. Verified for Mumbai → Pune, Nagpur, Thane"
+    },
+    {
+      "req": "Fix category link generation to use live route builders",
+      "status": "DONE",
+      "detail": "Now uses /category/escorts, /category/massage, /category/dating, /category/adult-jobs with anchor text '{category} in {city}'"
+    }
+  ],
+
+  "notImplemented": [
+    "SeoKeyword table / DB schema additions — deferred to Phase 2",
+    "SEO cron / automated regeneration — deferred to Phase 2",
+    "Keyword density tracking — deferred to Phase 2"
+  ],
+
+  "backwardCompatibility": {
+    "legacyPages": "parseIntroSections() returns h2=null sections for pages without ##H2:: markers; SeoIntroContent falls back to the original flat <p> renderer — zero visual change for existing content",
+    "typecheck": "npx tsc --noEmit — 0 errors",
+    "linter": "0 errors on both modified files"
+  }
+}
