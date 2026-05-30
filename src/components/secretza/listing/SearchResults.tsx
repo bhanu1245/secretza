@@ -33,7 +33,7 @@ const ITEMS_PER_PAGE = 12;
 const sortOptions: { value: SearchFilters["sortBy"]; label: string }[] = [
   { value: "featured", label: "Featured" },
   { value: "newest", label: "Newest" },
-  { value: "relevance", label: "Relevance" },
+  { value: "relevance", label: "Best Match" },
   { value: "price_low", label: "Price: Low to High" },
   { value: "price_high", label: "Price: High to Low" },
 ];
@@ -78,6 +78,7 @@ function FilterContent({
                   onCheckedChange={(checked) => {
                     setFilters({
                       categorySlug: checked ? cat.slug : undefined,
+                      page: 1,
                     });
                   }}
                   className="border-[rgba(255,255,255,0.15)] data-[state=checked]:bg-violet data-[state=checked]:border-violet"
@@ -109,6 +110,7 @@ function FilterContent({
               countrySlug: val === "all" ? undefined : val,
               stateSlug: undefined,
               citySlug: undefined,
+              page: 1,
             })
           }
         >
@@ -138,6 +140,7 @@ function FilterContent({
               setFilters({
                 stateSlug: val === "all" ? undefined : val,
                 citySlug: undefined,
+                page: 1,
               })
             }
           >
@@ -167,6 +170,7 @@ function FilterContent({
             onValueChange={(val) =>
               setFilters({
                 citySlug: val === "all" ? undefined : val,
+                page: 1,
               })
             }
           >
@@ -195,7 +199,7 @@ function FilterContent({
         <Switch
           checked={!!filters.featured}
           onCheckedChange={(checked) =>
-            setFilters({ featured: checked || undefined })
+            setFilters({ featured: checked || undefined, page: 1 })
           }
         />
       </div>
@@ -402,7 +406,7 @@ export default function SearchResults() {
                 <Badge
                   variant="secondary"
                   className="cursor-pointer gap-1 bg-[#1E1E2A] text-[#A1A1AA] hover:text-[#F5F5F7]"
-                  onClick={() => setFilters({ keyword: undefined })}
+                  onClick={() => setFilters({ keyword: undefined, page: 1 })}
                 >
                   &ldquo;{filters.keyword}&rdquo;
                   <X className="size-3" />
@@ -412,7 +416,7 @@ export default function SearchResults() {
                 <Badge
                   variant="secondary"
                   className="cursor-pointer gap-1 bg-[#1E1E2A] text-[#A1A1AA] hover:text-[#F5F5F7]"
-                  onClick={() => setFilters({ categorySlug: undefined })}
+                  onClick={() => setFilters({ categorySlug: undefined, page: 1 })}
                 >
                   {apiCategories.find((c) => c.slug === filters.categorySlug)?.name}
                   <X className="size-3" />
@@ -427,6 +431,7 @@ export default function SearchResults() {
                       countrySlug: undefined,
                       stateSlug: undefined,
                       citySlug: undefined,
+                      page: 1,
                     })
                   }
                 >
@@ -438,7 +443,7 @@ export default function SearchResults() {
                 <Badge
                   variant="secondary"
                   className="cursor-pointer gap-1 bg-[#1E1E2A] text-[#A1A1AA] hover:text-[#F5F5F7]"
-                  onClick={() => setFilters({ featured: undefined })}
+                  onClick={() => setFilters({ featured: undefined, page: 1 })}
                 >
                   Featured
                   <X className="size-3" />

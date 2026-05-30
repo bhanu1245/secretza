@@ -56,16 +56,25 @@ export async function GET(request: Request) {
   const where: Prisma.ListingWhereInput = userId
     ? { userId }
     : { status: "approved" };
+
+  // Build keyword and category conditions as an AND-of-ORs so they never
+  // overwrite each other.  Each clause is pushed into `andClauses` and merged
+  // into `where.AND` at the end of this block.
+  const andClauses: Prisma.ListingWhereInput[] = [];
+
   if (keyword) {
-    where.OR = [
-      { title: { contains: keyword } },
-      { description: { contains: keyword } },
-      { tags: { contains: keyword } },
-      { category: { name: { contains: keyword } } },
-      { city: { name: { contains: keyword } } },
-      { country: { name: { contains: keyword } } },
-    ];
+    andClauses.push({
+      OR: [
+        { title: { contains: keyword } },
+        { description: { contains: keyword } },
+        { tags: { contains: keyword } },
+        { category: { name: { contains: keyword } } },
+        { city: { name: { contains: keyword } } },
+        { country: { name: { contains: keyword } } },
+      ],
+    });
   }
+
   if (category) {
     const categoryRecord = await db.category.findFirst({
       where: {
@@ -78,15 +87,23 @@ export async function GET(request: Request) {
     });
     if (categoryRecord) {
       const categoryIds = [categoryRecord.id, ...categoryRecord.children.map((child) => child.id)];
-      where.OR = [
-        { categoryId: { in: categoryIds } },
-        { subcategoryId: { in: categoryIds } },
-        { categorySlug: category },
-        { subcategorySlug: category },
-      ];
+      andClauses.push({
+        OR: [
+          { categoryId: { in: categoryIds } },
+          { subcategoryId: { in: categoryIds } },
+          { categorySlug: category },
+          { subcategorySlug: category },
+        ],
+      });
     } else {
-      where.categorySlug = category;
+      // Slug not found — fall back to a direct slug match so the filter still
+      // narrows results rather than returning everything.
+      andClauses.push({ categorySlug: category });
     }
+  }
+
+  if (andClauses.length > 0) {
+    where.AND = andClauses;
   }
   if (city) {
     const cityRecord = await db.city.findFirst({
@@ -138,9 +155,14 @@ export async function GET(request: Request) {
     case "featured":
       orderBy = [{ isFeatured: "desc" }, { priorityScore: "desc" }] as any;
       break;
+    case "ranking":
+    case "relevance":
+      // "Best Match" / ranking: rely on stored priorityScore kept current by
+      // the refresh-ranking cron.  Both "ranking" (API default) and the legacy
+      // "relevance" value from older clients map here.
+      orderBy = { priorityScore: "desc" };
+      break;
     default:
-      // Default: order by stored priorityScore (fast DB-level sort)
-      // Also use boosted/featured as secondary tie-breakers
       orderBy = { priorityScore: "desc" };
       break;
   }
@@ -316,15 +338,12 @@ export async function GET(request: Request) {
     };
   });
 
-  // If sorting by "ranking", re-sort by computed score in-memory
-  // (this handles edge cases where DB priorityScore is stale)
-  const finalListings =
-    sortBy === "ranking"
-      ? [...transformed].sort((a, b) => (b.computedScore ?? 0) - (a.computedScore ?? 0))
-      : transformed;
-
+  // DB-level priorityScore ordering is the authority.  In-memory re-sorting
+  // after pagination was removed because it operated only on the current page
+  // slice and could not correctly promote highly-scored listings from later
+  // pages.  The refresh-ranking cron keeps priorityScore current.
   return NextResponse.json({
-    listings: finalListings,
+    listings: transformed,
     total,
     page,
     totalPages: Math.ceil(total / limit),
