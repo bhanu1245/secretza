@@ -15,8 +15,22 @@ import { getDurationForTier } from "@/lib/payment-settings";
 const VALID_ACTIONS = ["approve", "reject", "request_proof", "duplicate"] as const;
 type ReviewAction = (typeof VALID_ACTIONS)[number];
 
+// Terminal statuses that block re-review for any action
+const TERMINAL_STATUSES = ["approved", "rejected"] as const;
+
 interface RouteParams {
   params: Promise<{ id: string }>;
+}
+
+// Sentinel error thrown inside the transaction when a concurrent approval
+// is detected — caught in the outer handler and returned as 409.
+class SubmissionAlreadyProcessedError extends Error {
+  readonly submissionStatus: string;
+  constructor(status: string) {
+    super(`Submission already ${status}`);
+    this.name = "SubmissionAlreadyProcessedError";
+    this.submissionStatus = status;
+  }
 }
 
 /**
@@ -43,9 +57,7 @@ export async function POST(
     // --- Validate action ---
     if (!action || !VALID_ACTIONS.includes(action as ReviewAction)) {
       return NextResponse.json(
-        {
-          error: `Invalid action. Must be one of: ${VALID_ACTIONS.join(", ")}`,
-        },
+        { error: `Invalid action. Must be one of: ${VALID_ACTIONS.join(", ")}` },
         { status: 400 }
       );
     }
@@ -56,27 +68,34 @@ export async function POST(
     const submission = await db.manualPaymentSubmission.findUnique({
       where: { id },
       include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-          },
-        },
+        user: { select: { id: true, email: true, name: true } },
       },
     });
 
     if (!submission) {
+      return NextResponse.json({ error: "Submission not found" }, { status: 404 });
+    }
+
+    // --- Guard: terminal statuses block any further review ---
+    if ((TERMINAL_STATUSES as readonly string[]).includes(submission.status)) {
       return NextResponse.json(
-        { error: "Submission not found" },
-        { status: 404 }
+        { error: `This submission has already been ${submission.status}` },
+        { status: 409 }
       );
     }
 
-    // Don't allow re-reviewing already processed submissions
-    if (submission.status === "approved" || submission.status === "rejected") {
+    // --- Guard (P1 Fix 5): "duplicate" submissions cannot be approved ---
+    // They may still be rejected or have proof requested (admin workflow flexibility),
+    // but approval is blocked because the submission was flagged as fraudulent.
+    // The user must submit fresh payment proof to proceed.
+    if (reviewAction === "approve" && submission.status === "duplicate") {
       return NextResponse.json(
-        { error: `This submission has already been ${submission.status}` },
+        {
+          error:
+            "Submissions marked as duplicate cannot be approved. " +
+            "If this payment is legitimate, ask the user to submit a new payment proof.",
+          code: "DUPLICATE_STATUS",
+        },
         { status: 409 }
       );
     }
@@ -84,25 +103,35 @@ export async function POST(
     // --- Determine new status ---
     let newStatus: string;
     switch (reviewAction) {
-      case "approve":
-        newStatus = "approved";
-        break;
-      case "reject":
-        newStatus = "rejected";
-        break;
-      case "request_proof":
-        newStatus = "proof_requested";
-        break;
-      case "duplicate":
-        newStatus = "duplicate";
-        break;
+      case "approve":       newStatus = "approved";        break;
+      case "reject":        newStatus = "rejected";        break;
+      case "request_proof": newStatus = "proof_requested"; break;
+      case "duplicate":     newStatus = "duplicate";       break;
     }
 
-    // --- Update submission (and activate features atomically if approved) ---
-    let updatedSubmission;
+    // --- Execute review ---
+    let updatedSubmission: Awaited<ReturnType<typeof db.manualPaymentSubmission.update>>;
+
     if (reviewAction === "approve") {
+      // All approval side-effects run atomically inside a single transaction.
       await db.$transaction(async (tx) => {
-        // Update submission status
+
+        // --- P1 Fix 4: Re-read status inside transaction (concurrent-approval guard) ---
+        // A second admin could have approved between our outer read and now.
+        // Reading inside the transaction gives a consistent snapshot in SQLite.
+        const freshSubmission = await tx.manualPaymentSubmission.findUnique({
+          where: { id },
+          select: { status: true },
+        });
+        if (
+          freshSubmission &&
+          ((TERMINAL_STATUSES as readonly string[]).includes(freshSubmission.status) ||
+            freshSubmission.status === "duplicate")
+        ) {
+          throw new SubmissionAlreadyProcessedError(freshSubmission.status);
+        }
+
+        // Update submission to approved
         updatedSubmission = await tx.manualPaymentSubmission.update({
           where: { id },
           data: {
@@ -119,9 +148,7 @@ export async function POST(
 
         if (submission.paymentType === "boost") {
           if (submission.listingId) {
-            const listing = await tx.listing.findUnique({
-              where: { id: submission.listingId },
-            });
+            const listing = await tx.listing.findUnique({ where: { id: submission.listingId } });
             if (listing) {
               const { durationMinutes, label, matched } = await getDurationForTier("boost", tierAmount);
               if (!matched) {
@@ -130,32 +157,16 @@ export async function POST(
                 });
               }
               const boostUntil = getBoostExpiry(durationMinutes);
-
-              // Recompute priority score with the new boost
-              const rankedListing = {
-                ...listing,
-                isBoosted: true,
-                boostUntil,
-              };
-              const newPriorityScore = computePriorityScore(rankedListing);
-
+              const newPriorityScore = computePriorityScore({ ...listing, isBoosted: true, boostUntil });
               await tx.listing.update({
                 where: { id: submission.listingId },
-                data: {
-                  isBoosted: true,
-                  boostUntil,
-                  lastBumpedAt: new Date(),
-                  priorityScore: newPriorityScore,
-                },
+                data: { isBoosted: true, boostUntil, lastBumpedAt: new Date(), priorityScore: newPriorityScore },
               });
             }
           }
         } else if (submission.paymentType === "feature") {
-          // Activate featured status on listing
           if (submission.listingId) {
-            const listing = await tx.listing.findUnique({
-              where: { id: submission.listingId },
-            });
+            const listing = await tx.listing.findUnique({ where: { id: submission.listingId } });
             if (listing) {
               const { durationDays, label, matched } = await getDurationForTier("feature", tierAmount);
               if (!matched) {
@@ -164,27 +175,14 @@ export async function POST(
                 });
               }
               const featuredUntil = getFeatureExpiry(durationDays);
-
-              // Recompute priority score with the new featured status
-              const rankedListing = {
-                ...listing,
-                isFeatured: true,
-                featuredUntil,
-              };
-              const newPriorityScore = computePriorityScore(rankedListing);
-
+              const newPriorityScore = computePriorityScore({ ...listing, isFeatured: true, featuredUntil });
               await tx.listing.update({
                 where: { id: submission.listingId },
-                data: {
-                  isFeatured: true,
-                  featuredUntil,
-                  priorityScore: newPriorityScore,
-                },
+                data: { isFeatured: true, featuredUntil, priorityScore: newPriorityScore },
               });
             }
           }
         } else if (submission.paymentType === "premium") {
-          // Activate premium for user
           const { durationDays, label, matched } = await getDurationForTier("premium", tierAmount);
           if (!matched) {
             console.warn("[review/approve] premium tier not found in PaymentSettings", {
@@ -194,13 +192,11 @@ export async function POST(
           const premiumExpiry = getFeatureExpiry(durationDays);
           await tx.user.update({
             where: { id: submission.userId },
-            data: {
-              isPremium: true,
-              premiumExpiry,
-            },
+            data: { isPremium: true, premiumExpiry },
           });
         }
 
+        // Coupon redemption: graceful — never blocks approval (see redeemCouponOnApproval).
         if (submission.couponId) {
           await redeemCouponOnApproval({
             couponId: submission.couponId,
@@ -224,7 +220,7 @@ export async function POST(
         });
       });
     } else {
-      // Non-approve actions: just update submission status
+      // Non-approve actions: update submission status only.
       updatedSubmission = await db.manualPaymentSubmission.update({
         where: { id },
         data: {
@@ -256,7 +252,7 @@ export async function POST(
       },
     });
 
-    // --- Notification to user ---
+    // --- Notifications ---
     if (reviewAction === "approve") {
       await createNotification({
         userId: submission.userId,
@@ -284,28 +280,48 @@ export async function POST(
         entityType: "ManualPaymentSubmission",
         entityId: submission.id,
       });
+    } else if (reviewAction === "duplicate") {
+      // P1 Fix 3: notify users when their submission is marked duplicate so
+      // they know to contact support rather than waiting indefinitely.
+      await createNotification({
+        userId: submission.userId,
+        type: "payment_duplicate",
+        title: "Payment Marked as Duplicate",
+        message:
+          `Your ${submission.paymentType} payment of ₹${submission.amount} has been flagged as a duplicate submission. ` +
+          (adminNotes ? `Note: ${adminNotes}` : "Please contact support if you believe this is an error."),
+        entityType: "ManualPaymentSubmission",
+        entityId: submission.id,
+      });
     }
 
     return NextResponse.json({
       success: true,
       submission: {
-        id: updatedSubmission.id,
-        status: updatedSubmission.status,
-        adminNotes: updatedSubmission.adminNotes,
-        reviewedBy: updatedSubmission.reviewedBy,
-        reviewedAt: updatedSubmission.reviewedAt?.toISOString() ?? null,
-        updatedAt: updatedSubmission.updatedAt.toISOString(),
+        id: updatedSubmission!.id,
+        status: updatedSubmission!.status,
+        adminNotes: updatedSubmission!.adminNotes,
+        reviewedBy: updatedSubmission!.reviewedBy,
+        reviewedAt: updatedSubmission!.reviewedAt?.toISOString() ?? null,
+        updatedAt: updatedSubmission!.updatedAt.toISOString(),
       },
       message:
         reviewAction === "approve"
           ? "Payment approved and feature activated successfully."
           : reviewAction === "reject"
-            ? "Payment submission rejected."
-            : reviewAction === "request_proof"
-              ? "Additional proof requested from user."
-              : "Submission marked as duplicate.",
+          ? "Payment submission rejected."
+          : reviewAction === "request_proof"
+          ? "Additional proof requested from user."
+          : "Submission marked as duplicate.",
     });
   } catch (error) {
+    // Concurrent approval detected inside the transaction
+    if (error instanceof SubmissionAlreadyProcessedError) {
+      return NextResponse.json(
+        { error: `This submission has already been ${error.submissionStatus}` },
+        { status: 409 }
+      );
+    }
     logError(error, { component: "route:api/admin/payments/manual/[id]/review" });
     return NextResponse.json(
       { error: "Failed to review payment submission" },

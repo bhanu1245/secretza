@@ -181,18 +181,22 @@ export async function redeemCouponOnApproval(params: {
   const client = params.tx ?? db;
 
   const coupon = await client.coupon.findUnique({ where: { id: params.couponId } });
+
+  // The user paid the discounted amount at submission time. The approval must
+  // not be blocked by coupon state changes that occurred after submission.
+  // All post-submission coupon state issues are logged as warnings and skipped
+  // gracefully — the feature activation and Payment record still proceed.
+
   if (!coupon) {
-    throw new Error("Coupon not found during redemption");
+    // Coupon was deleted after submission — skip redemption, do not block approval.
+    console.warn("[redeemCouponOnApproval] coupon deleted after submission — skipping redemption", {
+      couponId: params.couponId,
+      submissionId: params.submissionId,
+    });
+    return null;
   }
 
-  if (!coupon.isActive) {
-    throw new Error("Coupon is inactive");
-  }
-
-  if (coupon.expiresAt && coupon.expiresAt.getTime() < Date.now()) {
-    throw new Error("Coupon expired");
-  }
-
+  // Idempotency guard: return existing redemption if already processed.
   const existingRedemption = await client.couponRedemption.findUnique({
     where: { manualPaymentSubmissionId: params.submissionId },
   });
@@ -200,15 +204,47 @@ export async function redeemCouponOnApproval(params: {
     return existingRedemption;
   }
 
+  if (!coupon.isActive) {
+    // Coupon deactivated after submission — skip redemption, do not block approval.
+    console.warn("[redeemCouponOnApproval] coupon deactivated after submission — skipping redemption", {
+      couponId: params.couponId,
+      submissionId: params.submissionId,
+    });
+    return null;
+  }
+
+  if (coupon.expiresAt && coupon.expiresAt.getTime() < Date.now()) {
+    // Coupon expired after submission — skip redemption, do not block approval.
+    console.warn("[redeemCouponOnApproval] coupon expired after submission — skipping redemption", {
+      couponId: params.couponId,
+      submissionId: params.submissionId,
+      expiresAt: coupon.expiresAt.toISOString(),
+    });
+    return null;
+  }
+
   const userRedemptions = await client.couponRedemption.count({
     where: { couponId: params.couponId, userId: params.userId },
   });
   if (coupon.maxUsesPerUser > 0 && userRedemptions >= coupon.maxUsesPerUser) {
-    throw new Error("User coupon limit reached");
+    // Limit reached after submission — skip to avoid double-counting, do not block.
+    console.warn("[redeemCouponOnApproval] user coupon limit already reached — skipping redemption", {
+      couponId: params.couponId,
+      userId: params.userId,
+      submissionId: params.submissionId,
+    });
+    return null;
   }
 
   if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) {
-    throw new Error("Global coupon limit reached");
+    // Global limit reached after submission — skip to avoid over-redemption.
+    console.warn("[redeemCouponOnApproval] global coupon limit already reached — skipping redemption", {
+      couponId: params.couponId,
+      usedCount: coupon.usedCount,
+      maxUses: coupon.maxUses,
+      submissionId: params.submissionId,
+    });
+    return null;
   }
 
   await client.coupon.update({
