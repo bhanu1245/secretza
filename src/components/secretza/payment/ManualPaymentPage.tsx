@@ -173,7 +173,18 @@ export default function ManualPaymentPage({
     : null;
   const tiers = dynamicTiers || FALLBACK_TIERS[paymentType] || [];
   const [selectedTierIndex, setSelectedTierIndex] = useState(0);
-  const selectedAmount = tiers[selectedTierIndex]?.amount ?? 99;
+  const tierOriginalAmount = tiers[selectedTierIndex]?.amount ?? 99;
+
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discountAmount: number;
+    finalAmount: number;
+  } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+
+  const selectedAmount = appliedCoupon?.finalAmount ?? tierOriginalAmount;
 
   const [utrNumber, setUtrNumber] = useState("");
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
@@ -196,6 +207,56 @@ export default function ManualPaymentPage({
 
   // Derived
   const isFormValid = utrNumber.length === 12 && !submitting;
+
+  const clearCoupon = useCallback(() => {
+    setAppliedCoupon(null);
+    setCouponError(null);
+  }, []);
+
+  const handleApplyCoupon = useCallback(async () => {
+    const code = couponInput.trim();
+    if (!code) {
+      setCouponError("Enter a coupon code");
+      return;
+    }
+
+    setCouponLoading(true);
+    setCouponError(null);
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          originalAmount: tierOriginalAmount,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.valid) {
+        setAppliedCoupon(null);
+        setCouponError(data.error || "Invalid coupon");
+        return;
+      }
+      setAppliedCoupon({
+        code: data.coupon.code,
+        discountAmount: data.discountAmount,
+        finalAmount: data.finalAmount,
+      });
+      toast.success("Coupon applied", {
+        description: `You save ₹${data.discountAmount.toFixed(2)}`,
+      });
+    } catch {
+      setCouponError("Failed to validate coupon");
+    } finally {
+      setCouponLoading(false);
+    }
+  }, [couponInput, tierOriginalAmount]);
+
+  const handleTierSelect = useCallback((idx: number) => {
+    setSelectedTierIndex(idx);
+    clearCoupon();
+    setCouponInput("");
+  }, [clearCoupon]);
   const PaymentTypeIcon = paymentTypeIcons[paymentType] || Zap;
   const upiId = paymentConfig?.upiId || FALLBACK_UPI_ID;
   const whatsAppNumber = paymentConfig?.whatsappNumber || FALLBACK_WHATSAPP;
@@ -250,9 +311,16 @@ export default function ManualPaymentPage({
           return;
         }
 
-        const res = await fetch(
-          `/api/payments/manual/qr?amount=${selectedAmount}&paymentType=${paymentType}`
-        );
+        const qrParams = new URLSearchParams({
+          amount: String(selectedAmount),
+          paymentType,
+          originalAmount: String(tierOriginalAmount),
+        });
+        if (appliedCoupon?.code) {
+          qrParams.set("couponCode", appliedCoupon.code);
+        }
+
+        const res = await fetch(`/api/payments/manual/qr?${qrParams.toString()}`);
         if (res.ok) {
           const data = await res.json();
           if (!cancelled && data.qrDataUrl) {
@@ -284,7 +352,7 @@ export default function ManualPaymentPage({
     return () => {
       cancelled = true;
     };
-  }, [selectedAmount, paymentType, paymentConfig?.qrImageUrl]);
+  }, [selectedAmount, tierOriginalAmount, appliedCoupon?.code, paymentType, paymentConfig?.qrImageUrl]);
 
   // ========================
   // Fetch previous submissions
@@ -403,6 +471,8 @@ export default function ManualPaymentPage({
       if (listingId) formData.append("listingId", listingId);
       formData.append("paymentType", paymentType);
       formData.append("amount", String(selectedAmount));
+      formData.append("originalAmount", String(tierOriginalAmount));
+      if (appliedCoupon?.code) formData.append("couponCode", appliedCoupon.code);
       formData.append("selectedPlan", tiers[selectedTierIndex]?.label || "");
       formData.append("paymentMethod", "upi");
       formData.append("utrNumber", utrNumber);
@@ -444,7 +514,7 @@ export default function ManualPaymentPage({
     } finally {
       setSubmitting(false);
     }
-  }, [isFormValid, listingId, paymentType, selectedAmount, selectedTierIndex, tiers, utrNumber, notes, screenshotFile]);
+  }, [isFormValid, listingId, paymentType, selectedAmount, tierOriginalAmount, appliedCoupon, selectedTierIndex, tiers, utrNumber, notes, screenshotFile]);
 
   const handleUTRChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -559,7 +629,7 @@ export default function ManualPaymentPage({
                 {tiers.map((tier, idx) => (
                   <button
                     key={tier.label}
-                    onClick={() => setSelectedTierIndex(idx)}
+                    onClick={() => handleTierSelect(idx)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm transition-all duration-200 ${
                       selectedTierIndex === idx
                         ? "bg-[#7C3AED]/15 text-[#8B5CF6] border-[#7C3AED]/30"
@@ -571,6 +641,41 @@ export default function ManualPaymentPage({
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Coupon */}
+            <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#15151D] p-5">
+              <h3 className="text-sm font-semibold text-[#F5F5F7] mb-3">Have a coupon?</h3>
+              <div className="flex gap-2">
+                <input
+                  value={couponInput}
+                  onChange={(e) => {
+                    setCouponInput(e.target.value.toUpperCase());
+                    if (appliedCoupon) clearCoupon();
+                  }}
+                  placeholder="Enter coupon code"
+                  className="flex-1 rounded-lg bg-[#0B0B0F] border border-[rgba(255,255,255,0.08)] px-3 py-2 text-sm text-[#F5F5F7] uppercase"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyCoupon}
+                  disabled={couponLoading || !couponInput.trim()}
+                  className="px-4 py-2 rounded-lg bg-[#7C3AED]/15 text-[#8B5CF6] border border-[#7C3AED]/30 text-sm font-medium disabled:opacity-50"
+                >
+                  {couponLoading ? "..." : "Apply"}
+                </button>
+              </div>
+              {couponError && (
+                <p className="text-xs text-red-400 mt-2">{couponError}</p>
+              )}
+              {appliedCoupon && (
+                <div className="mt-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-sm">
+                  <p className="text-emerald-400 font-medium">{appliedCoupon.code} applied</p>
+                  <p className="text-[#A1A1AA] text-xs mt-1">
+                    Original ₹{tierOriginalAmount} · Discount ₹{appliedCoupon.discountAmount.toFixed(2)} · Pay ₹{appliedCoupon.finalAmount.toFixed(2)}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* QR Code Section */}

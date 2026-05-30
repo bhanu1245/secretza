@@ -10,6 +10,7 @@ import path from "path";
 import { existsSync } from "fs";
 import { detectMimeType, ALLOWED_MIME_TYPES } from "@/lib/image-processing";
 import { getValidAmounts } from "@/lib/payment-settings";
+import { validateCouponForCheckout } from "@/lib/coupons";
 import {
   formatZodErrors,
   manualPaymentFormSchema,
@@ -87,6 +88,8 @@ export async function POST(request: Request) {
       selectedPlan: parseFormField(formData.get("selectedPlan")),
       paymentMethod: parseFormField(formData.get("paymentMethod")) ?? "upi",
       notes: parseFormField(formData.get("notes")),
+      couponCode: parseFormField(formData.get("couponCode")),
+      originalAmount: parseFormField(formData.get("originalAmount")),
     });
 
     if (!parsed.success) {
@@ -103,16 +106,61 @@ export async function POST(request: Request) {
       selectedPlan,
       paymentMethod,
       notes,
+      couponCode,
+      originalAmount: originalAmountInput,
     } = parsed.data;
 
     const validAmounts = await getValidAmounts(paymentType);
-    if (!validAmounts.includes(amount)) {
+    const tierOriginalAmount = originalAmountInput ?? amount;
+
+    if (!validAmounts.includes(tierOriginalAmount)) {
       return NextResponse.json(
         {
           error: `Invalid amount for ${paymentType}. Must be one of: ₹${validAmounts.join(", ₹")}`,
-          field: "amount",
+          field: "originalAmount",
           validAmounts,
         },
+        { status: 400 },
+      );
+    }
+
+    let finalAmount = tierOriginalAmount;
+    let discountAmount = 0;
+    let couponId: string | null = null;
+    let appliedCouponCode: string | null = null;
+
+    if (couponCode) {
+      const couponResult = await validateCouponForCheckout({
+        code: couponCode,
+        userId,
+        originalAmount: tierOriginalAmount,
+      });
+
+      if (!couponResult.valid) {
+        return NextResponse.json(
+          { error: couponResult.error, field: "couponCode", code: couponResult.code },
+          { status: 400 },
+        );
+      }
+
+      if (Math.abs(couponResult.finalAmount - amount) > 0.01) {
+        return NextResponse.json(
+          {
+            error: "Payment amount does not match coupon discount",
+            field: "amount",
+            expectedAmount: couponResult.finalAmount,
+          },
+          { status: 400 },
+        );
+      }
+
+      finalAmount = couponResult.finalAmount;
+      discountAmount = couponResult.discountAmount;
+      couponId = couponResult.coupon.id;
+      appliedCouponCode = couponResult.coupon.code;
+    } else if (Math.abs(amount - tierOriginalAmount) > 0.01) {
+      return NextResponse.json(
+        { error: "Amount must match selected plan without a coupon", field: "amount" },
         { status: 400 },
       );
     }
@@ -185,7 +233,11 @@ export async function POST(request: Request) {
         userId,
         listingId: listingId ?? null,
         paymentType,
-        amount,
+        amount: finalAmount,
+        originalAmount: tierOriginalAmount,
+        discountAmount,
+        couponCode: appliedCouponCode,
+        couponId,
         utrNumber,
         planLabel: selectedPlan ?? null,
         paymentMethod: paymentMethod ?? "upi",
@@ -229,7 +281,10 @@ export async function POST(request: Request) {
         entityId: submission.id,
         details: JSON.stringify({
           paymentType,
-          amount,
+          amount: finalAmount,
+          originalAmount: tierOriginalAmount,
+          discountAmount,
+          couponCode: appliedCouponCode,
           utrNumber,
           listingId: listingId ?? null,
           selectedPlan: selectedPlan ?? null,
@@ -243,7 +298,7 @@ export async function POST(request: Request) {
       userId,
       type: "payment_submitted",
       title: "Payment Proof Submitted",
-      message: `Your ${paymentType} payment of ₹${amount} has been submitted and is under review.`,
+      message: `Your ${paymentType} payment of ₹${finalAmount} has been submitted and is under review.`,
       entityType: "ManualPaymentSubmission",
       entityId: submission.id,
     });
@@ -256,6 +311,9 @@ export async function POST(request: Request) {
           listingId: submission.listingId,
           paymentType: submission.paymentType,
           amount: submission.amount,
+        originalAmount: submission.originalAmount,
+        discountAmount: submission.discountAmount,
+        couponCode: submission.couponCode,
           utrNumber: submission.utrNumber,
           selectedPlan: submission.planLabel,
           paymentMethod: submission.paymentMethod,

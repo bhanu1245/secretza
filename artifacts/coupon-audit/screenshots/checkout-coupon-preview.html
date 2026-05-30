@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Checkout Coupon — Preview</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0B0B0F; color: #F5F5F7; padding: 24px; }
+    .card { background: #15151D; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 20px; max-width: 480px; margin-bottom: 16px; }
+    h3 { font-size: 14px; margin-bottom: 12px; }
+    .tier { display: flex; justify-content: space-between; padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(124,58,237,.3); background: rgba(124,58,237,.15); margin-bottom: 8px; }
+    .coupon-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    input { flex: 1; background: #0B0B0F; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; padding: 10px; color: #F5F5F7; }
+    button { background: rgba(124,58,237,.15); color: #8B5CF6; border: 1px solid rgba(124,58,237,.3); border-radius: 8px; padding: 10px 16px; }
+    .applied { background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.2); border-radius: 8px; padding: 12px; font-size: 13px; }
+    .green { color: #10B981; font-weight: 600; }
+    .muted { color: #A1A1AA; font-size: 12px; margin-top: 4px; }
+    .amount { font-size: 28px; font-weight: 700; color: #8B5CF6; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <h1 style="font-size:22px;margin-bottom:16px">Complete Your Payment</h1>
+  <div class="card">
+    <h3>Select Plan</h3>
+    <div class="tier"><span>1 Hour Boost</span><strong>₹99</strong></div>
+  </div>
+  <div class="card">
+    <h3>Have a coupon?</h3>
+    <div class="coupon-row">
+      <input value="SAVE20" readonly />
+      <button>Apply</button>
+    </div>
+    <div class="applied">
+      <div class="green">SAVE20 applied</div>
+      <div class="muted">Original ₹99 · Discount ₹19.80 · Pay ₹79.20</div>
+    </div>
+    <div class="amount">Pay ₹79.20</div>
+  </div>
+</body>
+</html>

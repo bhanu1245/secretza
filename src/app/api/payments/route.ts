@@ -6,6 +6,7 @@ import { logPaymentAudit } from "@/lib/payment-audit";
 import { getClientIp } from "@/lib/rate-limit";
 import { logError } from "@/lib/monitoring";
 import { getValidAmounts } from "@/lib/payment-settings";
+import { validateCouponForCheckout } from "@/lib/coupons";
 
 /**
  * Payment hooks endpoint for external payment gateway callbacks
@@ -48,13 +49,44 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate amount against dynamic PaymentSettings tiers
+    // Validate amount against dynamic PaymentSettings tiers (or coupon-adjusted amount)
+    let finalAmount = amount;
+    let discountAmount = 0;
+    let appliedCouponCode: string | null = null;
+
     if (type !== "renewal") {
       const validAmounts = await getValidAmounts(type as "boost" | "feature" | "premium");
-      if (validAmounts.length > 0 && !validAmounts.includes(amount)) {
+      const originalAmount = typeof body.originalAmount === "number" ? body.originalAmount : amount;
+
+      if (!validAmounts.includes(originalAmount)) {
         return NextResponse.json(
           { error: `Invalid amount for ${type}. Must be one of: ₹${validAmounts.join(", ₹")}` },
           { status: 400 }
+        );
+      }
+
+      if (couponCode) {
+        const couponResult = await validateCouponForCheckout({
+          code: String(couponCode),
+          userId: authenticatedUserId,
+          originalAmount,
+        });
+        if (!couponResult.valid) {
+          return NextResponse.json({ error: couponResult.error, field: "couponCode" }, { status: 400 });
+        }
+        if (Math.abs(couponResult.finalAmount - amount) > 0.01) {
+          return NextResponse.json(
+            { error: "Payment amount does not match coupon discount", field: "amount" },
+            { status: 400 },
+          );
+        }
+        finalAmount = couponResult.finalAmount;
+        discountAmount = couponResult.discountAmount;
+        appliedCouponCode = couponResult.coupon.code;
+      } else if (Math.abs(amount - originalAmount) > 0.01) {
+        return NextResponse.json(
+          { error: "Amount must match selected plan without a coupon", field: "amount" },
+          { status: 400 },
         );
       }
     }
@@ -77,12 +109,12 @@ export async function POST(request: Request) {
       data: {
         userId: authenticatedUserId,
         listingId: listingId || null,
-        amount: amount || 0,
+        amount: finalAmount,
         currency: "INR",
         status: "pending",
         method: type,
         gatewayTxId: gatewayTxId || null,
-        couponCode: couponCode || null,
+        couponCode: appliedCouponCode || couponCode || null,
       },
     });
 

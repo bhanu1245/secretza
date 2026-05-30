@@ -83,6 +83,7 @@ model User {
   reviewedImages         ListingImage[]
   reviewedManualPayments ManualPaymentSubmission[] @relation("ManualPaymentReviewer")
   manualPayments         ManualPaymentSubmission[] @relation("ManualPaymentUser")
+  couponRedemptions      CouponRedemption[]
   notifications          Notification[]
   payments               Payment[]
   reviews                Review[]
@@ -393,6 +394,10 @@ model ManualPaymentSubmission {
   listingId     String?
   paymentType   String
   amount        Float
+  originalAmount Float?
+  discountAmount Float    @default(0)
+  couponCode    String?
+  couponId      String?
   utrNumber     String    @unique
   screenshotUrl String?
   planLabel     String?
@@ -406,22 +411,48 @@ model ManualPaymentSubmission {
   updatedAt     DateTime  @updatedAt
   reviewer      User?     @relation("ManualPaymentReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
   user          User      @relation("ManualPaymentUser", fields: [userId], references: [id], onDelete: Cascade)
+  coupon        Coupon?   @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  couponRedemption CouponRedemption?
 
   @@index([userId, status])
   @@index([status, createdAt(sort: Desc)])
+  @@index([couponId])
+  @@index([couponCode])
 }
 
 model Coupon {
-  id            String    @id @default(cuid())
-  code          String    @unique
-  discountType  String    @default("percentage")
-  discountValue Float
-  maxUses       Int
-  usedCount     Int       @default(0)
-  isActive      Boolean   @default(true)
-  expiresAt     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  code            String    @unique
+  description     String?
+  discountType    String    @default("percentage") // percentage | fixed
+  discountValue   Float
+  maxUses         Int       @default(0) // 0 = unlimited global uses
+  maxUsesPerUser  Int       @default(0) // 0 = unlimited per user; 1 = one-time per user
+  usedCount       Int       @default(0)
+  isActive        Boolean   @default(true)
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  redemptions     CouponRedemption[]
+  submissions     ManualPaymentSubmission[]
+
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+model CouponRedemption {
+  id                        String   @id @default(cuid())
+  couponId                  String
+  userId                    String
+  manualPaymentSubmissionId String   @unique
+  createdAt                 DateTime @default(now())
+  coupon                    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  submission                ManualPaymentSubmission @relation(fields: [manualPaymentSubmissionId], references: [id], onDelete: Cascade)
+
+  @@index([couponId])
+  @@index([userId])
+  @@index([couponId, userId])
 }
 
 // ============================================================================

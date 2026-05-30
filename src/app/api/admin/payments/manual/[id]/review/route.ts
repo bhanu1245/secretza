@@ -8,6 +8,7 @@ import {
 } from "@/lib/ranking-engine";
 import { createNotification } from "@/lib/notifications";
 import { logError } from "@/lib/monitoring";
+import { redeemCouponOnApproval } from "@/lib/coupons";
 
 // Valid review actions
 const VALID_ACTIONS = ["approve", "reject", "request_proof", "duplicate"] as const;
@@ -128,15 +129,16 @@ export async function POST(
           },
         });
 
-        // Activate the corresponding feature
+        // Activate the corresponding feature (tier lookup uses original plan amount)
+        const tierAmount = submission.originalAmount ?? submission.amount;
+
         if (submission.paymentType === "boost") {
-          // Activate boost on listing
           if (submission.listingId) {
             const listing = await tx.listing.findUnique({
               where: { id: submission.listingId },
             });
             if (listing) {
-              const boostMinutes = BOOST_DURATIONS[submission.amount] || 60;
+              const boostMinutes = BOOST_DURATIONS[tierAmount] || 60;
               const boostUntil = getBoostExpiry(boostMinutes);
 
               // Recompute priority score with the new boost
@@ -165,7 +167,7 @@ export async function POST(
               where: { id: submission.listingId },
             });
             if (listing) {
-              const featureDays = FEATURE_DURATIONS[submission.amount] || 7;
+              const featureDays = FEATURE_DURATIONS[tierAmount] || 7;
               const featuredUntil = getFeatureExpiry(featureDays);
 
               // Recompute priority score with the new featured status
@@ -198,7 +200,15 @@ export async function POST(
           });
         }
 
-        // Create a Payment record with status "completed"
+        if (submission.couponId) {
+          await redeemCouponOnApproval({
+            couponId: submission.couponId,
+            userId: submission.userId,
+            submissionId: submission.id,
+            tx,
+          });
+        }
+
         await tx.payment.create({
           data: {
             userId: submission.userId,
@@ -208,6 +218,7 @@ export async function POST(
             status: "completed",
             method: "manual_upi",
             gatewayTxId: submission.utrNumber,
+            couponCode: submission.couponCode,
           },
         });
       });

@@ -32,6 +32,7 @@ const csrfExemptRoutes = [
   "/api/upload/",
   "/api/upload/moderate",
   "/api/payments/",
+  "/api/coupons/",
 ];
 
 const ROLE_LEVEL: Record<string, number> = {

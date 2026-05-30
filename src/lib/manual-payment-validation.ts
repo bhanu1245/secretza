@@ -25,6 +25,17 @@ export const manualPaymentFormSchema = z.object({
   selectedPlan: z.string().trim().min(1).max(120).optional().nullable(),
   paymentMethod: z.enum(VALID_PAYMENT_METHODS).optional().default("upi"),
   notes: z.string().trim().max(500).optional().nullable(),
+  couponCode: z
+    .string()
+    .trim()
+    .transform((value) => value.toUpperCase())
+    .optional()
+    .nullable(),
+  originalAmount: z.coerce
+    .number({ error: "originalAmount must be a number" })
+    .positive("originalAmount must be greater than 0")
+    .optional()
+    .nullable(),
 });
 
 export type ManualPaymentFormInput = z.infer<typeof manualPaymentFormSchema>;
