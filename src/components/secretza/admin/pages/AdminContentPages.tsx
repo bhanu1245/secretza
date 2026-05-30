@@ -56,6 +56,7 @@ import {
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import AdminSocialSettings from "@/components/secretza/admin/AdminSocialSettings";
 import { logError } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1431,6 +1432,8 @@ export function AdminSettingsPage() {
         <h2 className="text-2xl font-bold text-[#F5F5F7]">Settings</h2>
         <p className="text-sm text-[#A1A1AA] mt-1">Configure platform settings and preferences.</p>
       </div>
+
+      <AdminSocialSettings />
 
       {/* General Settings */}
       <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">

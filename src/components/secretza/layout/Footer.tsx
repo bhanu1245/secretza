@@ -16,12 +16,12 @@ import {
   FOOTER_LOCATION_LINKS,
 } from "@/lib/footer-routes";
 
-type SocialLinks = {
+type SocialLinks = Partial<{
   twitter: string;
   instagram: string;
   youtube: string;
   website: string;
-};
+}>;
 
 const socialIcons = [
   { key: "twitter" as const, icon: Twitter, label: "Twitter" },
@@ -62,7 +62,7 @@ export default function Footer() {
             <p className="text-sm text-muted-foreground leading-relaxed mb-5 max-w-[250px]">
               Premium Adult Classifieds Worldwide. Connecting people safely and discreetly since 2024.
             </p>
-            {social && (
+            {social && Object.keys(social).length > 0 && (
               <div className="flex items-center gap-2">
                 {socialIcons.map(({ key, icon: Icon, label }) => {
                   const href = social[key];

@@ -32,7 +32,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import ReviewList from "@/components/secretza/review/ReviewList";
 import ListingContactSection from "@/components/secretza/listing/ListingContactSection";
+import ShareButtons from "@/components/secretza/shared/ShareButtons";
 import { normalizeListingContact } from "@/lib/listing-contact";
+import { buildListingUrl } from "@/lib/seo-ssr";
 import {
   getListingImages,
   getListingCoverImageWithPlaceholder,
@@ -274,6 +276,12 @@ export default function ListingDetail({
               <h1 className="text-xl font-bold leading-tight text-[#F5F5F7]">
                 {listing.title}
               </h1>
+
+              <ShareButtons
+                url={buildListingUrl(listing.slug)}
+                title={listing.title}
+                className="mt-2"
+              />
 
               {/* Price */}
               {listing.price && (

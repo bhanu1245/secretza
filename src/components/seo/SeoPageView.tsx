@@ -1,0 +1,211 @@
+import Link from "next/link";
+import { MapPin, Tag, Search } from "lucide-react";
+import Breadcrumbs from "@/components/seo/Breadcrumbs";
+import SeoFeaturedImage from "@/components/seo/SeoFeaturedImage";
+import JsonLd from "@/components/seo/JsonLd";
+import ListingCard from "@/components/secretza/listing/ListingCard";
+import ShareButtons from "@/components/secretza/shared/ShareButtons";
+import { serializeSeoPageImages } from "@/lib/seo-images";
+import { seoPageShareUrl } from "@/lib/share-links";
+import {
+  parseSeoPageSchemas,
+  type PublishedSeoPage,
+  type SeoBreadcrumbItem,
+  type SeoRelatedLink,
+} from "@/lib/seo-public-page";
+import { resolveSeoPageSchemasForView } from "@/lib/seo-schema";
+import type { Listing } from "@/lib/types";
+
+export type SeoPageViewProps = {
+  page: PublishedSeoPage;
+  listings: Listing[];
+  breadcrumbs: SeoBreadcrumbItem[];
+  relatedLinks: SeoRelatedLink[];
+};
+
+function groupRelatedLinks(links: SeoRelatedLink[]) {
+  return {
+    longtail: links.filter((l) => l.group === "longtail"),
+    category: links.filter((l) => l.group === "category"),
+    city: links.filter((l) => l.group === "city"),
+  };
+}
+
+/** SEO page body — breadcrumbs, content, listings, FAQs, and related links. */
+export default function SeoPageView({
+  page,
+  listings,
+  breadcrumbs,
+  relatedLinks,
+}: SeoPageViewProps) {
+  const featuredImage = serializeSeoPageImages({
+    featuredImage: page.featuredImage,
+    imageAlt: page.imageAlt,
+    imageTitle: page.imageTitle,
+    imageCaption: page.imageCaption,
+    title: page.title,
+    h1: page.h1,
+    pageType: page.pageType,
+  });
+
+  const schemas = resolveSeoPageSchemasForView({ page, breadcrumbs });
+  const h1 = page.h1 || page.title || page.pageSlug;
+  const intro = page.introContent;
+  const grouped = groupRelatedLinks(relatedLinks);
+  const shareUrl = seoPageShareUrl(page.canonicalUrl, page.pageSlug);
+  const shareTitle = page.title || h1;
+
+  return (
+    <>
+      {schemas.map((schema, index) => (
+        <JsonLd key={`seo-schema-${index}`} data={schema} />
+      ))}
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Breadcrumbs items={breadcrumbs} />
+
+        <div className="flex flex-col gap-3 mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{h1}</h1>
+
+          <SeoFeaturedImage
+            src={featuredImage.featuredImage}
+            alt={featuredImage.imageAlt}
+            title={featuredImage.imageTitle}
+            caption={featuredImage.imageCaption}
+            priority
+          />
+
+          {intro && (
+            <div className="text-muted-foreground text-sm leading-relaxed max-w-4xl whitespace-pre-line space-y-4">
+              {intro.split("\n\n").map((paragraph, index) => (
+                <p key={`intro-${index}`}>{paragraph}</p>
+              ))}
+            </div>
+          )}
+
+          <p className="text-muted-foreground text-sm">
+            {listings.length} listing{listings.length !== 1 ? "s" : ""} available
+          </p>
+
+          <ShareButtons url={shareUrl} title={shareTitle} />
+        </div>
+
+        {listings.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-12">
+            {listings.map((listing) => (
+              <ListingCard key={listing.id} listing={listing} />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-surface p-8 text-center text-muted-foreground mb-12">
+            No approved listings found for this page yet.
+          </div>
+        )}
+
+        {page.faqs.length > 0 && (
+          <section className="mb-12" aria-label="Frequently Asked Questions">
+            <h2 className="text-xl font-semibold text-foreground mb-4">
+              Frequently Asked Questions
+            </h2>
+            <div className="space-y-2">
+              {page.faqs.map((faq, index) => (
+                <details
+                  key={`${faq.question}-${index}`}
+                  className="group rounded-lg border border-border bg-surface overflow-hidden"
+                >
+                  <summary className="flex items-center justify-between cursor-pointer px-5 py-4 text-sm font-medium text-foreground hover:bg-surface-light transition-colors select-none">
+                    <span className="pr-4">{faq.question}</span>
+                    <svg
+                      className="w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 group-open:rotate-180"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <div className="px-5 pb-4 text-sm text-muted-foreground leading-relaxed border-t border-border">
+                    <p className="pt-3">{faq.answer}</p>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {relatedLinks.length > 0 && (
+          <section className="mb-8" aria-label="Explore More">
+            <h2 className="text-lg font-semibold text-foreground mb-4">
+              Explore More on Secretza
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {grouped.longtail.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <Search className="w-4 h-4 text-violet" />
+                    Related Searches
+                  </h3>
+                  <ul className="space-y-2">
+                    {grouped.longtail.map((link) => (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          className="text-sm text-muted-foreground hover:text-violet transition-colors"
+                        >
+                          {link.title}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {grouped.category.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-violet" />
+                    Popular Categories
+                  </h3>
+                  <ul className="space-y-2">
+                    {grouped.category.map((link) => (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          className="text-sm text-muted-foreground hover:text-violet transition-colors"
+                        >
+                          {link.title}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {grouped.city.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-violet" />
+                    Nearby Cities
+                  </h3>
+                  <ul className="space-y-2">
+                    {grouped.city.map((link) => (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          className="text-sm text-muted-foreground hover:text-violet transition-colors"
+                        >
+                          {link.title}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+      </div>
+    </>
+  );
+}

@@ -23,8 +23,9 @@ import { Separator } from "@/components/ui/separator";
 import StarRating from "@/components/secretza/review/StarRating";
 import ReviewList from "@/components/secretza/review/ReviewList";
 import ListingContactSection from "@/components/secretza/listing/ListingContactSection";
+import ShareButtons from "@/components/secretza/shared/ShareButtons";
 import { normalizeListingContact } from "@/lib/listing-contact";
-import { buildCategoryUrl } from "@/lib/seo-ssr";
+import { buildCategoryUrl, buildListingUrl } from "@/lib/seo-ssr";
 import { cn } from "@/lib/utils";
 import {
   getPublicListingImages,
@@ -233,6 +234,11 @@ export default function ListingPageContent({ listing }: ListingPageContentProps)
         <h1 className="text-2xl sm:text-3xl font-bold leading-tight text-foreground">
           {listing.title}
         </h1>
+
+        <ShareButtons
+          url={buildListingUrl(listing.slug)}
+          title={listing.title}
+        />
 
         {/* Price */}
         {listing.price && (
