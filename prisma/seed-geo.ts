@@ -51,7 +51,7 @@ const COUNTRIES = [
   { name: "Poland", code: "PL", slug: "poland" },
   { name: "Czech Republic", code: "CZ", slug: "czech-republic" },
   { name: "Turkey", code: "TR", slug: "turkey" },
-  { name: "UAE", code: "AE", slug: "uae" },
+  { name: "United Arab Emirates", code: "AE", slug: "united-arab-emirates" },
   { name: "Saudi Arabia", code: "SA", slug: "saudi-arabia" },
   { name: "South Africa", code: "ZA", slug: "south-africa" },
   { name: "Nigeria", code: "NG", slug: "nigeria" },
@@ -467,6 +467,40 @@ async function seedLocalities(districtIdMap: Map<string, string>, cityIdMap: Map
   return { created, skipped };
 }
 
+async function seedAreas(cityIdMap: Map<string, string>) {
+  console.log(`\n📍 Seeding Area records from ${indiaDistricts.length} district definitions...`);
+  let created = 0;
+  let skipped = 0;
+
+  for (const d of indiaDistricts) {
+    const cityId = cityIdMap.get(`IN:${d.citySlug}:${d.stateSlug}`);
+    if (!cityId) {
+      skipped++;
+      continue;
+    }
+
+    const existing = await db.area.findUnique({
+      where: { slug_cityId: { slug: d.slug, cityId } },
+    });
+    if (existing) {
+      await db.area.update({
+        where: { id: existing.id },
+        data: { name: d.name, isActive: true },
+      });
+      skipped++;
+      continue;
+    }
+
+    await db.area.create({
+      data: { name: d.name, slug: d.slug, cityId, isActive: true },
+    });
+    created++;
+  }
+
+  console.log(`   ✅ Areas: ${created} created, ${skipped} already exist`);
+  return { created, skipped };
+}
+
 // ==========================================
 // Main
 // ==========================================
@@ -505,6 +539,9 @@ async function main() {
     // 7. Seed localities (300+)
     const { created: localitiesCreated, skipped: localitiesSkipped } = await seedLocalities(districtIdMap, indiaCityIdMap);
 
+    // 8. Seed Area records (listing form / public locations API)
+    const { created: areasCreated, skipped: areasSkipped } = await seedAreas(indiaCityIdMap);
+
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
     console.log("\n═══════════════════════════════════════");
@@ -515,6 +552,7 @@ async function main() {
     console.log(`  🏙️  Cities:        ${indiaCities.length} India + ${NON_INDIA_CITIES.length} International`);
     console.log(`  📊 Districts:     ${indiaDistricts.length}`);
     console.log(`  📍 Localities:    ${localitiesCreated} created, ${localitiesSkipped} existing`);
+    console.log(`  🏘️  Areas:         ${areasCreated} created, ${areasSkipped} existing`);
     console.log(`  ⏱️  Time:          ${elapsed}s`);
     console.log("═══════════════════════════════════════");
   } catch (error) {

@@ -1,0 +1,34 @@
+{
+  "initialBefore": {
+    "countries": 95,
+    "states": 449,
+    "cities": 840,
+    "areas": 32,
+    "districts": 0,
+    "localities": 0
+  },
+  "afterFix": {
+    "countries": 95,
+    "states": 449,
+    "cities": 847,
+    "areas": 360,
+    "districts": 349,
+    "localities": 177
+  },
+  "delta": {
+    "countries": 0,
+    "states": 0,
+    "cities": 7,
+    "areas": 328,
+    "districts": 349,
+    "localities": 177
+  },
+  "fixesApplied": [
+    "Ran enterprise geo seed (world-geo-data + india-geo-data)",
+    "Synced country slugs with world-geo-data (UAE uae → united-arab-emirates)",
+    "Ensured all 36 India states/UTs and 321 canonical cities",
+    "Seeded 349 districts + 177 localities via prisma/seed-geo.ts",
+    "Seeded 328 Area records from indiaDistricts for listing form / public locations API",
+    "Fixed listing FK references and activated referenced inactive geo records"
+  ]
+}
