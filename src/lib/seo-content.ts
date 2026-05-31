@@ -1,5 +1,5 @@
 // ==========================================
-// Secretza SEO Content Generation Engine v2
+// SecretZa SEO Content Generation Engine v2
 // ==========================================
 // Generates unique, keyword-rich SEO content for every page type.
 // Features: content rotation, city-context injection, trust blocks,
@@ -30,6 +30,14 @@ export interface SEOContent {
   relatedPages?: Array<{ title: string; url: string; type: string }>;
   pageType?: string;
   listingCountHint?: number;
+  /** Full assembled intro (500+ words) when generated via enrichment engine */
+  fullIntroContent?: string;
+  /** City enrichment snapshot for audit/debug */
+  cityEnrichment?: CityEnrichment;
+  /** Primary keyword for this page (e.g. "verified escorts in Mumbai") */
+  primaryKeyword?: string;
+  /** Secondary keyword cluster (JSON-serialisable array) */
+  secondaryKeywords?: string[];
 }
 
 interface SchemaBreadcrumbItem {
@@ -47,6 +55,9 @@ interface SchemaFAQItem {
 // ------------------------------------------
 
 import { indiaStates, indiaCities, getCityBySlug, getNearbyCities as getGeoNearbyCities } from '@/lib/india-geo-data';
+import {
+  type CityEnrichment,
+} from '@/lib/seo-city-enrichment';
 
 // ------------------------------------------
 // Category Data
@@ -82,69 +93,69 @@ const CATEGORY_FAQ_TEMPLATES = [
   {
     category: "escorts",
     faqs: [
-      "How do I verify an escort listing on Secretza?",
-      "Are the escort profiles on Secretza verified and legitimate?",
+      "How do I verify an escort listing on SecretZa?",
+      "Are the escort profiles on SecretZa verified and legitimate?",
       "What safety precautions should I take when meeting an escort?",
-      "How are Secretza escort listings different from other platforms?",
-      "Can I find both incall and outcall escort services on Secretza?",
+      "How are SecretZa escort listings different from other platforms?",
+      "Can I find both incall and outcall escort services on SecretZa?",
     ],
   },
   {
     category: "massage",
     faqs: [
-      "What types of massage services are available on Secretza?",
-      "Are the massage providers on Secretza professionally trained?",
-      "How do I book a massage appointment through Secretza?",
+      "What types of massage services are available on SecretZa?",
+      "Are the massage providers on SecretZa professionally trained?",
+      "How do I book a massage appointment through SecretZa?",
       "What are the typical massage service rates in Indian cities?",
-      "Can I find nuru and tantra massage specialists on Secretza?",
+      "Can I find nuru and tantra massage specialists on SecretZa?",
     ],
   },
   {
     category: "dating",
     faqs: [
-      "How does Secretza differ from mainstream dating apps?",
-      "Is Secretza safe for adult dating and casual encounters?",
+      "How does SecretZa differ from mainstream dating apps?",
+      "Is SecretZa safe for adult dating and casual encounters?",
       "Can I find both short-term and long-term dating connections?",
-      "What privacy features does Secretza offer for dating profiles?",
-      "Are there age verification measures on Secretza dating listings?",
+      "What privacy features does SecretZa offer for dating profiles?",
+      "Are there age verification measures on SecretZa dating listings?",
     ],
   },
   {
     category: "trans",
     faqs: [
-      "How do I find verified transgender escorts on Secretza?",
-      "Are the trans listings on Secretza respectful and inclusive?",
-      "What types of trans services are available on Secretza?",
-      "Can trans providers create their own listings on Secretza?",
-      "How does Secretza ensure safety for transgender service providers?",
+      "How do I find verified transgender escorts on SecretZa?",
+      "Are the trans listings on SecretZa respectful and inclusive?",
+      "What types of trans services are available on SecretZa?",
+      "Can trans providers create their own listings on SecretZa?",
+      "How does SecretZa ensure safety for transgender service providers?",
     ],
   },
   {
     category: "male-escorts",
     faqs: [
-      "How do I find male escort services on Secretza?",
-      "Are the male escort profiles on Secretza verified?",
-      "Can women book male escorts through Secretza?",
-      "What services do male escorts on Secretza typically offer?",
-      "How are male escort listings moderated on Secretza?",
+      "How do I find male escort services on SecretZa?",
+      "Are the male escort profiles on SecretZa verified?",
+      "Can women book male escorts through SecretZa?",
+      "What services do male escorts on SecretZa typically offer?",
+      "How are male escort listings moderated on SecretZa?",
     ],
   },
   {
     category: "couples",
     faqs: [
-      "What couple-friendly services are listed on Secretza?",
-      "Can couples find escort services together on Secretza?",
+      "What couple-friendly services are listed on SecretZa?",
+      "Can couples find escort services together on SecretZa?",
       "Are there swinger and lifestyle listings for couples?",
-      "How does Secretza handle couple-specific service listings?",
+      "How does SecretZa handle couple-specific service listings?",
       "What privacy options are available for couple bookings?",
     ],
   },
   {
     category: "adult-jobs",
     faqs: [
-      "What types of adult industry jobs are listed on Secretza?",
-      "How do I apply for adult jobs listed on Secretza?",
-      "Are the adult job listings on Secretza legitimate and verified?",
+      "What types of adult industry jobs are listed on SecretZa?",
+      "How do I apply for adult jobs listed on SecretZa?",
+      "Are the adult job listings on SecretZa legitimate and verified?",
       "What categories of adult employment are available?",
       "Can I post my resume or profile for adult job opportunities?",
     ],
@@ -152,31 +163,31 @@ const CATEGORY_FAQ_TEMPLATES = [
   {
     category: "adult-services",
     faqs: [
-      "What types of adult services are listed on Secretza?",
-      "How are adult service providers verified on Secretza?",
+      "What types of adult services are listed on SecretZa?",
+      "How are adult service providers verified on SecretZa?",
       "Can I find specialized adult services in my city?",
-      "What makes Secretza the best platform for adult services?",
-      "How do I contact adult service providers on Secretza?",
+      "What makes SecretZa the best platform for adult services?",
+      "How do I contact adult service providers on SecretZa?",
     ],
   },
   {
     category: "webcam",
     faqs: [
-      "How do webcam services work on Secretza?",
-      "Are the webcam models on Secretza verified?",
+      "How do webcam services work on SecretZa?",
+      "Are the webcam models on SecretZa verified?",
       "What payment methods are accepted for webcam services?",
-      "Can I book private webcam sessions through Secretza?",
-      "How does Secretza protect my privacy during webcam sessions?",
+      "Can I book private webcam sessions through SecretZa?",
+      "How does SecretZa protect my privacy during webcam sessions?",
     ],
   },
   {
     category: "phone-chat",
     faqs: [
-      "What types of phone and chat services are available on Secretza?",
+      "What types of phone and chat services are available on SecretZa?",
       "How do I connect with phone chat operators?",
-      "Are phone chat services on Secretza private and secure?",
+      "Are phone chat services on SecretZa private and secure?",
       "What are the rates for adult phone chat services?",
-      "Can I find multilingual phone chat operators on Secretza?",
+      "Can I find multilingual phone chat operators on SecretZa?",
     ],
   },
 ] as const;
@@ -284,8 +295,8 @@ const MAJOR_INDIAN_CITIES = [
 // Constants
 // ------------------------------------------
 
-const SITE_NAME = "Secretza";
-const BASE_URL = "https://secretza.com";
+const SITE_NAME = "SecretZa";
+const BASE_URL = "https://SecretZa.com";
 const BRAND_TAGLINE = "India's Premium Adult Classifieds Platform";
 
 // ------------------------------------------
@@ -458,7 +469,7 @@ function truncateToLength(text: string, maxLen: number): string {
 // ------------------------------------------
 
 function generateTrustBlock(cityName: string, _category?: string): string {
-  return `All listings on Secretza undergo a multi-step verification process including photo verification, profile review, and active moderation. We encourage users to communicate through the platform, read reviews, and follow basic safety guidelines. Secretza maintains a strict policy against misleading or fraudulent listings. Report any suspicious activity \u2014 our moderation team investigates all reports within 24 hours.`;
+  return `All listings on SecretZa undergo a multi-step verification process including photo verification, profile review, and active moderation. We encourage users to communicate through the platform, read reviews, and follow basic safety guidelines. SecretZa maintains a strict policy against misleading or fraudulent listings. Report any suspicious activity \u2014 our moderation team investigates all reports within 24 hours.`;
 }
 
 // ------------------------------------------
@@ -494,19 +505,19 @@ function generateCityIntro(
 
   const templates: string[] = [
     // Template 0: Welcome-style
-    `Welcome to ${cityName}'s most trusted adult classifieds directory, serving ${stateName}, ${countryName}.${sellingPhrase} Secretza connects you with verified providers of ${catList} and more.${areaPhrase}, our platform covers every corner of ${cityName}.${descPhrase} Each listing is moderated for authenticity, with real photos and verified details. Whether you're a resident or visiting, browse daily-updated profiles with user reviews and secure messaging. We also serve ${nearbyComma}, making Secretza your complete resource for adult services across ${stateName}.`,
+    `Welcome to ${cityName}'s most trusted adult classifieds directory, serving ${stateName}, ${countryName}.${sellingPhrase} SecretZa connects you with verified providers of ${catList} and more.${areaPhrase}, our platform covers every corner of ${cityName}.${descPhrase} Each listing is moderated for authenticity, with real photos and verified details. Whether you're a resident or visiting, browse daily-updated profiles with user reviews and secure messaging. We also serve ${nearbyComma}, making SecretZa your complete resource for adult services across ${stateName}.`,
 
     // Template 1: Discovery-style
-    `Discover premium adult services across ${cityName}'s most sought-after locations.${areaPhrase}, Secretza curates ${catList} and a wide range of verified listings tailored to ${cityName}'s unique character.${descPhrase} Our directory features detailed profiles with genuine photos, transparent pricing, and authentic user reviews. Navigate effortlessly with filters for location, services, and preferences. Serving locals and visitors alike, Secretza also extends coverage to ${nearbyComma}. New verified listings are added daily to ensure you always find fresh, quality options in ${cityName}, ${stateName}.`,
+    `Discover premium adult services across ${cityName}'s most sought-after locations.${areaPhrase}, SecretZa curates ${catList} and a wide range of verified listings tailored to ${cityName}'s unique character.${descPhrase} Our directory features detailed profiles with genuine photos, transparent pricing, and authentic user reviews. Navigate effortlessly with filters for location, services, and preferences. Serving locals and visitors alike, SecretZa also extends coverage to ${nearbyComma}. New verified listings are added daily to ensure you always find fresh, quality options in ${cityName}, ${stateName}.`,
 
     // Template 2: Directory-style
-    `${cityName} is home to a thriving adult services scene, and Secretza is the city's most comprehensive directory for ${catList}. With ${desc ? desc.toLowerCase().trim().replace(/\.$/, '') : 'a vibrant urban landscape'}, ${cityName} attracts thousands seeking quality adult entertainment daily.${areaPhrase}, our platform lists providers across every major locality. Every profile undergoes thorough verification including photo checks and profile review. Browse with confidence using our advanced filters, read genuine user reviews, and connect securely through our messaging platform. Coverage extends to ${nearbyComma} and the wider ${stateName} region.`,
+    `${cityName} is home to a thriving adult services scene, and SecretZa is the city's most comprehensive directory for ${catList}. With ${desc ? desc.toLowerCase().trim().replace(/\.$/, '') : 'a vibrant urban landscape'}, ${cityName} attracts thousands seeking quality adult entertainment daily.${areaPhrase}, our platform lists providers across every major locality. Every profile undergoes thorough verification including photo checks and profile review. Browse with confidence using our advanced filters, read genuine user reviews, and connect securely through our messaging platform. Coverage extends to ${nearbyComma} and the wider ${stateName} region.`,
 
     // Template 3: Experience-style
-    `Experience the best of ${cityName}'s adult classifieds with Secretza, India's fastest-growing verified directory. Whether you're exploring ${catList} or seeking something more specific, our platform delivers curated, high-quality listings for ${cityName}, ${stateName}.${sellingPhrase}${descPhrase} Each provider is vetted through our multi-layer verification process, ensuring authenticity and discretion. Browse detailed profiles in ${areas.length > 0 ? areas.join(", ") : 'popular areas across the city'} with real photos, service details, and user ratings. Our coverage spans ${nearbyComma}, giving you access to the widest selection in the region.`,
+    `Experience the best of ${cityName}'s adult classifieds with SecretZa, India's fastest-growing verified directory. Whether you're exploring ${catList} or seeking something more specific, our platform delivers curated, high-quality listings for ${cityName}, ${stateName}.${sellingPhrase}${descPhrase} Each provider is vetted through our multi-layer verification process, ensuring authenticity and discretion. Browse detailed profiles in ${areas.length > 0 ? areas.join(", ") : 'popular areas across the city'} with real photos, service details, and user ratings. Our coverage spans ${nearbyComma}, giving you access to the widest selection in the region.`,
 
     // Template 4: Guide-style
-    `Your complete guide to adult services in ${cityName}, ${stateName}. Secretza offers a carefully curated selection of ${catList} and more, all verified for authenticity and quality.${sellingPhrase}${descPhrase} From ${areas.length > 0 ? areas[0] : 'central'} to ${areas.length > 1 ? areas[1] : 'the outskirts'}, we cover the entire city with daily-updated listings featuring real photos, detailed descriptions, and honest reviews. Use our advanced filters to narrow by area, price, and services. We also serve ${nearbyComma}, so you can explore options across ${stateName} and beyond. Trust Secretza for a safe, discreet, and comprehensive experience.`,
+    `Your complete guide to adult services in ${cityName}, ${stateName}. SecretZa offers a carefully curated selection of ${catList} and more, all verified for authenticity and quality.${sellingPhrase}${descPhrase} From ${areas.length > 0 ? areas[0] : 'central'} to ${areas.length > 1 ? areas[1] : 'the outskirts'}, we cover the entire city with daily-updated listings featuring real photos, detailed descriptions, and honest reviews. Use our advanced filters to narrow by area, price, and services. We also serve ${nearbyComma}, so you can explore options across ${stateName} and beyond. Trust SecretZa for a safe, discreet, and comprehensive experience.`,
   ];
 
   return templates[idx];
@@ -537,15 +548,15 @@ function generateCategoryCityIntro(
   const descPhrase = desc ? ` ${desc}` : '';
 
   const templates: string[] = [
-    `Discover premium ${cat} across ${cityName}'s most vibrant locations.${areaPhrase}, Secretza connects you with ${displayCount}+ verified ${cat} providers in ${cityName}, ${stateName}.${descPhrase} Our curated directory features authentic profiles with real photos, transparent pricing, and genuine user reviews. Whether you're a local resident or visiting ${cityName}, find exactly what you're looking for with our advanced filters for services, location, and budget. We also serve ${nearbyComma}, ensuring the widest selection across the region. New ${cat} listings are added daily.`,
+    `Discover premium ${cat} across ${cityName}'s most vibrant locations.${areaPhrase}, SecretZa connects you with ${displayCount}+ verified ${cat} providers in ${cityName}, ${stateName}.${descPhrase} Our curated directory features authentic profiles with real photos, transparent pricing, and genuine user reviews. Whether you're a local resident or visiting ${cityName}, find exactly what you're looking for with our advanced filters for services, location, and budget. We also serve ${nearbyComma}, ensuring the widest selection across the region. New ${cat} listings are added daily.`,
 
-    `${cityName} offers some of the finest ${cat} in ${stateName}, and Secretza is the city's most trusted platform for finding them. With ${displayCount}+ verified listings, our directory covers ${areas.length > 0 ? `areas from ${areas.join(" to ")}` : 'neighbourhoods across the city'}.${descPhrase} Browse detailed profiles with verified photos, service descriptions, and honest user feedback. Connect directly with providers through our secure messaging system. We also extend coverage to ${nearbyComma}. Every listing on Secretza undergoes moderation for your safety and satisfaction.`,
+    `${cityName} offers some of the finest ${cat} in ${stateName}, and SecretZa is the city's most trusted platform for finding them. With ${displayCount}+ verified listings, our directory covers ${areas.length > 0 ? `areas from ${areas.join(" to ")}` : 'neighbourhoods across the city'}.${descPhrase} Browse detailed profiles with verified photos, service descriptions, and honest user feedback. Connect directly with providers through our secure messaging system. We also extend coverage to ${nearbyComma}. Every listing on SecretZa undergoes moderation for your safety and satisfaction.`,
 
-    `Looking for ${cat} in ${cityName}? You've found the right place. Secretza features ${displayCount}+ carefully verified ${cat} profiles across ${cityName}, ${stateName}.${descPhrase}${areaPhrase}, our platform ensures comprehensive coverage of the city. Each listing includes real photos, service details, pricing, and user reviews. Filter by area, price range, and services offered to find your ideal match. Our coverage extends to ${nearbyComma}, giving you more options across ${stateName}. New ${cat} providers join Secretza daily, so you'll always find fresh options.`,
+    `Looking for ${cat} in ${cityName}? You've found the right place. SecretZa features ${displayCount}+ carefully verified ${cat} profiles across ${cityName}, ${stateName}.${descPhrase}${areaPhrase}, our platform ensures comprehensive coverage of the city. Each listing includes real photos, service details, pricing, and user reviews. Filter by area, price range, and services offered to find your ideal match. Our coverage extends to ${nearbyComma}, giving you more options across ${stateName}. New ${cat} providers join SecretZa daily, so you'll always find fresh options.`,
 
-    `Experience verified ${cat} in ${cityName} with Secretza's curated directory. ${cityName}${desc ? ', ' + desc.toLowerCase().replace(/\.$/, '') : ''}, attracts discerning visitors seeking quality ${cat}.${areaPhrase}, our ${displayCount}+ listings span every major area. Browse genuine profiles with verified photos, detailed service descriptions, and real user reviews. Our platform's secure messaging makes connecting easy and discreet. Serving ${nearbyComma} as well, Secretza is your go-to resource for ${cat} across ${stateName}. Listings are updated daily with fresh, verified providers.`,
+    `Experience verified ${cat} in ${cityName} with SecretZa's curated directory. ${cityName}${desc ? ', ' + desc.toLowerCase().replace(/\.$/, '') : ''}, attracts discerning visitors seeking quality ${cat}.${areaPhrase}, our ${displayCount}+ listings span every major area. Browse genuine profiles with verified photos, detailed service descriptions, and real user reviews. Our platform's secure messaging makes connecting easy and discreet. Serving ${nearbyComma} as well, SecretZa is your go-to resource for ${cat} across ${stateName}. Listings are updated daily with fresh, verified providers.`,
 
-    `Your trusted source for ${cat} in ${cityName}, ${stateName}. Secretza's directory includes ${displayCount}+ verified ${cat} profiles, each reviewed for quality and authenticity.${descPhrase} Explore listings in ${areas.length > 0 ? areas.join(", ") : 'popular areas across the city'} and discover providers who match your preferences. Every profile features verified photos, transparent pricing, and real user feedback. Use our advanced search to filter by location, services, and budget. We also cover ${nearbyComma} for broader options throughout ${stateName}. Join thousands who trust Secretza for safe, discreet ${cat} in ${cityName}.`,
+    `Your trusted source for ${cat} in ${cityName}, ${stateName}. SecretZa's directory includes ${displayCount}+ verified ${cat} profiles, each reviewed for quality and authenticity.${descPhrase} Explore listings in ${areas.length > 0 ? areas.join(", ") : 'popular areas across the city'} and discover providers who match your preferences. Every profile features verified photos, transparent pricing, and real user feedback. Use our advanced search to filter by location, services, and budget. We also cover ${nearbyComma} for broader options throughout ${stateName}. Join thousands who trust SecretZa for safe, discreet ${cat} in ${cityName}.`,
   ];
 
   return templates[idx];
@@ -561,15 +572,15 @@ function generateCategoryIntro(categoryName: string, categorySlug: string): stri
   const idx = selectTemplateIndex(categorySlug, 5, 'cat-intro');
 
   const templates: string[] = [
-    `Explore the largest collection of verified ${cat} listings across India on Secretza. ${categoryDesc} Our platform features thousands of authentic profiles from ${topCities.join(", ")}, and many more cities. Every ${cat} listing on Secretza goes through a thorough moderation process to ensure authenticity and quality. Whether you're in a metropolitan city or a growing urban centre, Secretza helps you find the right ${cat} services near you. Filter by city, price range, services offered, and verification status to find your perfect match. New ${cat} listings are added daily.`,
+    `Explore the largest collection of verified ${cat} listings across India on SecretZa. ${categoryDesc} Our platform features thousands of authentic profiles from ${topCities.join(", ")}, and many more cities. Every ${cat} listing on SecretZa goes through a thorough moderation process to ensure authenticity and quality. Whether you're in a metropolitan city or a growing urban centre, SecretZa helps you find the right ${cat} services near you. Filter by city, price range, services offered, and verification status to find your perfect match. New ${cat} listings are added daily.`,
 
-    `India's most trusted platform for ${cat} — Secretza connects you with verified providers nationwide. ${categoryDesc} With listings spanning ${topCities.slice(0, 4).join(", ")} and over 100 other cities, you'll find comprehensive options wherever you are. Each profile is reviewed for authenticity, featuring real photos and honest user reviews. Our secure messaging system ensures discreet communication with providers. Advanced filters let you narrow results by location, services, and budget. Discover why thousands trust Secretza for quality ${cat} across India.`,
+    `India's most trusted platform for ${cat} — SecretZa connects you with verified providers nationwide. ${categoryDesc} With listings spanning ${topCities.slice(0, 4).join(", ")} and over 100 other cities, you'll find comprehensive options wherever you are. Each profile is reviewed for authenticity, featuring real photos and honest user reviews. Our secure messaging system ensures discreet communication with providers. Advanced filters let you narrow results by location, services, and budget. Discover why thousands trust SecretZa for quality ${cat} across India.`,
 
-    `Find verified ${cat} across every major Indian city with Secretza. ${categoryDesc} Our curated directory covers ${topCities.join(", ")}, and many more urban centres throughout India. Every listing undergoes our multi-step verification process, so you browse with confidence. Compare providers by photos, services, pricing, and user ratings. Whether you prefer incall or outcall services, short encounters or extended arrangements, Secretza has options for every preference. Fresh ${cat} listings are published daily from providers across India.`,
+    `Find verified ${cat} across every major Indian city with SecretZa. ${categoryDesc} Our curated directory covers ${topCities.join(", ")}, and many more urban centres throughout India. Every listing undergoes our multi-step verification process, so you browse with confidence. Compare providers by photos, services, pricing, and user ratings. Whether you prefer incall or outcall services, short encounters or extended arrangements, SecretZa has options for every preference. Fresh ${cat} listings are published daily from providers across India.`,
 
-    `Secretza is India's premier destination for ${cat}, offering a vetted, user-friendly directory of verified providers. ${categoryDesc} From ${topCities.slice(0, 3).join(", ")} to emerging cities, our platform delivers quality ${cat} wherever you are. Each listing is moderated, with photo verification and profile review ensuring authenticity. Use our powerful search filters to find exactly what you need — by city, service type, price, or verification status. Read genuine reviews from other users, and connect securely through our built-in messaging. New ${cat} profiles are added every day.`,
+    `SecretZa is India's premier destination for ${cat}, offering a vetted, user-friendly directory of verified providers. ${categoryDesc} From ${topCities.slice(0, 3).join(", ")} to emerging cities, our platform delivers quality ${cat} wherever you are. Each listing is moderated, with photo verification and profile review ensuring authenticity. Use our powerful search filters to find exactly what you need — by city, service type, price, or verification status. Read genuine reviews from other users, and connect securely through our built-in messaging. New ${cat} profiles are added every day.`,
 
-    `Your nationwide guide to ${cat} in India — Secretza brings together the most comprehensive selection of verified ${cat} listings. ${categoryDesc} Serving ${topCities.slice(0, 4).join(", ")} and 100+ other cities, our platform is built for safety, quality, and ease of use. Browse detailed provider profiles with verified photos, transparent pricing, and service descriptions. User reviews and ratings help you make informed decisions. Whether searching for a specific type of ${cat} or exploring what's available in your city, Secretza makes it simple. New listings are added daily across all Indian cities.`,
+    `Your nationwide guide to ${cat} in India — SecretZa brings together the most comprehensive selection of verified ${cat} listings. ${categoryDesc} Serving ${topCities.slice(0, 4).join(", ")} and 100+ other cities, our platform is built for safety, quality, and ease of use. Browse detailed provider profiles with verified photos, transparent pricing, and service descriptions. User reviews and ratings help you make informed decisions. Whether searching for a specific type of ${cat} or exploring what's available in your city, SecretZa makes it simple. New listings are added daily across all Indian cities.`,
   ];
 
   return templates[idx];
@@ -590,15 +601,15 @@ function generateStateIntro(
   const idx = selectTemplateIndex(stateSlug, 5, 'state-intro');
 
   const templates: string[] = [
-    `Welcome to the premier directory of adult classifieds for ${stateName}, ${countryName}. Secretza offers an extensive collection of verified listings spanning ${catList} and more across all major cities in ${stateName}. Whether you're in ${cityNames} or any other city in ${stateName}, our platform connects you with trusted adult service providers in your area. Each listing on Secretza undergoes thorough moderation to ensure authenticity, safety, and quality. Browse by city, category, or service type to find exactly what you need. With new listings added daily, Secretza is your go-to platform for adult classifieds throughout ${stateName}, ${countryName}.`,
+    `Welcome to the premier directory of adult classifieds for ${stateName}, ${countryName}. SecretZa offers an extensive collection of verified listings spanning ${catList} and more across all major cities in ${stateName}. Whether you're in ${cityNames} or any other city in ${stateName}, our platform connects you with trusted adult service providers in your area. Each listing on SecretZa undergoes thorough moderation to ensure authenticity, safety, and quality. Browse by city, category, or service type to find exactly what you need. With new listings added daily, SecretZa is your go-to platform for adult classifieds throughout ${stateName}, ${countryName}.`,
 
-    `Discover adult classifieds across ${stateName} with Secretza, India's leading verified directory. From ${cityNames} and surrounding cities, ${stateName} offers a diverse selection of ${catList} and more. Our platform features thoroughly vetted providers with real photos, transparent pricing, and user reviews. Whether you're seeking companionship, massage, dating connections, or entertainment, Secretza covers every category across ${stateName}. Use our advanced filters to narrow by city, services, and budget. New verified listings are published daily throughout ${stateName}, ${countryName}.`,
+    `Discover adult classifieds across ${stateName} with SecretZa, India's leading verified directory. From ${cityNames} and surrounding cities, ${stateName} offers a diverse selection of ${catList} and more. Our platform features thoroughly vetted providers with real photos, transparent pricing, and user reviews. Whether you're seeking companionship, massage, dating connections, or entertainment, SecretZa covers every category across ${stateName}. Use our advanced filters to narrow by city, services, and budget. New verified listings are published daily throughout ${stateName}, ${countryName}.`,
 
-    `${stateName} is home to a vibrant adult services scene, and Secretza is your most trusted guide. Our comprehensive directory covers ${catList} and more in ${cityNames} and other cities across ${stateName}. Every listing on our platform undergoes multi-step verification including photo checks and profile review. Browse with confidence using our detailed search filters, read genuine user reviews, and connect securely with providers. Secretza continuously expands its coverage across ${stateName}, ${countryName}, with fresh listings added daily to ensure you always find quality options.`,
+    `${stateName} is home to a vibrant adult services scene, and SecretZa is your most trusted guide. Our comprehensive directory covers ${catList} and more in ${cityNames} and other cities across ${stateName}. Every listing on our platform undergoes multi-step verification including photo checks and profile review. Browse with confidence using our detailed search filters, read genuine user reviews, and connect securely with providers. SecretZa continuously expands its coverage across ${stateName}, ${countryName}, with fresh listings added daily to ensure you always find quality options.`,
 
-    `Your complete resource for adult classifieds in ${stateName}, ${countryName}. Secretza connects you with verified providers of ${catList} across ${cityNames} and other major cities in ${stateName}. Each listing features authentic photos, service details, pricing, and user feedback. Our moderation team reviews every new listing to maintain quality and safety standards. Filter by city, category, or service type to quickly find what matches your preferences. Serving the entire ${stateName} region, Secretza is the most reliable platform for adult services in ${countryName}.`,
+    `Your complete resource for adult classifieds in ${stateName}, ${countryName}. SecretZa connects you with verified providers of ${catList} across ${cityNames} and other major cities in ${stateName}. Each listing features authentic photos, service details, pricing, and user feedback. Our moderation team reviews every new listing to maintain quality and safety standards. Filter by city, category, or service type to quickly find what matches your preferences. Serving the entire ${stateName} region, SecretZa is the most reliable platform for adult services in ${countryName}.`,
 
-    `Explore the widest selection of verified adult classifieds in ${stateName} on Secretza. Covering ${catList} across ${cityNames} and beyond, our platform is designed for safety, authenticity, and user convenience. Every provider is vetted through our verification process, and genuine user reviews help you make informed choices. Whether you're new to ${stateName} or a long-time resident, Secretza's directory makes finding quality adult services straightforward and discreet. Listings are refreshed daily across all cities in ${stateName}, ${countryName}.`,
+    `Explore the widest selection of verified adult classifieds in ${stateName} on SecretZa. Covering ${catList} across ${cityNames} and beyond, our platform is designed for safety, authenticity, and user convenience. Every provider is vetted through our verification process, and genuine user reviews help you make informed choices. Whether you're new to ${stateName} or a long-time resident, SecretZa's directory makes finding quality adult services straightforward and discreet. Listings are refreshed daily across all cities in ${stateName}, ${countryName}.`,
   ];
 
   return templates[idx];
@@ -613,15 +624,15 @@ function generateCountryIntro(countryName: string): string {
   const idx = selectTemplateIndex('india', 5, 'country-intro');
 
   const templates: string[] = [
-    `Secretza is ${countryName}'s leading adult classifieds platform, offering the most comprehensive directory of verified adult services across the country. From ${topCities.slice(0, 3).join(", ")} to growing urban centres, Secretza connects you with trusted providers in every major Indian city. Explore thousands of listings across ${catList} and more. Our platform features a rigorous verification process, user reviews, and secure messaging to ensure a safe and enjoyable experience. Whether you're seeking companionship, professional services, or entertainment, Secretza has you covered across all ${indiaStates.length} states and union territories. New listings are added daily.`,
+    `SecretZa is ${countryName}'s leading adult classifieds platform, offering the most comprehensive directory of verified adult services across the country. From ${topCities.slice(0, 3).join(", ")} to growing urban centres, SecretZa connects you with trusted providers in every major Indian city. Explore thousands of listings across ${catList} and more. Our platform features a rigorous verification process, user reviews, and secure messaging to ensure a safe and enjoyable experience. Whether you're seeking companionship, professional services, or entertainment, SecretZa has you covered across all ${indiaStates.length} states and union territories. New listings are added daily.`,
 
-    `${countryName}'s most trusted adult classifieds platform — Secretza brings together verified providers and quality listings from ${topCities.slice(0, 4).join(", ")} and over 100 other Indian cities. Browse ${catList} and more with confidence, knowing every listing is moderated for authenticity. Our platform features real photos, transparent pricing, and genuine user reviews. Advanced search filters help you find exactly what you need by city, service type, and budget. Join millions who trust Secretza for safe, discreet adult classifieds across ${countryName}. New providers join daily.`,
+    `${countryName}'s most trusted adult classifieds platform — SecretZa brings together verified providers and quality listings from ${topCities.slice(0, 4).join(", ")} and over 100 other Indian cities. Browse ${catList} and more with confidence, knowing every listing is moderated for authenticity. Our platform features real photos, transparent pricing, and genuine user reviews. Advanced search filters help you find exactly what you need by city, service type, and budget. Join millions who trust SecretZa for safe, discreet adult classifieds across ${countryName}. New providers join daily.`,
 
-    `Discover verified adult classifieds across ${countryName} with Secretza, the platform built for safety, quality, and variety. Covering ${topCities.slice(0, 3).join(", ")} and 100+ more cities, our directory spans all ${indiaStates.length} states and union territories. Explore ${catList} and a full range of adult services, each listing vetted through our multi-step verification process. Read authentic user reviews, compare providers by services and pricing, and connect securely through our built-in messaging. Secretza is your comprehensive guide to adult services in ${countryName}.`,
+    `Discover verified adult classifieds across ${countryName} with SecretZa, the platform built for safety, quality, and variety. Covering ${topCities.slice(0, 3).join(", ")} and 100+ more cities, our directory spans all ${indiaStates.length} states and union territories. Explore ${catList} and a full range of adult services, each listing vetted through our multi-step verification process. Read authentic user reviews, compare providers by services and pricing, and connect securely through our built-in messaging. SecretZa is your comprehensive guide to adult services in ${countryName}.`,
 
-    `Your one-stop destination for adult classifieds in ${countryName} — Secretza offers the largest verified directory of ${catList} and more. From the metropolitan hubs of ${topCities.slice(0, 3).join(", ")} to smaller cities, we cover every corner of ${countryName}. Each listing undergoes moderation including photo verification and profile review, ensuring a safe browsing experience. Use our powerful filters to search by city, category, price, and verification status. Fresh listings are published daily, so there's always something new to explore on Secretza.`,
+    `Your one-stop destination for adult classifieds in ${countryName} — SecretZa offers the largest verified directory of ${catList} and more. From the metropolitan hubs of ${topCities.slice(0, 3).join(", ")} to smaller cities, we cover every corner of ${countryName}. Each listing undergoes moderation including photo verification and profile review, ensuring a safe browsing experience. Use our powerful filters to search by city, category, price, and verification status. Fresh listings are published daily, so there's always something new to explore on SecretZa.`,
 
-    `Secretza is revolutionizing adult classifieds in ${countryName} with a platform focused on verification, transparency, and user safety. With listings from ${topCities.slice(0, 4).join(", ")} and cities across all ${indiaStates.length} states, we offer ${catList} and comprehensive adult services. Every profile features verified photos, detailed service descriptions, and honest user reviews. Our secure messaging system ensures discreet communication. Whether you're looking for companionship, entertainment, or professional adult services, Secretza provides a reliable, quality-first experience across ${countryName}.`,
+    `SecretZa is revolutionizing adult classifieds in ${countryName} with a platform focused on verification, transparency, and user safety. With listings from ${topCities.slice(0, 4).join(", ")} and cities across all ${indiaStates.length} states, we offer ${catList} and comprehensive adult services. Every profile features verified photos, detailed service descriptions, and honest user reviews. Our secure messaging system ensures discreet communication. Whether you're looking for companionship, entertainment, or professional adult services, SecretZa provides a reliable, quality-first experience across ${countryName}.`,
   ];
 
   return templates[idx];
@@ -654,74 +665,31 @@ function getCategoryFAQs(
     // Build 5 FAQs: 3 from templates + 2 city-specific
     const baseFaqs = faqTemplates.faqs.slice(0, 3).map((q, i) => {
       const answers: Record<number, string> = {
-        0: `You can find verified ${cat} in ${cityName} right here on Secretza. Every listing goes through a moderation process to ensure authenticity. Browse profiles in ${areaStr}, check photos and reviews, and connect directly with ${cat} providers in ${cityName}, ${stateName}. Secretza makes it easy to filter by location, price, and services offered. New listings are added daily across all areas of ${cityName}.`,
-        1: `Secretza takes safety seriously for all ${cat} listings in ${cityName}. We implement profile verification, user reviews, and a robust moderation system. Always meet in public places first, communicate through the platform initially, and trust your instincts. Secretza also allows users to report suspicious listings, which our team reviews promptly within 24 hours.`,
-        2: `${cityName} has ${cat} listings spread across multiple areas including ${areaStr}. Use Secretza's location filters to browse ${cat} in specific neighbourhoods of ${cityName}. Areas with higher concentrations typically include upscale districts and well-connected commercial areas. You can also check nearby ${nearbyCity1} and ${nearbyCity2} for additional options.`,
+        0: `You can find verified ${cat} in ${cityName} right here on SecretZa. Every listing goes through a moderation process to ensure authenticity. Browse profiles in ${areaStr}, check photos and reviews, and connect directly with ${cat} providers in ${cityName}, ${stateName}. SecretZa makes it easy to filter by location, price, and services offered. New listings are added daily across all areas of ${cityName}.`,
+        1: `SecretZa takes safety seriously for all ${cat} listings in ${cityName}. We implement profile verification, user reviews, and a robust moderation system. Always meet in public places first, communicate through the platform initially, and trust your instincts. SecretZa also allows users to report suspicious listings, which our team reviews promptly within 24 hours.`,
+        2: `${cityName} has ${cat} listings spread across multiple areas including ${areaStr}. Use SecretZa's location filters to browse ${cat} in specific neighbourhoods of ${cityName}. Areas with higher concentrations typically include upscale districts and well-connected commercial areas. You can also check nearby ${nearbyCity1} and ${nearbyCity2} for additional options.`,
       };
       return { question: q, answer: answers[i] ?? answers[0]! };
     });
 
     // City-specific FAQ 4: about areas
     const areaQ = areas.length > 0
-      ? { question: `Which areas in ${cityName} are best for finding ${cat}?`, answer: `${cityName}'s ${cat} listings are concentrated in popular areas like ${areaStr}. These areas are well-connected and frequented by both locals and visitors. Use Secretza's area filter to narrow your search to specific neighbourhoods. Premium providers often list in upscale and central locations, while budget-friendly options may be found in suburban areas of ${cityName}.` }
-      : { question: `Where can I find ${cat} in ${cityName}?`, answer: `${cat} in ${cityName} are spread across the city's popular neighbourhoods and commercial districts. Use Secretza's advanced location filters to find providers near you. Central areas and well-connected localities typically have the highest concentration of listings. You can also explore nearby ${nearbyCity1} for more options.` };
+      ? { question: `Which areas in ${cityName} are best for finding ${cat}?`, answer: `${cityName}'s ${cat} listings are concentrated in popular areas like ${areaStr}. These areas are well-connected and frequented by both locals and visitors. Use SecretZa's area filter to narrow your search to specific neighbourhoods. Premium providers often list in upscale and central locations, while budget-friendly options may be found in suburban areas of ${cityName}.` }
+      : { question: `Where can I find ${cat} in ${cityName}?`, answer: `${cat} in ${cityName} are spread across the city's popular neighbourhoods and commercial districts. Use SecretZa's advanced location filters to find providers near you. Central areas and well-connected localities typically have the highest concentration of listings. You can also explore nearby ${nearbyCity1} for more options.` };
 
     // City-specific FAQ 5: pricing/practical
-    const priceQ = { question: `What are the typical rates for ${cat} in ${cityName}?`, answer: `${cat} pricing in ${cityName} varies depending on the provider, service type, duration, and experience level. ${cityName}, being a ${indiaCities.find(c => c.slug === resolveCitySlug(citySlug))?.tier === 1 ? 'major metro' : 'growing urban'} city, offers a range of options across different price points. Premium providers in upscale areas typically charge more, while new listings may offer competitive introductory rates. Use Secretza's price filter to find ${cat} within your budget in ${cityName}, ${stateName}.` };
+    const priceQ = { question: `What are the typical rates for ${cat} in ${cityName}?`, answer: `${cat} pricing in ${cityName} varies depending on the provider, service type, duration, and experience level. ${cityName}, being a ${indiaCities.find(c => c.slug === resolveCitySlug(citySlug))?.tier === 1 ? 'major metro' : 'growing urban'} city, offers a range of options across different price points. Premium providers in upscale areas typically charge more, while new listings may offer competitive introductory rates. Use SecretZa's price filter to find ${cat} within your budget in ${cityName}, ${stateName}.` };
 
     return [...baseFaqs, areaQ, priceQ];
   }
 
   // Fallback for unknown categories
   return [
-    { question: `How to find verified ${cat} in ${cityName}?`, answer: `Visit Secretza and navigate to the ${categoryName} section, then filter by ${cityName}. All listings are moderated for authenticity. Browse verified profiles in ${areaStr}, compare services and pricing, and connect directly with providers. Secretza offers the most comprehensive directory of adult services in ${cityName}, ${stateName}.` },
-    { question: `Are ${cat} listings in ${cityName} safe and verified?`, answer: `Secretza employs multiple verification layers for ${cat} listings in ${cityName}. This includes profile verification, user reviews and ratings, and a dedicated moderation team. We encourage users to read reviews and communicate through the platform before meeting any provider. Report suspicious activity — our team investigates within 24 hours.` },
-    { question: `What areas in ${cityName} have the most ${cat} listings?`, answer: `${cityName} offers ${cat} listings across multiple areas including ${areaStr}. Use Secretza's advanced location filters to find providers near you. You can also find listings in nearby ${nearbyCity1} and ${nearbyCity2}.` },
-    { question: `How do I stay safe when using ${cat} services in ${cityName}?`, answer: `Always communicate through Secretza's platform initially, meet in safe public locations for first encounters, verify profile details and photos, read user reviews, and trust your instincts. Never share financial information upfront. Report any suspicious behaviour to our moderation team, who investigate all reports within 24 hours.` },
-    { question: `Can I find ${cat} near ${nearbyCity1} as well?`, answer: `Yes! Secretza covers ${cat} listings in ${nearbyCity1}, ${nearbyCity2}, and many other cities near ${cityName}. Simply switch the location filter to explore options in surrounding areas. Our platform provides the widest coverage of verified adult services across ${stateName}.` },
-  ];
-}
-
-/**
- * Generate enhanced city-specific FAQs with area context.
- */
-function getCityFAQs(
-  cityName: string,
-  citySlug: string,
-  stateName: string,
-): Array<{ question: string; answer: string }> {
-  const nearby = getNearbyCities(citySlug, 3);
-  const nearbyCity1 = nearby[0]?.name ?? "nearby cities";
-  const nearbyCity2 = nearby[1]?.name ?? "surrounding areas";
-  const catList = getCategoryList();
-  const areas = pickAreas(citySlug, 2);
-  const areaStr = areas.length > 0 ? areas.join(" and ") : "popular areas and central districts";
-  const nightlife = getNightlife(citySlug);
-  const tourism = getTourism(citySlug);
-
-  const nightlifeQ = nightlife.length > 0
-    ? { question: `What are the best nightlife areas in ${cityName}?`, answer: `${cityName} is known for its vibrant nightlife, particularly around ${nightlife.slice(0, 3).join(", ")}. These areas feature a range of entertainment venues and are well-connected for late-night transport. For adult classifieds related to nightlife and entertainment, Secretza has listings from providers across these popular ${cityName} hotspots.` }
-    : { question: `Is ${cityName} good for nightlife and adult entertainment?`, answer: `${cityName} offers a lively entertainment scene with various options across the city. Popular areas for nightlife and adult services include ${areaStr}. Secretza's directory covers verified providers throughout ${cityName}, making it easy to find entertainment options wherever you are in the city.` };
-
-  const tourismQ = tourism.length > 0
-    ? { question: `I'm visiting ${cityName} as a tourist. Where can I find adult services?`, answer: `${cityName} attracts many visitors for ${tourism.slice(0, 2).join(" and ")}, and the city offers quality adult services across ${areaStr}. Secretza is the most trusted platform for visitors seeking adult classifieds in ${cityName}. Browse verified profiles with real photos, read reviews, and use our area filters to find providers near your hotel or accommodation. We also cover ${nearbyCity1} and ${nearbyCity2} for broader options.` }
-    : { question: `Can tourists find adult services in ${cityName}?`, answer: `Absolutely! ${cityName} welcomes visitors and has adult service listings across ${areaStr}. Secretza's platform is designed to help both locals and tourists find verified providers. Use our location-based filters to browse listings near your area of stay. We recommend reading reviews and verifying profiles before making contact.` };
-
-  return [
-    {
-      question: `What types of adult classifieds are available in ${cityName}?`,
-      answer: `${cityName} offers a wide range of adult classifieds on Secretza, including ${catList}, and more. Whether you're looking for escorts, massage services, dating, webcam models, or adult jobs, you'll find comprehensive listings for ${cityName}, ${stateName}. All categories are updated daily with new verified listings.`,
-    },
-    {
-      question: `Is Secretza the best platform for adult classifieds in ${cityName}?`,
-      answer: `Secretza is ${countryName}'s leading adult classifieds platform with the most comprehensive and verified selection in ${cityName}. With advanced search filters, photo-verified profiles, genuine user reviews, and a secure messaging system, Secretza makes finding quality adult services in ${cityName}, ${stateName} easy and discreet.`,
-    },
-    nightlifeQ,
-    tourismQ,
-    {
-      question: `Can I find adult services near ${nearbyCity1} and ${nearbyCity2} too?`,
-      answer: `Yes! Secretza covers adult classifieds across all major Indian cities. In addition to ${cityName}, you can browse verified listings in ${nearbyCity1}, ${nearbyCity2}, and many other cities across ${stateName}. Simply use the location filter to switch cities and discover services available near you.`,
-    },
+    { question: `How to find verified ${cat} in ${cityName}?`, answer: `Visit SecretZa and navigate to the ${categoryName} section, then filter by ${cityName}. All listings are moderated for authenticity. Browse verified profiles in ${areaStr}, compare services and pricing, and connect directly with providers. SecretZa offers the most comprehensive directory of adult services in ${cityName}, ${stateName}.` },
+    { question: `Are ${cat} listings in ${cityName} safe and verified?`, answer: `SecretZa employs multiple verification layers for ${cat} listings in ${cityName}. This includes profile verification, user reviews and ratings, and a dedicated moderation team. We encourage users to read reviews and communicate through the platform before meeting any provider. Report suspicious activity — our team investigates within 24 hours.` },
+    { question: `What areas in ${cityName} have the most ${cat} listings?`, answer: `${cityName} offers ${cat} listings across multiple areas including ${areaStr}. Use SecretZa's advanced location filters to find providers near you. You can also find listings in nearby ${nearbyCity1} and ${nearbyCity2}.` },
+    { question: `How do I stay safe when using ${cat} services in ${cityName}?`, answer: `Always communicate through SecretZa's platform initially, meet in safe public locations for first encounters, verify profile details and photos, read user reviews, and trust your instincts. Never share financial information upfront. Report any suspicious behaviour to our moderation team, who investigate all reports within 24 hours.` },
+    { question: `Can I find ${cat} near ${nearbyCity1} as well?`, answer: `Yes! SecretZa covers ${cat} listings in ${nearbyCity1}, ${nearbyCity2}, and many other cities near ${cityName}. Simply switch the location filter to explore options in surrounding areas. Our platform provides the widest coverage of verified adult services across ${stateName}.` },
   ];
 }
 
@@ -741,22 +709,22 @@ function getCategoryFAQsGlobal(
   if (faqTemplates) {
     return faqTemplates.faqs.slice(0, 5).map((q, i) => {
       const answers: Record<number, string> = {
-        0: `Secretza is the premier platform for finding verified ${cat} in India. All ${cat} listings go through a moderation process to ensure authenticity. Browse thousands of profiles across all major Indian cities, filter by location and preferences, and connect directly with ${cat} providers. New listings are added daily.`,
-        1: `Yes, ${cat} profiles on Secretza are verified through a multi-step process. We check profile information, verify photos, and monitor user reviews. Our moderation team actively reviews new listings and investigates reports to maintain a trustworthy platform for ${cat} services in India.`,
-        2: `Safety is a top priority on Secretza. When engaging with ${cat} listings, always communicate through the platform first, read user reviews, verify profile information, and meet in safe, public locations initially. Secretza provides reporting tools for any suspicious ${cat} listings — our team investigates within 24 hours.`,
-        3: `${cat} pricing on Secretza varies by city, service type, and provider experience. Premium ${cat} providers in metro cities like Mumbai, Delhi, and Bangalore typically charge higher rates. Secretza allows you to filter ${cat} listings by price range to find options within your budget.`,
-        4: `Secretza offers ${cat} listings in all major Indian cities including Mumbai, Delhi, Bangalore, Hyderabad, Chennai, Kolkata, Pune, Jaipur, Kochi, Chandigarh, and over 100 more. Use our location filter to find ${cat} near you, or browse by state to discover options across India.`,
+        0: `SecretZa is the premier platform for finding verified ${cat} in India. All ${cat} listings go through a moderation process to ensure authenticity. Browse thousands of profiles across all major Indian cities, filter by location and preferences, and connect directly with ${cat} providers. New listings are added daily.`,
+        1: `Yes, ${cat} profiles on SecretZa are verified through a multi-step process. We check profile information, verify photos, and monitor user reviews. Our moderation team actively reviews new listings and investigates reports to maintain a trustworthy platform for ${cat} services in India.`,
+        2: `Safety is a top priority on SecretZa. When engaging with ${cat} listings, always communicate through the platform first, read user reviews, verify profile information, and meet in safe, public locations initially. SecretZa provides reporting tools for any suspicious ${cat} listings — our team investigates within 24 hours.`,
+        3: `${cat} pricing on SecretZa varies by city, service type, and provider experience. Premium ${cat} providers in metro cities like Mumbai, Delhi, and Bangalore typically charge higher rates. SecretZa allows you to filter ${cat} listings by price range to find options within your budget.`,
+        4: `SecretZa offers ${cat} listings in all major Indian cities including Mumbai, Delhi, Bangalore, Hyderabad, Chennai, Kolkata, Pune, Jaipur, Kochi, Chandigarh, and over 100 more. Use our location filter to find ${cat} near you, or browse by state to discover options across India.`,
       };
       return { question: q, answer: answers[i] ?? answers[0]! };
     });
   }
 
   return [
-    { question: `How do I find verified ${cat} on Secretza?`, answer: `Browse the ${categoryName} section on Secretza to find verified listings across India. Use filters for location, price, and services to narrow your search. Every listing is reviewed by our moderation team to ensure quality and authenticity.` },
-    { question: `Are ${cat} listings on Secretza safe?`, answer: `Secretza implements profile verification, user reviews, and active moderation for all ${cat} listings. We encourage users to communicate through the platform and read reviews before engaging with any provider.` },
-    { question: `What cities have ${cat} listings on Secretza?`, answer: `Secretza offers ${cat} listings in all major Indian cities including Mumbai, Delhi, Bangalore, Hyderabad, Chennai, Kolkata, Pune, Jaipur, and many more. Use our location filter to find ${cat} near you.` },
-    { question: `How is Secretza different from other ${cat} platforms?`, answer: `Secretza stands out with its rigorous multi-step verification, genuine user reviews, secure messaging, and comprehensive coverage across all Indian cities. Our moderation team reviews every listing, and suspicious accounts are removed promptly. We prioritise safety, transparency, and user experience.` },
-    { question: `Can I post a ${categoryName} listing on Secretza?`, answer: `Yes! Creating a listing is free. Register for an account, select the ${categoryName} category, add your details and photos, and publish. Your listing will be reviewed by our moderation team and typically goes live within hours. Featured and premium options are available for enhanced visibility.` },
+    { question: `How do I find verified ${cat} on SecretZa?`, answer: `Browse the ${categoryName} section on SecretZa to find verified listings across India. Use filters for location, price, and services to narrow your search. Every listing is reviewed by our moderation team to ensure quality and authenticity.` },
+    { question: `Are ${cat} listings on SecretZa safe?`, answer: `SecretZa implements profile verification, user reviews, and active moderation for all ${cat} listings. We encourage users to communicate through the platform and read reviews before engaging with any provider.` },
+    { question: `What cities have ${cat} listings on SecretZa?`, answer: `SecretZa offers ${cat} listings in all major Indian cities including Mumbai, Delhi, Bangalore, Hyderabad, Chennai, Kolkata, Pune, Jaipur, and many more. Use our location filter to find ${cat} near you.` },
+    { question: `How is SecretZa different from other ${cat} platforms?`, answer: `SecretZa stands out with its rigorous multi-step verification, genuine user reviews, secure messaging, and comprehensive coverage across all Indian cities. Our moderation team reviews every listing, and suspicious accounts are removed promptly. We prioritise safety, transparency, and user experience.` },
+    { question: `Can I post a ${categoryName} listing on SecretZa?`, answer: `Yes! Creating a listing is free. Register for an account, select the ${categoryName} category, add your details and photos, and publish. Your listing will be reviewed by our moderation team and typically goes live within hours. Featured and premium options are available for enhanced visibility.` },
   ];
 }
 
@@ -919,78 +887,23 @@ export function generatePopularSearches(): string[] {
 // ------------------------------------------
 
 /**
- * Generate SEO content for a city page: /mumbai, /delhi
+ * Generate SEO content for a city page.
+ * @deprecated Use generateCitySEOContent from @/lib/seo-engine (V5). Removed V3 city variant path.
  */
 export function generateCitySEO(
   cityName: string,
   citySlug: string,
   stateName: string,
   countryNameParam: string = "India",
+  options?: { stateSlug?: string; dbAreas?: string[] },
 ): SEOContent {
-  const catList = getCategoryList();
+  const { generateCitySEOContent } = require("@/lib/seo-engine") as typeof import("@/lib/seo-engine");
+  return generateCitySEOContent(cityName, citySlug, stateName, countryNameParam, options);
+}
 
-  const title = `${cityName} Adult Classifieds - Find ${catList} in ${cityName}, ${stateName} | ${SITE_NAME}`;
-  const metaDescription = truncateToLength(
-    `Browse verified adult classifieds in ${cityName}, ${stateName}. Find ${catList} and more on Secretza. Updated daily with new listings in ${cityName}.`,
-    160,
-  );
-
-  const h1 = `${cityName} Adult Classifieds & Services`;
-
-  const introParagraph = generateCityIntro(cityName, citySlug, stateName, countryNameParam);
-
-  const faqs = getCityFAQs(cityName, citySlug, stateName);
-
-  const breadcrumbItems: Array<{ name: string; url: string }> = [
-    { name: "Home", url: "/" },
-    { name: countryNameParam, url: `/india` },
-    { name: stateName, url: `/india/${citySlug === 'delhi' ? 'delhi-ncr' : 'maharashtra'}` },
-    { name: cityName, url: `/${citySlug}` },
-  ];
-
-  const internalLinks = buildCityInternalLinks(citySlug, cityName);
-  const trustBlock = generateTrustBlock(cityName);
-  const sellingPoints = getSellingPoints(citySlug);
-  const areas = pickAreas(citySlug, 3);
-
-  // Trending searches for this city
-  const trending = generateTrendingSearches(citySlug);
-
-  // Popular areas as city highlights
-  const highlights = [
-    ...getNeighborhoods(citySlug),
-    ...getNightlife(citySlug),
-  ].slice(0, 8);
-
-  // Category-specific secondary paragraph
-  const topCat = CATEGORIES[hashString(citySlug) % CATEGORIES.length];
-  const tone = CATEGORY_TONES[topCat.slug];
-  const secondary = tone
-    ? `${topCat.name} in ${cityName}: ${topCat.name.toLowerCase()} focused on ${tone.primaryTheme} are among the most sought-after services. ${tone.uniqueAngle}. Whether you're interested in ${tone.secondaryThemes.slice(0, 2).join(" or ")}, ${cityName} offers a diverse selection. Explore all ${topCat.name.toLowerCase()} listings in ${cityName} with verified photos and reviews.`
-    : undefined;
-
-  return {
-    title,
-    metaDescription,
-    h1,
-    introParagraph,
-    faqs,
-    breadcrumbItems,
-    internalLinks,
-    trustBlock,
-    trendingSearches: trending,
-    cityHighlights: highlights.length > 0 ? highlights : [...areas, ...sellingPoints].slice(0, 4),
-    secondaryParagraph: secondary,
-    authorInfo: {
-      name: "Secretza Editorial Team",
-      role: "SEO Content Editor",
-    },
-    relatedPages: [
-      { title: `${topCat.name} in ${cityName}`, url: `/${topCat.slug}/${citySlug}`, type: "category_city" },
-    ],
-    pageType: "city",
-    lastUpdated: getDateModified(),
-  };
+/** Resolve intro body for storage — prefers full 500+ word assembly. */
+export function resolveIntroContentForStorage(content: SEOContent): string {
+  return content.fullIntroContent ?? content.introParagraph;
 }
 
 /**
@@ -1003,7 +916,7 @@ export function generateCategorySEO(
 ): SEOContent {
   const title = `${categoryName} in India - Verified ${lowerCategory(categoryName)} Listings Nationwide | ${SITE_NAME}`;
   const metaDescription = truncateToLength(
-    `Browse verified ${lowerCategory(categoryName)} listings across India on Secretza. Find trusted providers in Mumbai, Delhi, Bangalore & all cities.`,
+    `Browse verified ${lowerCategory(categoryName)} listings across India on SecretZa. Find trusted providers in Mumbai, Delhi, Bangalore & all cities.`,
     160,
   );
 
@@ -1028,7 +941,7 @@ export function generateCategorySEO(
 
   const tone = CATEGORY_TONES[categorySlug];
   const secondary = tone
-    ? `${categoryName.toLowerCase()} on Secretza focuses on ${tone.primaryTheme}. ${tone.uniqueAngle}. Our platform caters to ${tone.targetAudience} across India, with providers specializing in ${tone.secondaryThemes.slice(0, 3).join(", ")}.`
+    ? `${categoryName.toLowerCase()} on SecretZa focuses on ${tone.primaryTheme}. ${tone.uniqueAngle}. Our platform caters to ${tone.targetAudience} across India, with providers specializing in ${tone.secondaryThemes.slice(0, 3).join(", ")}.`
     : undefined;
 
   return {
@@ -1043,7 +956,7 @@ export function generateCategorySEO(
     popularSearches: popular,
     secondaryParagraph: secondary,
     authorInfo: {
-      name: "Secretza Editorial Team",
+      name: "SecretZa Editorial Team",
       role: "SEO Content Editor",
     },
     pageType: "category",
@@ -1065,7 +978,7 @@ export function generateCategoryCitySEO(
 
   const title = `${categoryName} in ${cityName} - ${displayCount}+ Verified Listings, ${stateName} | ${SITE_NAME}`;
   const metaDescription = truncateToLength(
-    `Find ${displayCount}+ verified ${lowerCategory(categoryName)} listings in ${cityName}, ${stateName}. Browse photos, reviews & prices on Secretza.`,
+    `Find ${displayCount}+ verified ${lowerCategory(categoryName)} listings in ${cityName}, ${stateName}. Browse photos, reviews & prices on SecretZa.`,
     160,
   );
 
@@ -1091,7 +1004,7 @@ export function generateCategoryCitySEO(
   // Category-specific tone
   const tone = CATEGORY_TONES[categorySlug];
   const secondary = tone
-    ? `${cityName}'s ${categoryName.toLowerCase()} scene is known for ${tone.primaryTheme}. ${tone.uniqueAngle}. Providers in ${cityName} cater to ${tone.targetAudience}, with offerings spanning ${tone.secondaryThemes.join(", ")}. Use Secretza's advanced filters to find the perfect match based on services, location, and budget.`
+    ? `${cityName}'s ${categoryName.toLowerCase()} scene is known for ${tone.primaryTheme}. ${tone.uniqueAngle}. Providers in ${cityName} cater to ${tone.targetAudience}, with offerings spanning ${tone.secondaryThemes.join(", ")}. Use SecretZa's advanced filters to find the perfect match based on services, location, and budget.`
     : undefined;
 
   // Related category pages
@@ -1114,7 +1027,7 @@ export function generateCategoryCitySEO(
     trendingSearches: trending,
     secondaryParagraph: secondary,
     authorInfo: {
-      name: "Secretza Editorial Team",
+      name: "SecretZa Editorial Team",
       role: "SEO Content Editor",
     },
     relatedPages: relatedCats,
@@ -1141,7 +1054,7 @@ export function generateStateSEO(
   const title = `${stateName} Adult Classifieds - Browse All Cities in ${stateName} | ${SITE_NAME}`;
   const stateCities = pickN(MAJOR_INDIAN_CITIES, 4, hashString(stateSlug));
   const metaDescription = truncateToLength(
-    `Explore adult classifieds across ${stateName}. Find ${catList} in ${stateCities.map(c => c.name).join(', ')} and more on Secretza.`,
+    `Explore adult classifieds across ${stateName}. Find ${catList} in ${stateCities.map(c => c.name).join(', ')} and more on SecretZa.`,
     160,
   );
 
@@ -1153,24 +1066,24 @@ export function generateStateSEO(
 
   const faqs: Array<{ question: string; answer: string }> = [
     {
-      question: `Which cities in ${stateName} have the most adult classifieds on Secretza?`,
-      answer: `${stateName} has adult classifieds listings across multiple cities on Secretza. Popular cities include ${cityNames}, and many more. Simply select your city from the location filter to browse local listings. Each city page features a comprehensive directory of ${lowerCategory(CATEGORIES[0].name)}, massage, dating, and other adult services.`,
+      question: `Which cities in ${stateName} have the most adult classifieds on SecretZa?`,
+      answer: `${stateName} has adult classifieds listings across multiple cities on SecretZa. Popular cities include ${cityNames}, and many more. Simply select your city from the location filter to browse local listings. Each city page features a comprehensive directory of ${lowerCategory(CATEGORIES[0].name)}, massage, dating, and other adult services.`,
     },
     {
       question: `Can I find all categories of adult services in ${stateName}?`,
-      answer: `Yes! Secretza offers all categories of adult services across ${stateName}. From ${catList} and more, you'll find comprehensive listings in every major city. Use our category filters to navigate between different service types and discover new options throughout ${stateName}.`,
+      answer: `Yes! SecretZa offers all categories of adult services across ${stateName}. From ${catList} and more, you'll find comprehensive listings in every major city. Use our category filters to navigate between different service types and discover new options throughout ${stateName}.`,
     },
     {
       question: `How do I post an adult classified in ${stateName}?`,
-      answer: `Posting on Secretza is quick and easy. Create your free account, select ${stateName} as your location, choose a category, and add your listing details. Your ad will be visible across ${stateName} and will appear in relevant city and category searches. Verified and featured listings receive enhanced visibility across the platform.`,
+      answer: `Posting on SecretZa is quick and easy. Create your free account, select ${stateName} as your location, choose a category, and add your listing details. Your ad will be visible across ${stateName} and will appear in relevant city and category searches. Verified and featured listings receive enhanced visibility across the platform.`,
     },
     {
-      question: `Is Secretza available in all cities of ${stateName}?`,
-      answer: `Secretza covers adult classifieds in all major cities and towns across ${stateName}. While the largest selection is available in metropolitan areas like ${stateCities[0]?.name ?? "major cities"}, we're continuously expanding our coverage. If your city isn't listed yet, you can still browse nearby locations and post your own listing.`,
+      question: `Is SecretZa available in all cities of ${stateName}?`,
+      answer: `SecretZa covers adult classifieds in all major cities and towns across ${stateName}. While the largest selection is available in metropolitan areas like ${stateCities[0]?.name ?? "major cities"}, we're continuously expanding our coverage. If your city isn't listed yet, you can still browse nearby locations and post your own listing.`,
     },
     {
-      question: `How does Secretza ensure listing quality in ${stateName}?`,
-      answer: `Every listing on Secretza undergoes our multi-step verification process including photo verification, profile review, and ongoing moderation. Our team actively monitors ${stateName} listings and investigates user reports within 24 hours. This ensures a safe, trustworthy experience for users across ${stateName}.`,
+      question: `How does SecretZa ensure listing quality in ${stateName}?`,
+      answer: `Every listing on SecretZa undergoes our multi-step verification process including photo verification, profile review, and ongoing moderation. Our team actively monitors ${stateName} listings and investigates user reports within 24 hours. This ensures a safe, trustworthy experience for users across ${stateName}.`,
     },
   ];
 
@@ -1191,7 +1104,7 @@ export function generateStateSEO(
     breadcrumbItems,
     internalLinks,
     trustBlock: generateTrustBlock(stateName),
-    authorInfo: { name: "Secretza Editorial Team", role: "SEO Content Editor" },
+    authorInfo: { name: "SecretZa Editorial Team", role: "SEO Content Editor" },
     pageType: "state",
     popularSearches: generatePopularSearches(),
     lastUpdated: getDateModified(),
@@ -1210,7 +1123,7 @@ export function generateCountrySEO(
 
   const title = `${countryNameParam} Adult Classifieds - Premium Listings in All Indian Cities | ${SITE_NAME}`;
   const metaDescription = truncateToLength(
-    `${countryNameParam}'s #1 adult classifieds platform. Browse verified ${catList} listings in Mumbai, Delhi, Bangalore & 100+ cities on Secretza.`,
+    `${countryNameParam}'s #1 adult classifieds platform. Browse verified ${catList} listings in Mumbai, Delhi, Bangalore & 100+ cities on SecretZa.`,
     160,
   );
 
@@ -1220,24 +1133,24 @@ export function generateCountrySEO(
 
   const faqs: Array<{ question: string; answer: string }> = [
     {
-      question: "What is Secretza?",
-      answer: `Secretza is ${countryNameParam}'s premier adult classifieds platform, offering verified listings for ${catList} and more across all major Indian cities. With thousands of active listings, user reviews, and a secure platform, Secretza is the most trusted name in Indian adult classifieds.`,
+      question: "What is SecretZa?",
+      answer: `SecretZa is ${countryNameParam}'s premier adult classifieds platform, offering verified listings for ${catList} and more across all major Indian cities. With thousands of active listings, user reviews, and a secure platform, SecretZa is the most trusted name in Indian adult classifieds.`,
     },
     {
-      question: `Which cities in ${countryNameParam} does Secretza cover?`,
-      answer: `Secretza covers adult classifieds in ${topCities.slice(0, 5).join(", ")}, and over 100 other Indian cities. Our coverage spans all major metropolitan areas, state capitals, and growing urban centres across ${countryNameParam}. Browse by state or city to find adult services near you.`,
+      question: `Which cities in ${countryNameParam} does SecretZa cover?`,
+      answer: `SecretZa covers adult classifieds in ${topCities.slice(0, 5).join(", ")}, and over 100 other Indian cities. Our coverage spans all major metropolitan areas, state capitals, and growing urban centres across ${countryNameParam}. Browse by state or city to find adult services near you.`,
     },
     {
-      question: "Is Secretza free to use?",
-      answer: `Yes, browsing and posting basic listings on Secretza is completely free. We offer premium and featured listing options for enhanced visibility. Users can browse all categories, view profiles, and use search filters without any charges. Premium features include priority placement, extended listing duration, and analytics.`,
+      question: "Is SecretZa free to use?",
+      answer: `Yes, browsing and posting basic listings on SecretZa is completely free. We offer premium and featured listing options for enhanced visibility. Users can browse all categories, view profiles, and use search filters without any charges. Premium features include priority placement, extended listing duration, and analytics.`,
     },
     {
-      question: "How does Secretza verify adult classified listings?",
-      answer: `Secretza uses a multi-layered verification process for all adult classifieds. This includes profile information checks, photo verification, user review monitoring, and a dedicated moderation team. Listings that don't meet our quality standards are removed. Users can also report suspicious listings, which our team investigates within 24 hours.`,
+      question: "How does SecretZa verify adult classified listings?",
+      answer: `SecretZa uses a multi-layered verification process for all adult classifieds. This includes profile information checks, photo verification, user review monitoring, and a dedicated moderation team. Listings that don't meet our quality standards are removed. Users can also report suspicious listings, which our team investigates within 24 hours.`,
     },
     {
-      question: "Can I post an adult classified on Secretza?",
-      answer: `Absolutely! Creating a listing on Secretza is free and straightforward. Simply register for an account, select your category and location, add your listing details with photos, and publish. Your listing will be reviewed by our moderation team and typically goes live within a few hours. Featured and premium options are available for enhanced visibility.`,
+      question: "Can I post an adult classified on SecretZa?",
+      answer: `Absolutely! Creating a listing on SecretZa is free and straightforward. Simply register for an account, select your category and location, add your listing details with photos, and publish. Your listing will be reviewed by our moderation team and typically goes live within a few hours. Featured and premium options are available for enhanced visibility.`,
     },
   ];
 
@@ -1257,7 +1170,7 @@ export function generateCountrySEO(
     breadcrumbItems,
     internalLinks,
     trustBlock: generateTrustBlock(countryNameParam),
-    authorInfo: { name: "Secretza Editorial Team", role: "SEO Content Editor" },
+    authorInfo: { name: "SecretZa Editorial Team", role: "SEO Content Editor" },
     pageType: "country",
     popularSearches: generatePopularSearches(),
     lastUpdated: getDateModified(),
@@ -1281,7 +1194,7 @@ export function generateLongTailSEO(
 
   const title = `${keyword} in ${cityName} - Find ${cat} ${cityName} Listings | ${SITE_NAME}`;
   const metaDescription = truncateToLength(
-    `Discover the best ${cat} in ${cityName}. Browse verified listings, photos, and reviews on Secretza. Updated daily.`,
+    `Discover the best ${cat} in ${cityName}. Browse verified listings, photos, and reviews on SecretZa. Updated daily.`,
     160,
   );
 
@@ -1290,28 +1203,28 @@ export function generateLongTailSEO(
   const areaPhrase = areas.length > 0 ? ` across areas like ${areas.join(" and ")}` : '';
   const descPhrase = desc ? ` ${desc}` : '';
 
-  const introParagraph = `Looking for ${cat} in ${cityName}? You've come to the right place. Secretza features a curated selection of ${cat} listings specifically for ${cityName}, with detailed profiles, real photos, verified information, and genuine user reviews.${descPhrase} Whether you're a local or just visiting${areaPhrase}, our platform makes it simple to find the best ${cat} options available. Each listing is carefully moderated to ensure authenticity and quality, so you can browse with confidence. Filter results by price, ratings, location, and availability to find exactly what matches your preferences. Secretza also covers ${nearbyCity1} and surrounding areas, giving you access to the widest selection of ${cat} in the region. New ${cat} listings in ${cityName} are added regularly, so check back often for the latest options and featured profiles.`;
+  const introParagraph = `Looking for ${cat} in ${cityName}? You've come to the right place. SecretZa features a curated selection of ${cat} listings specifically for ${cityName}, with detailed profiles, real photos, verified information, and genuine user reviews.${descPhrase} Whether you're a local or just visiting${areaPhrase}, our platform makes it simple to find the best ${cat} options available. Each listing is carefully moderated to ensure authenticity and quality, so you can browse with confidence. Filter results by price, ratings, location, and availability to find exactly what matches your preferences. SecretZa also covers ${nearbyCity1} and surrounding areas, giving you access to the widest selection of ${cat} in the region. New ${cat} listings in ${cityName} are added regularly, so check back often for the latest options and featured profiles.`;
 
   const faqs: Array<{ question: string; answer: string }> = [
     {
       question: `Where can I find ${cat} in ${cityName}?`,
-      answer: `Secretza is the best platform to find ${cat} in ${cityName}. Browse our verified listings with real photos, detailed descriptions, and user reviews. Use our filters to narrow results by area${areas.length > 0 ? ` like ${areas.join(", ")}` : ''}, price, and services. New ${cat} listings are added daily in ${cityName}.`,
+      answer: `SecretZa is the best platform to find ${cat} in ${cityName}. Browse our verified listings with real photos, detailed descriptions, and user reviews. Use our filters to narrow results by area${areas.length > 0 ? ` like ${areas.join(", ")}` : ''}, price, and services. New ${cat} listings are added daily in ${cityName}.`,
     },
     {
       question: `Are the ${cat} listings in ${cityName} verified?`,
-      answer: `Yes, Secretza verifies ${cat} listings in ${cityName} through a multi-step moderation process. We check profile details, verify photos, and monitor user feedback. Listings that don't meet our standards are removed. Always check for the verified badge and read reviews before connecting.`,
+      answer: `Yes, SecretZa verifies ${cat} listings in ${cityName} through a multi-step moderation process. We check profile details, verify photos, and monitor user feedback. Listings that don't meet our standards are removed. Always check for the verified badge and read reviews before connecting.`,
     },
     {
       question: `What are the rates for ${cat} in ${cityName}?`,
-      answer: `${cat} rates in ${cityName} vary depending on the provider, service type, duration, and experience level. Secretza allows you to filter listings by price range to find options that fit your budget. Premium providers typically charge more, while new listings may offer competitive introductory rates.`,
+      answer: `${cat} rates in ${cityName} vary depending on the provider, service type, duration, and experience level. SecretZa allows you to filter listings by price range to find options that fit your budget. Premium providers typically charge more, while new listings may offer competitive introductory rates.`,
     },
     {
       question: `Can I find ${cat} near ${nearbyCity1} as well?`,
-      answer: `Yes! Secretza covers ${cat} listings in ${nearbyCity1} and surrounding areas near ${cityName}. Simply switch the location filter or browse our nearby city listings to explore more options. We cover all major cities and towns across the region.`,
+      answer: `Yes! SecretZa covers ${cat} listings in ${nearbyCity1} and surrounding areas near ${cityName}. Simply switch the location filter or browse our nearby city listings to explore more options. We cover all major cities and towns across the region.`,
     },
     {
       question: `How do I stay safe when looking for ${cat} in ${cityName}?`,
-      answer: `Always communicate through Secretza's platform initially, verify provider details and photos, read user reviews carefully, and meet in safe, public locations for first encounters. Report any suspicious activity to our moderation team — all reports are investigated within 24 hours.`,
+      answer: `Always communicate through SecretZa's platform initially, verify provider details and photos, read user reviews carefully, and meet in safe, public locations for first encounters. Report any suspicious activity to our moderation team — all reports are investigated within 24 hours.`,
     },
   ];
 
@@ -1354,7 +1267,7 @@ export function generateLongTailSEO(
     trustBlock: generateTrustBlock(cityName, keyword),
     cityHighlights: areas,
     trendingSearches: generateTrendingSearches(citySlug, keywordSlug.includes('-') ? keywordSlug.split('-')[0] : undefined),
-    authorInfo: { name: "Secretza Editorial Team", role: "SEO Content Editor" },
+    authorInfo: { name: "SecretZa Editorial Team", role: "SEO Content Editor" },
     pageType: "longtail",
     lastUpdated: getDateModified(),
   };
@@ -1409,7 +1322,7 @@ export function generateItemListSchema(name: string, url: string, numberOfItems:
 }
 
 /**
- * Generate an Organization schema for Secretza.
+ * Generate an Organization schema for SecretZa.
  */
 export function generateOrganizationSchema(): object {
   return {
@@ -1425,6 +1338,34 @@ export function generateOrganizationSchema(): object {
       availableLanguage: ["English", "Hindi"],
     },
     sameAs: [],
+  };
+}
+
+/**
+ * Generate a WebPage schema for an SEO page.
+ */
+export function generateWebPageSchema(input: {
+  name: string;
+  description?: string | null;
+  url: string;
+}): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: input.name,
+    ...(input.description?.trim() ? { description: input.description.trim() } : {}),
+    url: input.url,
+    isPartOf: {
+      "@type": "WebSite",
+      name: SITE_NAME,
+      url: BASE_URL,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: BASE_URL,
+      logo: `${BASE_URL}/logo.png`,
+    },
   };
 }
 

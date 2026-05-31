@@ -682,6 +682,8 @@ model SeoPage {
   duplicateRisk      String?
   seoQualityScore    Float?
   contentHash        String?
+  primaryKeyword     String?
+  secondaryKeywords  String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   faqs               SeoFaq[]

@@ -1,0 +1,107 @@
+{
+  "phase": "SEO Architecture Phase 2",
+  "date": "2026-05-31",
+  "status": "COMPLETE",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "FAQ keyword matrix",
+      "status": "IMPLEMENTED",
+      "description": "buildKeywordFaqs() generates 4 questions that each explicitly target a keyword from the matrix (primary keyword + secondary keywords[0,2,4]). buildUniqueFaqs() now returns 4 keyword-targeted FAQs + 4 from the existing shuffle pool = 8 total.",
+      "file": "src/lib/seo-city-content-v5.ts",
+      "functions": ["buildKeywordFaqs", "buildUniqueFaqs"]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Primary keyword generation",
+      "status": "IMPLEMENTED",
+      "description": "buildPrimaryKeyword(cityName, architecture, tier) generates a deterministic, architecture-aware primary keyword. Premium → 'verified escorts', nightlife → 'nightlife escorts', business_traveler → 'discreet escorts', etc. Seeded via hashString for reproducibility.",
+      "file": "src/lib/seo-city-content-v5.ts",
+      "functions": ["buildPrimaryKeyword"],
+      "examples": {
+        "mumbai_premium": "VIP escorts in Mumbai",
+        "delhi_nightlife": "escorts in Delhi",
+        "bangalore_business": "verified escorts in Bangalore"
+      }
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Secondary keyword generation",
+      "status": "IMPLEMENTED",
+      "description": "buildSecondaryKeywords(c) returns 8 keywords targeting long-tail variations: 'call girls in {city}', 'escort service in {city}', '{neighborhood} escorts', 'independent escorts {city}', 'massage in {city}', '{city} adult services', '{state} escorts', 'verified escorts {city}'.",
+      "file": "src/lib/seo-city-content-v5.ts",
+      "functions": ["buildSecondaryKeywords"],
+      "count": 8
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "Store primary keyword on SEO pages",
+      "status": "IMPLEMENTED",
+      "description": "Added primaryKeyword TEXT column to SeoPage via migration 20260531000000_seo_keywords. updateSeoPageKeywords() saves via $executeRaw (Prisma client DLL locked by dev process). upsertFromContent() calls updateSeoPageKeywords() after upsert when keywords are present.",
+      "files": [
+        "prisma/schema.prisma",
+        "prisma/migrations/20260531000000_seo_keywords/migration.sql",
+        "src/lib/seo-page-service.ts"
+      ],
+      "column": "primaryKeyword TEXT"
+    },
+    {
+      "id": "REQ-5",
+      "requirement": "Store secondary keywords on SEO pages",
+      "status": "IMPLEMENTED",
+      "description": "Added secondaryKeywords TEXT column to SeoPage. Stored as JSON-serialised array (JSON.stringify). Reads back via JSON.parse. Same raw SQL path as primary keyword.",
+      "files": [
+        "prisma/schema.prisma",
+        "prisma/migrations/20260531000000_seo_keywords/migration.sql",
+        "src/lib/seo-page-service.ts"
+      ],
+      "column": "secondaryKeywords TEXT (JSON array)"
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "Embed 3 contextual internal links inside article body",
+      "status": "IMPLEMENTED",
+      "description": "insertContextualLinks() appends [text](url) markdown link sentences to sections at indices 0, 2, 4 (never the last trust-epilogue section). Links: (1) primary keyword → canonical city URL, (2) neighborhood escorts → city URL, (3) escorts in {city} → /category/escorts. SeoPageView.tsx now parses [anchor](url) markdown via parseBodyWithLinks() and renders as Next.js <Link> elements.",
+      "files": [
+        "src/lib/seo-city-content-v5.ts",
+        "src/components/seo/SeoPageView.tsx"
+      ],
+      "functions": ["insertContextualLinks", "parseBodyWithLinks", "BodyParagraph"]
+    }
+  ],
+  "notImplemented": [
+    "SeoKeyword table — not required by spec",
+    "SEO cron — not required by spec",
+    "Keyword density tracking — not required by spec"
+  ],
+  "filesModified": [
+    {
+      "file": "prisma/schema.prisma",
+      "change": "Added primaryKeyword String? and secondaryKeywords String? to SeoPage model"
+    },
+    {
+      "file": "prisma/migrations/20260531000000_seo_keywords/migration.sql",
+      "change": "New migration: ALTER TABLE SeoPage ADD COLUMN primaryKeyword TEXT and secondaryKeywords TEXT"
+    },
+    {
+      "file": "src/lib/seo-content.ts",
+      "change": "Added primaryKeyword?: string and secondaryKeywords?: string[] to SEOContent interface"
+    },
+    {
+      "file": "src/lib/seo-city-content-v5.ts",
+      "change": "Added buildPrimaryKeyword, buildSecondaryKeywords, buildKeywordFaqs, insertContextualLinks. Updated buildUniqueFaqs signature. Updated buildV5CityContent and generateV5CitySEO to generate and return keyword data."
+    },
+    {
+      "file": "src/lib/seo-page-service.ts",
+      "change": "Added primaryKeyword/secondaryKeywords to UpsertSeoPageInput. Added updateSeoPageKeywords() raw SQL helper. Updated upsertFromContent() to persist keywords."
+    },
+    {
+      "file": "src/lib/seo-engine.ts",
+      "change": "Added primaryKeyword/secondaryKeywords to v5CityToSEOContent and mergeV5CityBody return values."
+    },
+    {
+      "file": "src/components/seo/SeoPageView.tsx",
+      "change": "Added parseBodyWithLinks() and BodyParagraph component. Updated SeoIntroContent to split section.body on \\n\\n and render each paragraph via BodyParagraph with inline link support."
+    }
+  ]
+}

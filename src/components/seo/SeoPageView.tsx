@@ -69,6 +69,45 @@ function parseIntroSections(intro: string): ParsedSection[] {
   return sections.filter((s) => s.body.length > 0);
 }
 
+/** Parse `[anchor text](url)` markdown links into typed spans. */
+type BodyPart = { type: "text"; content: string } | { type: "link"; anchor: string; url: string };
+
+function parseBodyWithLinks(text: string): BodyPart[] {
+  const parts: BodyPart[] = [];
+  const linkRe = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = linkRe.exec(text)) !== null) {
+    if (m.index > last) parts.push({ type: "text", content: text.slice(last, m.index) });
+    parts.push({ type: "link", anchor: m[1]!, url: m[2]! });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push({ type: "text", content: text.slice(last) });
+  return parts.length > 0 ? parts : [{ type: "text", content: text }];
+}
+
+/** Render a single paragraph with inline markdown links as Next.js <Link> elements. */
+function BodyParagraph({ text, className }: { text: string; className?: string }) {
+  const parts = parseBodyWithLinks(text);
+  return (
+    <p className={className ?? "text-muted-foreground text-sm leading-relaxed"}>
+      {parts.map((part, i) =>
+        part.type === "link" ? (
+          <Link
+            key={i}
+            href={part.url}
+            className="text-violet-400 hover:text-violet-300 underline decoration-[0.5px] underline-offset-2 transition-colors"
+          >
+            {part.anchor}
+          </Link>
+        ) : (
+          <span key={i}>{part.content}</span>
+        ),
+      )}
+    </p>
+  );
+}
+
 function SeoIntroContent({ intro }: { intro: string }) {
   const sections = parseIntroSections(intro);
   const hasH2 = sections.some((s) => s.h2 !== null);
@@ -77,7 +116,7 @@ function SeoIntroContent({ intro }: { intro: string }) {
     return (
       <div className="text-muted-foreground text-sm leading-relaxed max-w-4xl whitespace-pre-line space-y-4">
         {intro.split("\n\n").map((paragraph, index) => (
-          <p key={`intro-${index}`}>{paragraph}</p>
+          <BodyParagraph key={`intro-${index}`} text={paragraph} />
         ))}
       </div>
     );
@@ -92,7 +131,9 @@ function SeoIntroContent({ intro }: { intro: string }) {
               {section.h2}
             </h2>
           )}
-          <p className="text-muted-foreground text-sm leading-relaxed">{section.body}</p>
+          {section.body.split("\n\n").map((para, pi) => (
+            <BodyParagraph key={pi} text={para} />
+          ))}
         </div>
       ))}
     </div>

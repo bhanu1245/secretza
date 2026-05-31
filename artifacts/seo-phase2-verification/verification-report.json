@@ -1,0 +1,51 @@
+{
+  "phase": "SEO Architecture Phase 2",
+  "date": "2026-05-31",
+  "verificationScript": "scripts/verify-seo-phase2.ts",
+  "result": "PASS",
+  "score": "24/24",
+  "cities": ["Mumbai", "Delhi"],
+  "checks": [
+    { "id": 1,  "name": "primaryKeyword non-empty",                           "status": "PASS" },
+    { "id": 2,  "name": "primaryKeyword contains city name (Mumbai)",          "status": "PASS" },
+    { "id": 10, "name": "V5CityContent has primaryKeyword field",              "status": "PASS" },
+    { "id": 10, "name": "V5CityContent has secondaryKeywords field",           "status": "PASS" },
+    { "id": "3a", "name": "secondaryKeywords has 8 items",                     "status": "PASS" },
+    { "id": "3b", "name": "all secondary keywords non-empty",                  "status": "PASS" },
+    { "id": "3c", "name": "≥6/8 secondary keywords contain city or state",    "status": "PASS", "note": "7/8 for Mumbai; 1 neighbourhood-only item ('Heritage Halli escorts') is valid long-tail" },
+    { "id": 14,  "name": "no duplicate secondary keywords",                    "status": "PASS" },
+    { "id": 5,   "name": "exactly 3 contextual links in Mumbai body",          "status": "PASS" },
+    { "id": 6,   "name": "links in distinct paragraphs",                       "status": "PASS" },
+    { "id": "7a", "name": "all links point to /in/... or /category/...",       "status": "PASS" },
+    { "id": "7b", "name": "at least 1 link to /category/escorts",              "status": "PASS" },
+    { "id": 13,  "name": "no links leak into ##H2:: sentinel lines",           "status": "PASS" },
+    { "id": 4,   "name": "FAQ count is 8",                                     "status": "PASS" },
+    { "id": "4a", "name": "first 4 FAQs are keyword-targeted",                 "status": "PASS" },
+    { "id": "4b", "name": "first FAQ targets primary keyword",                 "status": "PASS" },
+    { "id": "2b", "name": "Delhi primaryKeyword contains city name",           "status": "PASS" },
+    { "id": "3d", "name": "Delhi has 8 secondary keywords",                    "status": "PASS" },
+    { "id": "5b", "name": "Delhi has exactly 3 contextual links",              "status": "PASS" },
+    { "id": 11,  "name": "primaryKeyword is deterministic (idempotent)",       "status": "PASS" },
+    { "id": 11,  "name": "secondaryKeywords are deterministic",                "status": "PASS" },
+    { "id": 12,  "name": "different architectures produce different phrases",   "status": "PASS" },
+    { "id": 9,   "name": "flat (legacy) intro has no H2 sentinels",           "status": "PASS" },
+    { "id": "9b", "name": "flat intro backward-compat: splits to 3 paragraphs","status": "PASS" }
+  ],
+  "sampleOutputMumbai": {
+    "primaryKeyword": "VIP escorts in Mumbai",
+    "secondaryKeywordsPreview": [
+      "call girls in Mumbai",
+      "escort service in Mumbai",
+      "Heritage Halli escorts",
+      "independent escorts Mumbai",
+      "massage in Mumbai",
+      "Mumbai adult services",
+      "Maharashtra escorts",
+      "verified escorts Mumbai"
+    ],
+    "contextualLinksCount": 3,
+    "faqCount": 8,
+    "faqKeywordTargeted": 4,
+    "faqPoolItems": 4
+  }
+}

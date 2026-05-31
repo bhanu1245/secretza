@@ -32,6 +32,10 @@ export interface V5CityContent {
   faqFamily: number;
   sectionOrder: string[];
   cityEnrichment: CityEnrichment;
+  /** Primary keyword for this page (e.g. "verified escorts in Mumbai") */
+  primaryKeyword: string;
+  /** Secondary keyword cluster targeting the surrounding long-tail set */
+  secondaryKeywords: string[];
 }
 
 interface V5Context extends VariantCityInput {
@@ -270,7 +274,15 @@ function sectionWrapper(body: string, c: V5Context, section: SectionDef): string
   return `##H2::${h2}##\n\n${openers[v]!()} ${body}`;
 }
 
-function buildUniqueFaqs(c: V5Context): Array<{ question: string; answer: string }> {
+function buildUniqueFaqs(
+  c: V5Context,
+  primaryKw: string,
+  secondaryKws: string[],
+): Array<{ question: string; answer: string }> {
+  // 4 questions that each explicitly target a keyword from the matrix
+  const keywordFaqs = buildKeywordFaqs(c, primaryKw, secondaryKws);
+
+  // 4 more from the existing pool (seeded shuffle for uniqueness)
   const pool: Array<{ question: string; answer: string }> = [];
   for (let f = 0; f < FAQ_FAMILIES.length; f++) {
     const items = FAQ_FAMILIES[f]!(c);
@@ -282,10 +294,12 @@ function buildUniqueFaqs(c: V5Context): Array<{ question: string; answer: string
     });
   }
   const shuffled = seededShuffle(pool, c.seed + 99);
-  return shuffled.slice(0, 8).map((item, i) => ({
+  const poolFaqs = shuffled.slice(0, 4).map((item) => ({
     question: item.question.replace(/^\[F\d+-Q\d+\]\s*/, `${n(c)} — `),
     answer: item.answer,
   }));
+
+  return [...keywordFaqs, ...poolFaqs];
 }
 
 function buildEntropyParagraph(c: V5Context): string {
@@ -422,6 +436,105 @@ const FAQ_FAMILIES: Array<(c: V5Context) => Array<{ question: string; answer: st
   ],
 ];
 
+// ============================================================================
+// Phase 2 — Keyword generation
+// ============================================================================
+
+/** Primary keyword for a city page. Seeded so it never changes for a given city. */
+export function buildPrimaryKeyword(
+  cityName: string,
+  architecture: PageArchitecture,
+  _tier: number,
+): string {
+  const serviceByArch: Record<PageArchitecture, string[]> = {
+    premium:           ["verified escorts", "VIP escorts", "premium escorts"],
+    nightlife:         ["escorts", "adult entertainment", "nightlife escorts"],
+    business_traveler: ["escorts", "verified escorts", "discreet escorts"],
+    tourism:           ["escorts", "independent escorts", "adult services"],
+    local_resident:    ["independent escorts", "escorts", "local escorts"],
+    transport_hub:     ["escorts", "adult services", "call girls"],
+  };
+  const services = serviceByArch[architecture];
+  const idx = hashString(cityName + "pk-v2") % services.length;
+  return `${services[idx]} in ${cityName}`;
+}
+
+/** Secondary keyword cluster (8 items) for long-tail targeting. */
+export function buildSecondaryKeywords(c: V5Context): string[] {
+  const nm = n(c);
+  const nh0 = a0(c);
+  return [
+    `call girls in ${nm}`,
+    `escort service in ${nm}`,
+    `${nh0} escorts`,
+    `independent escorts ${nm}`,
+    `massage in ${nm}`,
+    `${nm} adult services`,
+    `${c.stateName} escorts`,
+    `verified escorts ${nm}`,
+  ];
+}
+
+/** 4 FAQ questions each targeting a distinct keyword from the matrix. */
+function buildKeywordFaqs(
+  c: V5Context,
+  primaryKw: string,
+  secondaryKws: string[],
+): Array<{ question: string; answer: string }> {
+  const nm = n(c);
+  const nh0 = a0(c);
+  const nh1 = a1(c);
+  const kw1 = secondaryKws[0] ?? `escort service in ${nm}`;
+  const kw2 = secondaryKws[2] ?? `${nh0} escorts`;
+  const kw4 = secondaryKws[4] ?? `massage in ${nm}`;
+  return [
+    {
+      question: `How do I find ${primaryKw}?`,
+      answer: `Use SecretZa district filters starting with ${nh0} — it shows the highest density of verified ${nm} listings. Filter by category before browsing.`,
+    },
+    {
+      question: `What is the best area for ${kw1}?`,
+      answer: `${nh0} and ${nh1} have the most active listings. Filter by district and check verified badges before contacting any provider.`,
+    },
+    {
+      question: `Are ${kw2} available on SecretZa?`,
+      answer: `Yes — filter by ${nh0} in SecretZa's search to see live listings. Verified providers update their profiles daily.`,
+    },
+    {
+      question: `How does ${kw4} differ from escort listings in ${nm}?`,
+      answer: `Use the category filter on SecretZa to separate massage from escort listings — they are indexed independently for ${nm}.`,
+    },
+  ];
+}
+
+/** Append 3 contextual link sentences (markdown [text](url)) into the first 3 eligible sections. */
+function insertContextualLinks(
+  sectionTexts: string[],
+  cityUrl: string,
+  primaryKw: string,
+  c: V5Context,
+): string[] {
+  if (sectionTexts.length < 2) return sectionTexts;
+  const nm = n(c);
+  const nh0 = a0(c);
+  const linkSentences = [
+    `Find [${primaryKw}](${cityUrl}) using verified district profiles on SecretZa.`,
+    `Browse [${nh0} escorts](${cityUrl}) — the highest-density verified area in ${nm}.`,
+    `Explore all [escorts in ${nm}](/category/escorts) by category and availability.`,
+  ];
+  const results = [...sectionTexts];
+  // Inject into indices 0, 2, 4 — never the last section (trust epilogue)
+  const maxIdx = results.length - 2;
+  const targets = [0, 2, 4].filter((i) => i <= maxIdx);
+  targets.slice(0, 3).forEach((idx, j) => {
+    const sentence = linkSentences[j];
+    if (sentence && results[idx]) {
+      results[idx] = results[idx] + "\n\n" + sentence;
+    }
+  });
+  return results;
+}
+
 function buildV5InternalLinks(c: V5Context) {
   const slug = c.slug;
   const countrySlug = c.countrySlug;
@@ -495,24 +608,37 @@ export function buildV5CityContent(
   faqFamily: number;
   faqs: Array<{ question: string; answer: string }>;
   internalLinks: ReturnType<typeof buildV5InternalLinks>;
+  primaryKeyword: string;
+  secondaryKeywords: string[];
 } {
   const c = ctx(enrichment, categoryList, stateSlug, countrySlug);
+
+  // Phase 2: generate keyword data before building content
+  const primaryKw = buildPrimaryKeyword(c.name, c.architecture, c.tier);
+  const secondaryKws = buildSecondaryKeywords(c);
+  const cityUrl = `/${c.countrySlug}/${c.stateSlug}/${c.slug}`;
+
   const introVariant = pickIntroVariant(c.slug);
   const intro = INTRO_VARIANTS[introVariant]!(c);
 
   const sections = pickSections(c);
-  const sectionTexts = sections.map((s) => {
+  let sectionTexts = sections.map((s) => {
     const solo = hashString(c.slug + `solo-${s.id}`) % 3 === 0;
     const core = solo
       ? `${n(c)} micro-zone ${a0(c)} + ${nonce(c, `solo${s.id}`)} carries ${c.categories.split(",")[0]?.trim()} listings decoupled from ${lm0(c)} tourism footfall — radius ${(c.seed + s.id) % 7 + 2} km from ${hub(c)}.`
       : s.build(c);
     return sectionWrapper(core, c, s);
   });
+
+  // Phase 2: embed 3 contextual [text](url) links inside article body
+  sectionTexts = insertContextualLinks(sectionTexts, cityUrl, primaryKw, c);
+
   const entropy = buildEntropyParagraph(c);
   const introContent = [intro, ...sectionTexts, entropy].join("\n\n");
 
   const faqFamily = pickFaqFamily(c.slug);
-  const faqs = buildUniqueFaqs(c);
+  // Phase 2: FAQ keyword matrix — 4 keyword-targeted + 4 from pool
+  const faqs = buildUniqueFaqs(c, primaryKw, secondaryKws);
 
   return {
     introContent,
@@ -523,6 +649,8 @@ export function buildV5CityContent(
     faqFamily,
     faqs,
     internalLinks: buildV5InternalLinks(c),
+    primaryKeyword: primaryKw,
+    secondaryKeywords: secondaryKws,
   };
 }
 
@@ -551,5 +679,7 @@ export function generateV5CitySEO(
     faqFamily: body.faqFamily,
     sectionOrder: body.sectionOrder,
     cityEnrichment: enrichment,
+    primaryKeyword: body.primaryKeyword,
+    secondaryKeywords: body.secondaryKeywords,
   };
 }

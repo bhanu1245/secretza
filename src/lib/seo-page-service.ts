@@ -6,17 +6,19 @@ import {
   type SeoImageFields,
 } from "@/lib/seo-images";
 import {
-  generateCitySEO,
-  generateCategorySEO,
-  generateCategoryCitySEO,
-  generateStateSEO,
-  generateCountrySEO,
-  generateLongTailSEO,
-  generateBreadcrumbSchema,
-  generateFAQSchema,
   resolveIntroContentForStorage,
   type SEOContent,
 } from "@/lib/seo-content";
+import { buildSchemaJsonFromContent } from "@/lib/seo-schema";
+import {
+  generateCitySEOContent,
+  generateCategorySEOContent,
+  generateCategoryCitySEOContent,
+  generateStateSEOContent,
+  generateCountrySEOContent,
+  generateLongTailSEOContent,
+  getActiveSeoEngine,
+} from "@/lib/seo-engine";
 import {
   analyzeSeoContent,
   countWords,
@@ -26,6 +28,7 @@ import {
   type SeoPageSnapshot,
   type UniquenessBreakdown,
 } from "@/lib/seo-quality";
+import { getCachedPeerPages } from "@/lib/seo-peer-cache";
 
 export type SeoPageType =
   | "city"
@@ -34,6 +37,13 @@ export type SeoPageType =
   | "state"
   | "country"
   | "longtail";
+
+/**
+ * All generated SEO pages render through the standard public layout chain:
+ * PublicSiteLayout → SeoPageView (see load*SeoPageView helpers in seo-public-page.ts).
+ * Content generation uses SEO_ENGINE=v5 via @/lib/seo-engine.
+ */
+export const SEO_PUBLIC_PAGE_LAYOUT = "PublicSiteLayout>SeoPageView" as const;
 
 const LONGTAIL_KEYWORDS = [
   { keyword: "Cheap Escorts", slug: "cheap-escorts" },
@@ -46,12 +56,15 @@ const LONGTAIL_KEYWORDS = [
   { keyword: "Verified Escorts", slug: "verified-escorts" },
 ] as const;
 
-export function buildSchemaJson(content: SEOContent): string {
-  const schemas: object[] = [generateBreadcrumbSchema(content.breadcrumbItems)];
-  if (content.faqs?.length) {
-    schemas.push(generateFAQSchema(content.faqs));
-  }
-  return JSON.stringify({ schemas }, null, 2);
+export function buildSchemaJson(content: SEOContent, absolutePageUrl?: string): string {
+  const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL || "https://SecretZa.com";
+  const lastCrumb = content.breadcrumbItems[content.breadcrumbItems.length - 1];
+  const path = lastCrumb?.url || "/";
+  const pageUrl =
+    absolutePageUrl ||
+    `${siteOrigin.replace(/\/+$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
+
+  return buildSchemaJsonFromContent(content, pageUrl);
 }
 
 export interface UpsertSeoPageInput {
@@ -76,6 +89,10 @@ export interface UpsertSeoPageInput {
   duplicateRisk?: string | null;
   seoQualityScore?: number | null;
   contentHash?: string | null;
+  /** Phase 2: primary keyword for this page */
+  primaryKeyword?: string | null;
+  /** Phase 2: JSON-serialised secondary keyword array */
+  secondaryKeywords?: string | null;
 }
 
 export interface SeoQualityMetrics {
@@ -108,39 +125,23 @@ export async function persistSeoFaqs(
   });
 }
 
-/** Load peer pages for duplicate/uniqueness comparison. */
-async function loadPeerPages(
-  pageType: SeoPageType,
-  excludeSlug?: string,
-): Promise<SeoPageSnapshot[]> {
-  const pages = await db.seoPage.findMany({
-    where: {
-      pageType,
-      ...(excludeSlug ? { pageSlug: { not: excludeSlug } } : {}),
-    },
-    select: {
-      id: true,
-      pageType: true,
-      pageSlug: true,
-      title: true,
-      metaDescription: true,
-      h1: true,
-      introContent: true,
-      faqs: { select: { question: true, answer: true } },
-    },
-    take: 500,
-  });
-
-  return pages.map((p) => ({
-    id: p.id,
-    pageType: p.pageType,
-    pageSlug: p.pageSlug,
-    title: p.title,
-    metaDescription: p.metaDescription,
-    h1: p.h1,
-    introContent: p.introContent,
-    faqText: p.faqs.map((f) => `${f.question} ${f.answer}`).join(" "),
-  }));
+/**
+ * Phase 2 — persist keyword fields via raw SQL (bypasses Prisma type
+ * regeneration requirement while the client DLL is locked by the dev server).
+ */
+export async function updateSeoPageKeywords(
+  pageId: string,
+  primaryKeyword: string | null | undefined,
+  secondaryKeywords: string[] | null | undefined,
+): Promise<void> {
+  const pk = primaryKeyword ?? null;
+  const sk = secondaryKeywords?.length ? JSON.stringify(secondaryKeywords) : null;
+  await db.$executeRaw`
+    UPDATE "SeoPage"
+    SET "primaryKeyword" = ${pk},
+        "secondaryKeywords" = ${sk}
+    WHERE "id" = ${pageId}
+  `;
 }
 
 /** Compute quality metrics for content vs existing pages. */
@@ -153,9 +154,10 @@ export async function computePageQualityMetrics(
     featuredImage?: string | null;
     canonicalUrl?: string;
     excludePageId?: string;
+    peers?: SeoPageSnapshot[];
   },
 ): Promise<SeoQualityMetrics> {
-  const peers = await loadPeerPages(pageType, pageSlug);
+  const peers = options?.peers ?? (await getCachedPeerPages(pageType, pageSlug));
   const faqText = content.faqs.map((f) => `${f.question} ${f.answer}`).join(" ");
   const candidate: SeoPageSnapshot = {
     id: options?.excludePageId,
@@ -289,7 +291,12 @@ export async function upsertFromContent(
   pageSlug: string,
   content: SEOContent,
   canonicalUrl: string,
-  options?: { skipImage?: boolean; existingFeaturedImage?: string | null },
+  options?: {
+    skipImage?: boolean;
+    existingFeaturedImage?: string | null;
+    precomputedMetrics?: SeoQualityMetrics;
+    excludePageId?: string;
+  },
 ) {
   const introContent = resolveIntroContentForStorage(content);
 
@@ -305,22 +312,25 @@ export async function upsertFromContent(
       headline: content.h1,
       subtitle: content.metaDescription,
     });
-    featuredImage = image.featuredImage;
-    imageAlt = image.imageAlt;
-    imageTitle = image.imageTitle;
-    imageCaption = image.imageCaption;
+    featuredImage = image.featuredImage ?? null;
+    imageAlt = image.imageAlt ?? null;
+    imageTitle = image.imageTitle ?? null;
+    imageCaption = image.imageCaption ?? null;
   }
 
-  const metrics = await computePageQualityMetrics(pageType, pageSlug, content, introContent, {
-    featuredImage,
-    canonicalUrl,
-  });
+  const metrics =
+    options?.precomputedMetrics ??
+    (await computePageQualityMetrics(pageType, pageSlug, content, introContent, {
+      featuredImage,
+      canonicalUrl,
+      excludePageId: options?.excludePageId,
+    }));
 
-  const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL || "https://secretza.com";
+  const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL || "https://SecretZa.com";
   const pageUrl = `${siteOrigin.replace(/\/+$/, "")}${canonicalUrl}`;
   const absoluteImage = resolveSeoImageUrl(featuredImage ?? null, siteOrigin);
   const customData = enrichSchemaWithFeaturedImage(
-    buildSchemaJson(content),
+    buildSchemaJson(content, pageUrl),
     absoluteImage,
     imageAlt || content.h1,
     pageUrl,
@@ -354,6 +364,11 @@ export async function upsertFromContent(
     await persistSeoFaqs(page.id, content.faqs);
   }
 
+  // Phase 2: persist keyword fields (raw SQL — Prisma types updated on next generate)
+  if (content.primaryKeyword !== undefined || content.secondaryKeywords !== undefined) {
+    await updateSeoPageKeywords(page.id, content.primaryKeyword, content.secondaryKeywords);
+  }
+
   return page;
 }
 
@@ -369,7 +384,7 @@ export async function generateSeoPageImage(pageId: string): Promise<SeoImageFiel
     subtitle: page.metaDescription || undefined,
   });
 
-  const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL || "https://secretza.com";
+  const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL || "https://SecretZa.com";
   const pageUrl = `${siteOrigin.replace(/\/+$/, "")}${page.canonicalUrl || ""}`;
   const absoluteImage = resolveSeoImageUrl(image.featuredImage ?? null, siteOrigin);
   const customData = enrichSchemaWithFeaturedImage(
@@ -433,7 +448,7 @@ export async function autoGenerateCitySeoPage(cityId: string) {
   });
   if (!city?.state) return null;
 
-  const seo = generateCitySEO(
+  const seo = generateCitySEOContent(
     city.name,
     city.slug,
     city.state.name,
@@ -451,7 +466,7 @@ export async function autoGenerateCategorySeoPage(categoryId: string) {
   });
   if (!category) return null;
 
-  const seo = generateCategorySEO(
+  const seo = generateCategorySEOContent(
     category.name,
     category.slug,
     category.description || undefined,
@@ -470,7 +485,7 @@ export async function autoGenerateStateSeoPage(stateId: string) {
   });
   if (!state) return null;
 
-  const seo = generateStateSEO(
+  const seo = generateStateSEOContent(
     state.name,
     state.slug,
     state.country?.name || "India",
@@ -514,7 +529,7 @@ export async function generateCitySeoPages(options: {
   let created = 0;
 
   for (const city of cities) {
-    const seo = generateCitySEO(
+    const seo = generateCitySEOContent(
       city.name,
       city.slug,
       city.state.name,
@@ -544,7 +559,7 @@ export async function generateCategorySeoPages(options: { limit?: number } = {})
   let created = 0;
 
   for (const category of categories) {
-    const seo = generateCategorySEO(
+    const seo = generateCategorySEOContent(
       category.name,
       category.slug,
       category.description || undefined,
@@ -602,12 +617,13 @@ export async function generateCategoryCitySeoPages(options: {
       if (created >= limit) break outer;
 
       const pageSlug = `${category.slug}/${city.slug}`;
-      const seo = generateCategoryCitySEO(
+      const seo = generateCategoryCitySEOContent(
         category.name,
         category.slug,
         city.name,
         city.slug,
         city.state.name,
+        city.state.slug,
       );
       const canonicalUrl = `/${category.slug}/${city.slug}`;
       await upsertFromContent("category_city", pageSlug, seo, canonicalUrl);
@@ -649,7 +665,7 @@ export async function generateStateSeoPages(options: {
   let created = 0;
 
   for (const state of states) {
-    const seo = generateStateSEO(
+    const seo = generateStateSEOContent(
       state.name,
       state.slug,
       state.country?.name || "India",
@@ -682,7 +698,7 @@ export async function generateCountrySeoPages(options: { limit?: number } = {}):
   let created = 0;
 
   for (const country of countries) {
-    const seo = generateCountrySEO(country.name, country.slug);
+    const seo = generateCountrySEOContent(country.name, country.slug);
     const canonicalUrl = `/${country.slug}`;
     await upsertFromContent("country", country.slug, seo, canonicalUrl);
     created++;
@@ -713,7 +729,11 @@ export async function generateLongtailSeoPages(options: {
     },
     orderBy: { name: "asc" },
     take: 15,
-    select: { slug: true, name: true },
+    select: {
+      slug: true,
+      name: true,
+      state: { select: { name: true, slug: true } },
+    },
   });
 
   const examples: GenerateResult["examples"] = [];
@@ -724,11 +744,13 @@ export async function generateLongtailSeoPages(options: {
       if (created >= limit) break outer;
 
       const pageSlug = `${keyword.slug}/${city.slug}`;
-      const seo = generateLongTailSEO(
+      const seo = generateLongTailSEOContent(
         keyword.keyword,
         keyword.slug,
         city.name,
         city.slug,
+        city.state?.name ?? "",
+        city.state?.slug ?? "",
       );
       const canonicalUrl = `/${keyword.slug}/${city.slug}`;
       await upsertFromContent("longtail", pageSlug, seo, canonicalUrl);
