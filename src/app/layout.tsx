@@ -8,6 +8,7 @@ import Analytics from "@/components/providers/AnalyticsProvider";
 import StructuredData from "@/components/seo/StructuredData";
 import { getVerificationMetaTag } from '@/lib/seo-verification';
 import { BRAND_NAME, BRAND_ASSETS } from "@/lib/brand";
+import AgeGate from "@/components/secretza/AgeGate";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://SecretZa.com";
 
@@ -101,6 +102,7 @@ export default function RootLayout({
             <AuthSync />
             {children}
             <Toaster />
+            <AgeGate />
           </Analytics>
         </SessionProvider>
       </body>
