@@ -41,6 +41,7 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
+      // Development
       {
         protocol: "http",
         hostname: "localhost",
@@ -51,6 +52,17 @@ const nextConfig: NextConfig = {
         protocol: "http",
         hostname: "127.0.0.1",
         port: "3000",
+        pathname: "/**",
+      },
+      // Production — required for Next.js <Image> to serve uploads and OG images
+      {
+        protocol: "https",
+        hostname: "secretza.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "www.secretza.com",
         pathname: "/**",
       },
     ],

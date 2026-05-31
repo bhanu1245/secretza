@@ -53,6 +53,29 @@ cd "$BUILD_DIR" || exit 1
 
 ls -lah
 
+# ── Upload persistence ──────────────────────────────────────────────────────
+# User-uploaded files (listing images, payment screenshots) are written to
+# uploads/ relative to the Next.js process CWD (next-service-dist/uploads/).
+# That directory is inside the deployment artifact and would be wiped on every
+# re-deploy. Symlinking it to a persistent VPS path keeps files across deploys.
+# Override UPLOADS_DIR in the environment to use a custom mount point.
+PERSISTENT_UPLOADS="${UPLOADS_DIR:-/data/uploads}"
+mkdir -p "$PERSISTENT_UPLOADS"
+if [ -d "./next-service-dist" ]; then
+    # Remove any stale real directory left by a previous deploy before linking
+    if [ -d "./next-service-dist/uploads" ] && [ ! -L "./next-service-dist/uploads" ]; then
+        echo "📁  Migrating existing uploads to persistent storage..."
+        cp -r ./next-service-dist/uploads/. "$PERSISTENT_UPLOADS/" 2>/dev/null || true
+        rm -rf "./next-service-dist/uploads"
+    fi
+    if [ ! -L "./next-service-dist/uploads" ]; then
+        ln -sfn "$PERSISTENT_UPLOADS" "./next-service-dist/uploads"
+        echo "📁  Uploads linked to persistent storage: $PERSISTENT_UPLOADS"
+    else
+        echo "📁  Uploads already linked: $(readlink ./next-service-dist/uploads)"
+    fi
+fi
+
 DEFAULT_PACKAGED_DB_PATH="/app/db/custom.db"
 DEFAULT_PACKAGED_DATABASE_URL="file:$DEFAULT_PACKAGED_DB_PATH"
 
@@ -66,6 +89,21 @@ if [ -f "./next-service-dist/server.js" ]; then
     export PORT="${PORT:-3000}"
     export HOSTNAME="${HOSTNAME:-0.0.0.0}"
     export DATABASE_URL="${DATABASE_URL:-$DEFAULT_PACKAGED_DATABASE_URL}"
+
+    # ── First-run DB seeding for external persistent path ──────────────────
+    # If DATABASE_URL points to an external file that does not yet exist
+    # (first deployment with a fresh persistent volume), seed it from the
+    # packaged database so the site starts with correct schema and base data.
+    if [ "$DATABASE_URL" != "$DEFAULT_PACKAGED_DATABASE_URL" ]; then
+        EXTERNAL_DB_PATH="${DATABASE_URL#file:}"
+        if [ ! -f "$EXTERNAL_DB_PATH" ] && [ -f "$DEFAULT_PACKAGED_DB_PATH" ]; then
+            mkdir -p "$(dirname "$EXTERNAL_DB_PATH")"
+            cp "$DEFAULT_PACKAGED_DB_PATH" "$EXTERNAL_DB_PATH"
+            echo "🗄️  First-run: seeded external DB from packaged database"
+            echo "    Source : $DEFAULT_PACKAGED_DB_PATH"
+            echo "    Target : $EXTERNAL_DB_PATH"
+        fi
+    fi
 
     if [ "$DATABASE_URL" = "$DEFAULT_PACKAGED_DATABASE_URL" ]; then
         if [ ! -f "$DEFAULT_PACKAGED_DB_PATH" ]; then
