@@ -166,7 +166,11 @@ export async function bulkModerateListingImages(
   reviewerId: string,
   reason?: string,
 ) {
-  const results = [];
+  type BulkModerationResult =
+    | { imageId: string; success: true; status: string }
+    | { imageId: string; success: false; error: string };
+
+  const results: BulkModerationResult[] = [];
   for (const imageId of imageIds) {
     try {
       const updated = await moderateListingImage(imageId, action, reviewerId, reason);
@@ -182,13 +186,89 @@ export async function bulkModerateListingImages(
   return results;
 }
 
-/** Whether a storage key may be served to the current viewer. */
+export type FileViewer = { id?: string; role?: string };
+
+/**
+ * Central authorization gate for files served via /api/upload/file.
+ *
+ * Security model (default-deny):
+ *   - listings/*     → public once moderation-approved; otherwise owner/admin/moderator only
+ *   - screenshots/*  → NEVER public — authenticated admin OR the payment owner only
+ *   - seo/*          → public (OG/social images embedded in public pages & read by crawlers)
+ *   - payments/qr/*  → public (admin-configured UPI QR displayed at checkout; contains no PII)
+ *   - anything else  → denied
+ *
+ * Returns true only when access is explicitly permitted. There is intentionally
+ * no blanket "return true" fallback for unknown prefixes.
+ */
+export async function authorizeUploadedFileAccess(
+  key: string,
+  viewer?: FileViewer,
+): Promise<boolean> {
+  if (typeof key !== "string" || key.length === 0) return false;
+
+  if (key.startsWith("screenshots/")) {
+    return canAccessPaymentScreenshot(key, viewer);
+  }
+  if (key.startsWith("listings/")) {
+    return canAccessListingImageFile(key, viewer);
+  }
+  if (key.startsWith("seo/")) {
+    // Public SEO/OG assets — safe to serve to anyone (no PII).
+    return true;
+  }
+  if (key.startsWith("payments/qr/")) {
+    // Admin-configured UPI QR code displayed publicly at checkout.
+    // The upload route is admin-protected; only retrieval needs to be public.
+    return true;
+  }
+
+  // Secure default: deny any key with an unrecognized prefix.
+  return false;
+}
+
+/**
+ * Payment proof screenshots are sensitive (UTR / transaction evidence) and must
+ * NEVER be public. Access is limited to an authenticated admin or the user who
+ * submitted the payment.
+ */
+export async function canAccessPaymentScreenshot(
+  key: string,
+  viewer?: FileViewer,
+): Promise<boolean> {
+  if (!key.startsWith("screenshots/")) return false;
+
+  // Unauthenticated requests are always rejected.
+  if (!viewer?.id) return false;
+
+  // Admins may review any payment proof (payment review is admin-gated).
+  const role = viewer.role?.toLowerCase();
+  if (role === "admin") {
+    return true;
+  }
+
+  // Otherwise, only the submission owner may view their own screenshot.
+  const submission = await db.manualPaymentSubmission.findFirst({
+    where: { screenshotUrl: { contains: key } },
+    select: { userId: true },
+  });
+
+  if (!submission) return false;
+  return submission.userId === viewer.id;
+}
+
+/**
+ * Whether a listing-image storage key may be served to the current viewer.
+ * Listing-scoped only — callers should route non-listing keys elsewhere.
+ */
 export async function canAccessListingImageFile(
   key: string,
-  viewer?: { id?: string; role?: string },
+  viewer?: FileViewer,
 ): Promise<boolean> {
+  // This helper only governs listing images. Any other prefix is denied here;
+  // routing of other prefixes is handled by authorizeUploadedFileAccess().
   if (!key.startsWith("listings/")) {
-    return true;
+    return false;
   }
 
   const image = await db.listingImage.findFirst({
