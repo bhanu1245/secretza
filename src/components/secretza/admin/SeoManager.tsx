@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { apiFetch, fetchCsrfToken } from '@/lib/api-client';
+import { getSeoPagePublicUrl } from '@/lib/seo-public-page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,6 +37,8 @@ import {
   Zap,
   ChevronLeft,
   ChevronRight,
+  ImageIcon,
+  ExternalLink,
 } from 'lucide-react';
 
 // ==========================================
@@ -51,7 +55,13 @@ interface SeoPage {
   noindex: boolean;
   canonicalUrl: string | null;
   isPublished: boolean;
-  customData?: Record<string, unknown> | null;
+  customData?: string | null;
+  featuredImage?: string | null;
+  featuredImageUrl?: string;
+  imageAlt?: string | null;
+  imageTitle?: string | null;
+  imageCaption?: string | null;
+  ogImageUrl?: string;
   faqs?: SeoFaq[];
   createdAt: string;
   updatedAt: string;
@@ -72,6 +82,25 @@ interface SeoPagesResponse {
   page: number;
   totalPages: number;
 }
+
+interface SeoCityOption {
+  id: string;
+  slug: string;
+  name: string;
+  state?: { name: string; slug: string } | null;
+}
+
+interface SeoTypeStats {
+  city: number;
+  category: number;
+  category_city: number;
+  state: number;
+  country: number;
+  longtail: number;
+  total: number;
+}
+
+type GenerateType = 'city' | 'category' | 'category_city' | 'state' | 'country' | 'longtail';
 
 type PageTypeOption = 'all' | 'city' | 'category' | 'category_city' | 'state' | 'country' | 'longtail';
 
@@ -126,10 +155,38 @@ export default function SeoManager() {
     h1: '',
     introContent: '',
     noindex: false,
+    isPublished: true,
     canonicalUrl: '',
-    customSeoBlock: '',
+    schemaJson: '',
+    featuredImage: '',
+    imageAlt: '',
+    imageTitle: '',
+    imageCaption: '',
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [generatingImageId, setGeneratingImageId] = useState<string | null>(null);
+  const [generatingImages, setGeneratingImages] = useState(false);
+
+  // Create page modal
+  const [createModal, setCreateModal] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    pageType: 'city' as GenerateType,
+    pageSlug: '',
+    title: '',
+    metaDescription: '',
+    h1: '',
+    introContent: '',
+    canonicalUrl: '',
+    schemaJson: '',
+    isPublished: true,
+    noindex: false,
+    featuredImage: '',
+    imageAlt: '',
+    imageTitle: '',
+    imageCaption: '',
+  });
+  const [creating, setCreating] = useState(false);
 
   // FAQ manager state
   const [faqPage, setFaqPage] = useState<SeoPage | null>(null);
@@ -147,15 +204,47 @@ export default function SeoManager() {
   const [deleting, setDeleting] = useState(false);
 
   // Bulk generate state
-  const [generating, setGenerating] = useState(false);
+  const [generatingType, setGeneratingType] = useState<GenerateType | null>(null);
+  const [generatingMissing, setGeneratingMissing] = useState(false);
+  const [typeStats, setTypeStats] = useState<SeoTypeStats>({
+    city: 0,
+    category: 0,
+    category_city: 0,
+    state: 0,
+    country: 0,
+    longtail: 0,
+    total: 0,
+  });
 
   // City intro editor state
   const [cityIntroModal, setCityIntroModal] = useState<{ city: string; slug: string; content: string; id?: string } | null>(null);
   const [savingCityIntro, setSavingCityIntro] = useState(false);
+  const [cityOptions, setCityOptions] = useState<SeoCityOption[]>([]);
+  const [loadingCityOptions, setLoadingCityOptions] = useState(false);
 
   // ==========================================
   // Fetch SEO Pages
   // ==========================================
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await fetch('/api/seo/stats', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setTypeStats({
+          city: data.counts?.city ?? 0,
+          category: data.counts?.category ?? 0,
+          category_city: data.counts?.category_city ?? 0,
+          state: data.counts?.state ?? 0,
+          country: data.counts?.country ?? 0,
+          longtail: data.counts?.longtail ?? 0,
+          total: data.total ?? 0,
+        });
+      }
+    } catch {
+      // Non-blocking
+    }
+  }, []);
+
   const fetchPages = useCallback(async () => {
     setLoading(true);
     try {
@@ -165,7 +254,9 @@ export default function SeoManager() {
       if (isPublishedFilter !== null) params.set('isPublished', String(isPublishedFilter));
       params.set('page', String(currentPage));
       params.set('limit', String(limit));
-      const res = await fetch(`/api/seo/pages?${params.toString()}`);
+      const res = await fetch(`/api/seo/pages?${params.toString()}`, {
+        credentials: 'include',
+      });
       if (res.ok) {
         const data: SeoPagesResponse = await res.json();
         setPages(data.pages);
@@ -180,8 +271,32 @@ export default function SeoManager() {
   }, [pageType, search, isPublishedFilter, currentPage]);
 
   useEffect(() => {
+    fetchCsrfToken().catch(() => {
+      // Fetched again on first mutation
+    });
+  }, []);
+
+  useEffect(() => {
     fetchPages();
-  }, [fetchPages]);
+    fetchStats();
+  }, [fetchPages, fetchStats]);
+
+  const loadCityOptions = useCallback(async () => {
+    setLoadingCityOptions(true);
+    try {
+      const res = await apiFetch('/api/seo/cities?limit=50');
+      if (res.ok) {
+        const data = await res.json();
+        setCityOptions(data.cities || []);
+      } else {
+        toast.error('Failed to load cities from database');
+      }
+    } catch {
+      toast.error('Failed to load cities from database');
+    } finally {
+      setLoadingCityOptions(false);
+    }
+  }, []);
 
   // ==========================================
   // Edit Page Handlers
@@ -194,24 +309,124 @@ export default function SeoManager() {
       h1: page.h1 || '',
       introContent: page.introContent || '',
       noindex: page.noindex,
+      isPublished: page.isPublished,
       canonicalUrl: page.canonicalUrl || '',
-      customSeoBlock: '',
+      schemaJson: page.customData || '',
+      featuredImage: page.featuredImage || '',
+      imageAlt: page.imageAlt || '',
+      imageTitle: page.imageTitle || '',
+      imageCaption: page.imageCaption || '',
     });
+  };
+
+  const uploadSeoImageFile = async (
+    file: File,
+    pageType: string,
+    pageSlug: string,
+  ): Promise<string | null> => {
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('pageType', pageType);
+      formData.append('pageSlug', pageSlug);
+      const res = await apiFetch('/api/upload/seo', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to upload SEO image');
+        return null;
+      }
+      toast.success('SEO image uploaded');
+      return data.url || data.key || null;
+    } catch {
+      toast.error('Failed to upload SEO image');
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleGeneratePageImage = async (page: SeoPage) => {
+    setGeneratingImageId(page.id);
+    try {
+      const res = await apiFetch('/api/seo/generate-image', {
+        method: 'POST',
+        body: JSON.stringify({ pageId: page.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to generate SEO image');
+        return;
+      }
+      toast.success('SEO image generated');
+      fetchPages();
+      if (editPage?.id === page.id) {
+        setEditForm((f) => ({
+          ...f,
+          featuredImage: data.featuredImage || f.featuredImage,
+          imageAlt: data.imageAlt || f.imageAlt,
+        }));
+      }
+    } catch {
+      toast.error('Failed to generate SEO image');
+    } finally {
+      setGeneratingImageId(null);
+    }
+  };
+
+  const handleGenerateMissingImages = async () => {
+    setGeneratingImages(true);
+    try {
+      const res = await apiFetch('/api/seo/generate-image', {
+        method: 'POST',
+        body: JSON.stringify({
+          limit: 500,
+          type: pageType !== 'all' ? pageType : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to generate SEO images');
+        return;
+      }
+      toast.success(data.message || `Generated ${data.updated} image(s)`);
+      fetchPages();
+    } catch {
+      toast.error('Failed to generate SEO images');
+    } finally {
+      setGeneratingImages(false);
+    }
   };
 
   const handleSavePage = async () => {
     if (!editPage) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/seo/pages/${editPage.id}`, {
+      const res = await apiFetch(`/api/seo/pages/${editPage.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({
+          title: editForm.title,
+          metaDescription: editForm.metaDescription,
+          h1: editForm.h1,
+          introContent: editForm.introContent,
+          noindex: editForm.noindex,
+          isPublished: editForm.isPublished,
+          canonicalUrl: editForm.canonicalUrl || null,
+          customData: editForm.schemaJson || null,
+          featuredImage: editForm.featuredImage || null,
+          imageAlt: editForm.imageAlt || null,
+          imageTitle: editForm.imageTitle || null,
+          imageCaption: editForm.imageCaption || null,
+        }),
       });
       if (res.ok) {
         toast.success('SEO page updated successfully');
         setEditPage(null);
         fetchPages();
+        fetchStats();
       } else {
         const err = await res.json();
         toast.error(err.error || 'Failed to update SEO page');
@@ -225,9 +440,8 @@ export default function SeoManager() {
 
   const handleQuickNoindex = async (page: SeoPage) => {
     try {
-      const res = await fetch(`/api/seo/pages/${page.id}`, {
+      const res = await apiFetch(`/api/seo/pages/${page.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ noindex: !page.noindex }),
       });
       if (res.ok) {
@@ -246,10 +460,12 @@ export default function SeoManager() {
     setFaqPage(page);
     setLoadingFaqs(true);
     try {
-      const res = await fetch(`/api/seo/pages/${page.id}`);
+      const res = await fetch(`/api/seo/pages/${page.id}`, {
+        credentials: 'include',
+      });
       if (res.ok) {
         const data = await res.json();
-        setFaqs((data.faqs || []).sort((a: SeoFaq, b: SeoFaq) => a.sortOrder - b.sortOrder));
+        setFaqs((data.page?.faqs || []).sort((a: SeoFaq, b: SeoFaq) => a.sortOrder - b.sortOrder));
       }
     } catch {
       toast.error('Failed to load FAQs');
@@ -279,9 +495,8 @@ export default function SeoManager() {
     setSavingFaq(true);
     try {
       if (isAddFaq && faqPage) {
-        const res = await fetch('/api/seo/faqs', {
+        const res = await apiFetch('/api/seo/faqs', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             seoPageId: faqPage.id,
             question: faqForm.question,
@@ -298,9 +513,8 @@ export default function SeoManager() {
           toast.error(err.error || 'Failed to create FAQ');
         }
       } else if (editFaq) {
-        const res = await fetch('/api/seo/faqs', {
+        const res = await apiFetch('/api/seo/faqs', {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: editFaq.id,
             question: faqForm.question,
@@ -335,15 +549,13 @@ export default function SeoManager() {
     const swapOrder = sorted[swapIdx].sortOrder;
 
     try {
-      const res = await fetch('/api/seo/faqs', {
+      const res = await apiFetch('/api/seo/faqs', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: faq.id, question: faq.question, answer: faq.answer, sortOrder: swapOrder, isActive: faq.isActive }),
       });
       if (res.ok) {
-        const res2 = await fetch('/api/seo/faqs', {
+        const res2 = await apiFetch('/api/seo/faqs', {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: sorted[swapIdx].id, question: sorted[swapIdx].question, answer: sorted[swapIdx].answer, sortOrder: currentOrder, isActive: sorted[swapIdx].isActive }),
         });
         if (res2.ok && faqPage) {
@@ -362,7 +574,7 @@ export default function SeoManager() {
     if (!deleteTarget || deleteTarget.type !== 'page') return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/seo/pages/${deleteTarget.id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/seo/pages/${deleteTarget.id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success('SEO page deleted');
         setDeleteTarget(null);
@@ -381,7 +593,7 @@ export default function SeoManager() {
     if (!deleteTarget || deleteTarget.type !== 'faq') return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/seo/faqs?id=${deleteTarget.id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/seo/faqs?id=${deleteTarget.id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success('FAQ deleted');
         setDeleteTarget(null);
@@ -399,70 +611,193 @@ export default function SeoManager() {
   // ==========================================
   // Bulk Generate
   // ==========================================
-  const handleBulkGenerate = async () => {
-    setGenerating(true);
+  const handleGenerate = async (type: GenerateType) => {
+    setGeneratingType(type);
     try {
-      const cities = ['mumbai', 'delhi', 'bangalore', 'hyderabad', 'chennai', 'kolkata', 'pune', 'ahmedabad', 'jaipur', 'lucknow'];
-      let created = 0;
-      for (const city of cities) {
-        const res = await fetch('/api/seo/pages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            pageType: 'city',
-            pageSlug: city,
-            title: `${city.charAt(0).toUpperCase() + city.slice(1)} - Find Services in ${city.charAt(0).toUpperCase() + city.slice(1)}`,
-            metaDescription: `Discover the best services in ${city.charAt(0).toUpperCase() + city.slice(1)}. Browse verified listings and find what you're looking for.`,
-            h1: `Services in ${city.charAt(0).toUpperCase() + city.slice(1)}`,
-            introContent: `Explore our comprehensive directory of services available in ${city.charAt(0).toUpperCase() + city.slice(1)}.`,
-          }),
-        });
-        if (res.ok) created++;
+      const limits: Partial<Record<GenerateType, number>> = {
+        city: 100,
+        category_city: 100,
+        longtail: 50,
+      };
+      const res = await apiFetch('/api/seo/generate', {
+        method: 'POST',
+        body: JSON.stringify({
+          type,
+          limit: limits[type],
+          countrySlug: 'india',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || `Failed to generate ${type} SEO pages`);
+        if (res.status === 401) {
+          toast.error('Admin login required');
+        }
+        return;
       }
-      toast.success(`Generated SEO pages for ${created} cities`);
+      toast.success(data.message || `Generated ${data.created} ${type} page(s)`);
       fetchPages();
+      fetchStats();
     } catch {
-      toast.error('Failed to generate SEO pages');
+      toast.error(`Failed to generate ${type} SEO pages`);
     } finally {
-      setGenerating(false);
+      setGeneratingType(null);
+    }
+  };
+
+  const handleGenerateMissing = async () => {
+    setGeneratingMissing(true);
+    try {
+      const res = await apiFetch('/api/seo/generate-missing', {
+        method: 'POST',
+        body: JSON.stringify({ countrySlug: 'india' }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to generate missing SEO pages');
+        return;
+      }
+      const { generated, skipped, failed } = data;
+      if (generated === 0 && failed === 0) {
+        toast.success(`All pages already exist — ${skipped} skipped`);
+      } else {
+        toast.success(
+          `Generated ${generated} new page(s) · Skipped ${skipped} existing${failed ? ` · ${failed} type(s) failed` : ''}`,
+        );
+      }
+      fetchPages();
+      fetchStats();
+    } catch {
+      toast.error('Failed to generate missing SEO pages');
+    } finally {
+      setGeneratingMissing(false);
+    }
+  };
+
+  const handleCreatePage = async () => {
+    if (!createForm.pageSlug.trim() || !createForm.pageType) {
+      toast.error('Page type and slug are required');
+      return;
+    }
+    setCreating(true);
+    try {
+      const res = await apiFetch('/api/seo/pages', {
+        method: 'POST',
+        body: JSON.stringify({
+          pageType: createForm.pageType,
+          pageSlug: createForm.pageSlug.trim(),
+          title: createForm.title || null,
+          metaDescription: createForm.metaDescription || null,
+          h1: createForm.h1 || null,
+          introContent: createForm.introContent || null,
+          canonicalUrl: createForm.canonicalUrl || null,
+          customData: createForm.schemaJson || null,
+          isPublished: createForm.isPublished,
+          noindex: createForm.noindex,
+          featuredImage: createForm.featuredImage || null,
+          imageAlt: createForm.imageAlt || null,
+          imageTitle: createForm.imageTitle || null,
+          imageCaption: createForm.imageCaption || null,
+          autoGenerateImage: !createForm.featuredImage,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to create SEO page');
+        return;
+      }
+      toast.success('SEO page created');
+      setCreateModal(false);
+      setCreateForm({
+        pageType: 'city',
+        pageSlug: '',
+        title: '',
+        metaDescription: '',
+        h1: '',
+        introContent: '',
+        canonicalUrl: '',
+        schemaJson: '',
+        isPublished: true,
+        noindex: false,
+        featuredImage: '',
+        imageAlt: '',
+        imageTitle: '',
+        imageCaption: '',
+      });
+      fetchPages();
+      fetchStats();
+    } catch {
+      toast.error('Failed to create SEO page');
+    } finally {
+      setCreating(false);
     }
   };
 
   // ==========================================
   // City Intro Handlers
   // ==========================================
-  const loadCityIntro = async (slug: string) => {
-    setCityIntroModal({ city: slug.charAt(0).toUpperCase() + slug.slice(1), slug, content: '' });
+  const loadCityIntro = async (city: SeoCityOption) => {
+    setCityIntroModal({ city: city.name, slug: city.slug, content: '', id: undefined });
     try {
-      const res = await fetch(`/api/seo/pages?pageType=city&search=${slug}&limit=1`);
+      const res = await fetch(
+        `/api/seo/pages?pageType=city&pageSlug=${encodeURIComponent(city.slug)}&limit=1`,
+        { credentials: 'include' },
+      );
       if (res.ok) {
         const data = await res.json();
-        if (data.pages?.[0]?.introContent) {
-          setCityIntroModal(prev => prev ? { ...prev, content: data.pages[0].introContent, id: data.pages[0].id } : null);
+        const page = data.pages?.[0];
+        if (page) {
+          setCityIntroModal({
+            city: city.name,
+            slug: city.slug,
+            content: page.introContent || '',
+            id: page.id,
+          });
         }
       }
-    } catch { /* empty */ }
+    } catch {
+      toast.error('Failed to load city intro');
+    }
   };
 
   const saveCityIntro = async () => {
     if (!cityIntroModal?.slug) return;
     setSavingCityIntro(true);
     try {
-      const body = {
-        pageType: 'city',
-        pageSlug: cityIntroModal.slug,
-        title: `${cityIntroModal.city} - Adult Classifieds & Services`,
-        metaDescription: `Discover verified adult services in ${cityIntroModal.city}. Browse premium listings with real photos and reviews on Secretza.`,
-        introContent: cityIntroModal.content,
-      };
-      const res = await fetch('/api/seo/pages', {
+      if (cityIntroModal.id) {
+        const res = await apiFetch(`/api/seo/pages/${cityIntroModal.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ introContent: cityIntroModal.content }),
+        });
+        if (res.ok) {
+          toast.success(`${cityIntroModal.city} intro saved successfully`);
+          setCityIntroModal(null);
+          fetchPages();
+        } else {
+          const err = await res.json();
+          toast.error(err.error || 'Failed to save city intro');
+        }
+        return;
+      }
+
+      const res = await apiFetch('/api/seo/pages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          pageType: 'city',
+          pageSlug: cityIntroModal.slug,
+          title: `${cityIntroModal.city} - Adult Classifieds & Services`,
+          metaDescription: `Discover verified adult services in ${cityIntroModal.city}. Browse premium listings with real photos and reviews on SecretZa.`,
+          h1: `${cityIntroModal.city} Adult Classifieds & Services`,
+          introContent: cityIntroModal.content,
+        }),
       });
       if (res.ok) {
         toast.success(`${cityIntroModal.city} intro saved successfully`);
         setCityIntroModal(null);
+        fetchPages();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to save city intro');
       }
     } catch {
       toast.error('Failed to save city intro');
@@ -705,6 +1040,15 @@ export default function SeoManager() {
     );
   }
 
+  const GENERATE_BUTTONS: { type: GenerateType; label: string }[] = [
+    { type: 'city', label: 'Cities' },
+    { type: 'category', label: 'Categories' },
+    { type: 'category_city', label: 'Category+City' },
+    { type: 'state', label: 'States' },
+    { type: 'country', label: 'Countries' },
+    { type: 'longtail', label: 'Longtail' },
+  ];
+
   // ==========================================
   // Main SEO Pages List View
   // ==========================================
@@ -714,24 +1058,19 @@ export default function SeoManager() {
         <div>
           <h2 className="text-2xl font-bold text-[#F5F5F7]">SEO Management</h2>
           <p className="text-sm text-[#A1A1AA] mt-1">
-            {total} SEO page{total !== 1 ? 's' : ''} total
+            {typeStats.total} SEO page{typeStats.total !== 1 ? 's' : ''} in database
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
-            onClick={handleBulkGenerate}
-            disabled={generating}
-            className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+            onClick={() => setCreateModal(true)}
+            className="h-8 text-xs bg-[#7C3AED] hover:bg-[#6D28D9] text-white rounded-lg"
           >
-            {generating ? (
-              <Loader2 className="size-3 animate-spin mr-1" />
-            ) : (
-              <RefreshCw className="size-3 mr-1" />
-            )}
-            Generate SEO for Cities
+            <Plus className="size-3 mr-1" />
+            Create SEO Page
           </Button>
           <Button
-            onClick={fetchPages}
+            onClick={() => { fetchPages(); fetchStats(); }}
             variant="ghost"
             className="h-8 text-xs text-[#A1A1AA] border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)] rounded-lg"
           >
@@ -739,14 +1078,89 @@ export default function SeoManager() {
             Refresh
           </Button>
           <Button
-            onClick={() => setCityIntroModal({ city: '', slug: '', content: '' })}
-            className="h-8 text-xs bg-[#7C3AED] hover:bg-[#6D28D9] text-white rounded-lg"
+            onClick={() => { setCityIntroModal({ city: '', slug: '', content: '' }); loadCityOptions(); }}
+            variant="ghost"
+            className="h-8 text-xs text-[#A1A1AA] border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)] rounded-lg"
           >
             <MapPin className="size-3 mr-1" />
             Edit City Intros
           </Button>
         </div>
       </div>
+
+      {/* Stats by type */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {PAGE_TYPE_OPTIONS.filter((o) => o.value !== 'all').map((opt) => {
+          const Icon = PAGE_TYPE_ICONS[opt.value] || Globe;
+          const count = typeStats[opt.value as keyof SeoTypeStats] ?? 0;
+          return (
+            <Card key={opt.value} className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Icon className="size-3.5 text-[#8B5CF6]" />
+                  <span className="text-[10px] text-[#A1A1AA] uppercase tracking-wide">{opt.label}</span>
+                </div>
+                <p className="text-xl font-bold text-[#F5F5F7] tabular-nums">{count}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Generate buttons */}
+      <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-[#F5F5F7]">Automatic SEO Generation</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {GENERATE_BUTTONS.map(({ type, label }) => (
+              <Button
+                key={type}
+                onClick={() => handleGenerate(type)}
+                disabled={generatingType !== null || generatingMissing}
+                className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+              >
+                {generatingType === type ? (
+                  <Loader2 className="size-3 animate-spin mr-1" />
+                ) : (
+                  <RefreshCw className="size-3 mr-1" />
+                )}
+                Generate {label}
+              </Button>
+            ))}
+            <Button
+              onClick={handleGenerateMissingImages}
+              disabled={generatingImages || generatingType !== null || generatingMissing}
+              className="h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white rounded-lg"
+            >
+              {generatingImages ? (
+                <Loader2 className="size-3 animate-spin mr-1" />
+              ) : (
+                <ImageIcon className="size-3 mr-1" />
+              )}
+              Generate SEO Images
+            </Button>
+          </div>
+          <div className="border-t border-[rgba(255,255,255,0.06)] pt-3">
+            <Button
+              onClick={handleGenerateMissing}
+              disabled={generatingMissing || generatingType !== null || generatingImages}
+              className="h-8 text-xs bg-sky-600 hover:bg-sky-700 text-white rounded-lg"
+            >
+              {generatingMissing ? (
+                <Loader2 className="size-3 animate-spin mr-1" />
+              ) : (
+                <Plus className="size-3 mr-1" />
+              )}
+              {generatingMissing ? 'Generating Missing Pages…' : 'Generate All Missing SEO Pages'}
+            </Button>
+            <p className="text-[10px] text-[#A1A1AA] mt-1.5">
+              Scans all entity types and creates only pages that do not yet exist. Safe to run multiple times.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Filter Bar */}
       <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
@@ -881,6 +1295,7 @@ export default function SeoManager() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[rgba(255,255,255,0.06)]">
+                    <th className="text-left px-4 py-3 text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-wider w-16">Image</th>
                     <th className="text-left px-4 py-3 text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-wider w-24">Type</th>
                     <th className="text-left px-4 py-3 text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-wider">Slug</th>
                     <th className="text-left px-4 py-3 text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-wider">Title</th>
@@ -894,6 +1309,18 @@ export default function SeoManager() {
                       key={page.id}
                       className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)] transition-colors"
                     >
+                      {/* Featured Image Preview */}
+                      <td className="px-4 py-3">
+                        <div className="w-12 h-8 rounded overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[#1E1E2A]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={page.featuredImageUrl || '/brand/logo-icon-dark.svg'}
+                            alt={page.imageAlt || page.title || page.pageSlug}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </td>
+
                       {/* Page Type */}
                       <td className="px-4 py-3">
                         <Badge
@@ -942,6 +1369,28 @@ export default function SeoManager() {
                       {/* Actions */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              const path = getSeoPagePublicUrl(page);
+                              window.open(path, '_blank', 'noopener,noreferrer');
+                            }}
+                            title="View public page"
+                            className="p-1.5 rounded-md hover:bg-[rgba(255,255,255,0.05)] text-[#A1A1AA] hover:text-emerald-400 transition-colors"
+                          >
+                            <ExternalLink className="size-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleGeneratePageImage(page)}
+                            title="Generate SEO image"
+                            disabled={generatingImageId === page.id}
+                            className="p-1.5 rounded-md hover:bg-[rgba(255,255,255,0.05)] text-[#A1A1AA] hover:text-violet-400 transition-colors disabled:opacity-50"
+                          >
+                            {generatingImageId === page.id ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <ImageIcon className="size-3.5" />
+                            )}
+                          </button>
                           <button
                             onClick={() => handleQuickNoindex(page)}
                             title={page.noindex ? 'Remove noindex' : 'Add noindex'}
@@ -1111,6 +1560,100 @@ export default function SeoManager() {
 
             <Separator className="bg-[rgba(255,255,255,0.08)]" />
 
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-[#A1A1AA]">Featured Image</label>
+                {editPage && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={generatingImageId === editPage.id}
+                    onClick={() => handleGeneratePageImage(editPage)}
+                    className="h-7 text-[10px] text-violet-400"
+                  >
+                    {generatingImageId === editPage.id ? (
+                      <Loader2 className="size-3 animate-spin mr-1" />
+                    ) : (
+                      <ImageIcon className="size-3 mr-1" />
+                    )}
+                    Generate
+                  </Button>
+                )}
+              </div>
+              {editForm.featuredImage && (
+                <div className="mb-3 rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] aspect-[1200/630] max-h-40">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={editForm.featuredImage.startsWith('http') || editForm.featuredImage.startsWith('/')
+                      ? editForm.featuredImage
+                      : `/api/upload/file?key=${encodeURIComponent(editForm.featuredImage)}`}
+                    alt={editForm.imageAlt || 'SEO featured image preview'}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              <Input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                disabled={uploadingImage || !editPage}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !editPage) return;
+                  const url = await uploadSeoImageFile(file, editPage.pageType, editPage.pageSlug);
+                  if (url) {
+                    setEditForm((f) => ({
+                      ...f,
+                      featuredImage: url,
+                      imageAlt: f.imageAlt || f.h1 || f.title || editPage.pageSlug,
+                    }));
+                  }
+                  e.target.value = '';
+                }}
+                className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] h-9 rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Image Alt Text</label>
+              <Input
+                value={editForm.imageAlt}
+                onChange={(e) => setEditForm((f) => ({ ...f, imageAlt: e.target.value }))}
+                placeholder="Descriptive alt text for accessibility and SEO"
+                className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] h-9 rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Image Title</label>
+              <Input
+                value={editForm.imageTitle}
+                onChange={(e) => setEditForm((f) => ({ ...f, imageTitle: e.target.value }))}
+                placeholder="Optional image title attribute"
+                className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] h-9 rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Image Caption</label>
+              <Input
+                value={editForm.imageCaption}
+                onChange={(e) => setEditForm((f) => ({ ...f, imageCaption: e.target.value }))}
+                placeholder="Optional caption shown below the image"
+                className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] h-9 rounded-lg text-sm"
+              />
+            </div>
+
+            <Separator className="bg-[rgba(255,255,255,0.08)]" />
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[#F5F5F7] font-medium">Published</p>
+                <p className="text-[10px] text-[#A1A1AA]">Show this page publicly</p>
+              </div>
+              <Switch
+                checked={editForm.isPublished}
+                onCheckedChange={(checked) => setEditForm((f) => ({ ...f, isPublished: checked }))}
+              />
+            </div>
+
             {/* Noindex */}
             <div className="flex items-center justify-between">
               <div>
@@ -1129,22 +1672,22 @@ export default function SeoManager() {
               <Input
                 value={editForm.canonicalUrl}
                 onChange={(e) => setEditForm((f) => ({ ...f, canonicalUrl: e.target.value }))}
-                placeholder="https://example.com/page"
+                placeholder="/india/maharashtra/mumbai"
                 className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] placeholder:text-[#52525B] focus:border-[#7C3AED] h-9 rounded-lg text-sm font-mono"
               />
             </div>
 
-            {/* Custom SEO Block */}
+            {/* Schema JSON */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-medium text-[#A1A1AA]">Custom SEO Block (HTML)</label>
-                <span className="text-[10px] text-[#52525B]">Injected as extra content on the page</span>
+                <label className="text-xs font-medium text-[#A1A1AA]">Schema JSON</label>
+                <span className="text-[10px] text-[#52525B]">Structured data (breadcrumb, FAQ)</span>
               </div>
               <Textarea
-                value={editForm.customSeoBlock}
-                onChange={(e) => setEditForm((f) => ({ ...f, customSeoBlock: e.target.value }))}
-                placeholder="Enter custom HTML content to inject on this page (e.g., featured content, promotional text)..."
-                rows={4}
+                value={editForm.schemaJson}
+                onChange={(e) => setEditForm((f) => ({ ...f, schemaJson: e.target.value }))}
+                placeholder='{"schemas":[...]}'
+                rows={6}
                 className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] placeholder:text-[#52525B] focus:border-[#7C3AED] rounded-lg text-sm resize-none font-mono text-xs"
               />
             </div>
@@ -1168,6 +1711,117 @@ export default function SeoManager() {
                 <CheckCircle className="size-4 mr-1" />
               )}
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create SEO Page Dialog */}
+      <Dialog open={createModal} onOpenChange={setCreateModal}>
+        <DialogContent className="bg-[#15151D] border-[rgba(255,255,255,0.08)] max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-[#F5F5F7] text-lg flex items-center gap-2">
+              <Plus className="size-4 text-[#8B5CF6]" />
+              Create SEO Page
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Page Type</label>
+              <select
+                value={createForm.pageType}
+                onChange={(e) => setCreateForm((f) => ({ ...f, pageType: e.target.value as GenerateType }))}
+                className="w-full h-9 rounded-lg bg-[#1E1E2A] border border-[rgba(255,255,255,0.08)] text-[#F5F5F7] text-sm px-3"
+              >
+                {PAGE_TYPE_OPTIONS.filter((o) => o.value !== 'all').map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Page Slug</label>
+              <Input
+                value={createForm.pageSlug}
+                onChange={(e) => setCreateForm((f) => ({ ...f, pageSlug: e.target.value }))}
+                placeholder="mumbai or escorts/mumbai"
+                className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] font-mono"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Title</label>
+              <Input value={createForm.title} onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))} className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7]" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Meta Description</label>
+              <Textarea value={createForm.metaDescription} onChange={(e) => setCreateForm((f) => ({ ...f, metaDescription: e.target.value }))} rows={3} className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] resize-none" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">H1</label>
+              <Input value={createForm.h1} onChange={(e) => setCreateForm((f) => ({ ...f, h1: e.target.value }))} className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7]" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Intro Content</label>
+              <Textarea value={createForm.introContent} onChange={(e) => setCreateForm((f) => ({ ...f, introContent: e.target.value }))} rows={4} className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] resize-none" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Featured Image Upload</label>
+              <Input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                disabled={uploadingImage || !createForm.pageSlug.trim()}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !createForm.pageSlug.trim()) return;
+                  const url = await uploadSeoImageFile(file, createForm.pageType, createForm.pageSlug.trim());
+                  if (url) {
+                    setCreateForm((f) => ({
+                      ...f,
+                      featuredImage: url,
+                      imageAlt: f.imageAlt || f.h1 || f.title || f.pageSlug,
+                    }));
+                  }
+                  e.target.value = '';
+                }}
+                className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7]"
+              />
+              {!createForm.featuredImage && (
+                <p className="text-[10px] text-[#52525B] mt-1">Leave empty to auto-generate an SVG on create.</p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Image Alt Text</label>
+              <Input value={createForm.imageAlt} onChange={(e) => setCreateForm((f) => ({ ...f, imageAlt: e.target.value }))} className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7]" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Image Title</label>
+              <Input value={createForm.imageTitle} onChange={(e) => setCreateForm((f) => ({ ...f, imageTitle: e.target.value }))} className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7]" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Image Caption</label>
+              <Input value={createForm.imageCaption} onChange={(e) => setCreateForm((f) => ({ ...f, imageCaption: e.target.value }))} className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7]" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Canonical URL</label>
+              <Input value={createForm.canonicalUrl} onChange={(e) => setCreateForm((f) => ({ ...f, canonicalUrl: e.target.value }))} className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] font-mono" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Schema JSON</label>
+              <Textarea value={createForm.schemaJson} onChange={(e) => setCreateForm((f) => ({ ...f, schemaJson: e.target.value }))} rows={4} className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] font-mono text-xs resize-none" />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[#F5F5F7]">Published</span>
+              <Switch checked={createForm.isPublished} onCheckedChange={(c) => setCreateForm((f) => ({ ...f, isPublished: c }))} />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[#F5F5F7]">Noindex</span>
+              <Switch checked={createForm.noindex} onCheckedChange={(c) => setCreateForm((f) => ({ ...f, noindex: c }))} />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setCreateModal(false)} className="text-[#A1A1AA]">Cancel</Button>
+            <Button onClick={handleCreatePage} disabled={creating} className="bg-[#7C3AED] hover:bg-[#6D28D9] text-white">
+              {creating ? <Loader2 className="size-4 animate-spin mr-1" /> : <Plus className="size-4 mr-1" />}
+              Create Page
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1214,21 +1868,37 @@ export default function SeoManager() {
           <div className="space-y-4 py-2">
             <div>
               <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Select City</label>
-              <div className="grid grid-cols-4 gap-2">
-                {['mumbai', 'delhi', 'bangalore', 'goa', 'hyderabad', 'chennai', 'pune', 'kolkata'].map((slug) => (
-                  <button
-                    key={slug}
-                    onClick={() => loadCityIntro(slug)}
-                    className={`px-2 py-1.5 text-xs rounded-lg transition-all capitalize ${
-                      cityIntroModal?.slug === slug
-                        ? 'bg-[#7C3AED]/15 text-[#8B5CF6] border border-[#7C3AED]/30'
-                        : 'text-[#A1A1AA] border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)]'
-                    }`}
-                  >
-                    {slug}
-                  </button>
-                ))}
-              </div>
+              {loadingCityOptions ? (
+                <div className="flex items-center gap-2 py-4 text-sm text-[#A1A1AA]">
+                  <Loader2 className="size-4 animate-spin" />
+                  Loading cities from database...
+                </div>
+              ) : cityOptions.length === 0 ? (
+                <p className="text-sm text-[#A1A1AA] py-2">
+                  No cities found. Generate SEO pages first.
+                </p>
+              ) : (
+                <ScrollArea className="h-40 rounded-lg border border-[rgba(255,255,255,0.08)] p-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {cityOptions.map((city) => (
+                      <button
+                        key={city.id}
+                        onClick={() => loadCityIntro(city)}
+                        className={`px-2 py-1.5 text-xs rounded-lg transition-all text-left ${
+                          cityIntroModal?.slug === city.slug
+                            ? 'bg-[#7C3AED]/15 text-[#8B5CF6] border border-[#7C3AED]/30'
+                            : 'text-[#A1A1AA] border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)]'
+                        }`}
+                      >
+                        {city.name}
+                        {city.state?.name ? (
+                          <span className="block text-[10px] text-[#52525B]">{city.state.name}</span>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
             </div>
             {cityIntroModal?.slug && (
               <div>

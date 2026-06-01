@@ -496,13 +496,40 @@ export async function autoGenerateStateSeoPage(stateId: string) {
 
 export interface GenerateResult {
   created: number;
+  skipped: number;
   total: number;
   examples: Array<{ pageType: string; pageSlug: string; canonicalUrl: string; title: string }>;
+}
+
+export interface GenerateMissingResult {
+  generated: number;
+  skipped: number;
+  failed: number;
+  total: number;
+  breakdown: Partial<Record<SeoPageType, {
+    generated: number;
+    skipped: number;
+    failed: number;
+    total: number;
+  }>>;
+}
+
+/**
+ * Returns the set of pageSlug values already stored for a given page type.
+ * Used by skipExisting logic to avoid re-generating pages that exist.
+ */
+async function getExistingPageSlugs(pageType: SeoPageType): Promise<Set<string>> {
+  const rows = await db.seoPage.findMany({
+    where: { pageType },
+    select: { pageSlug: true },
+  });
+  return new Set(rows.map((r) => r.pageSlug));
 }
 
 export async function generateCitySeoPages(options: {
   limit?: number;
   countrySlug?: string;
+  skipExisting?: boolean;
 } = {}): Promise<GenerateResult> {
   const countrySlug = options.countrySlug || "india";
   const cities = await db.city.findMany({
@@ -525,10 +552,13 @@ export async function generateCitySeoPages(options: {
     },
   });
 
+  const existingSlugs = options.skipExisting ? await getExistingPageSlugs("city") : null;
   const examples: GenerateResult["examples"] = [];
   let created = 0;
+  let skipped = 0;
 
   for (const city of cities) {
+    if (existingSlugs?.has(city.slug)) { skipped++; continue; }
     const seo = generateCitySEOContent(
       city.name,
       city.slug,
@@ -544,10 +574,10 @@ export async function generateCitySeoPages(options: {
     }
   }
 
-  return { created, total: cities.length, examples };
+  return { created, skipped, total: cities.length, examples };
 }
 
-export async function generateCategorySeoPages(options: { limit?: number } = {}): Promise<GenerateResult> {
+export async function generateCategorySeoPages(options: { limit?: number; skipExisting?: boolean } = {}): Promise<GenerateResult> {
   const categories = await db.category.findMany({
     where: { isActive: true, parentId: null },
     orderBy: { name: "asc" },
@@ -555,10 +585,13 @@ export async function generateCategorySeoPages(options: { limit?: number } = {})
     select: { slug: true, name: true, description: true },
   });
 
+  const existingSlugs = options.skipExisting ? await getExistingPageSlugs("category") : null;
   const examples: GenerateResult["examples"] = [];
   let created = 0;
+  let skipped = 0;
 
   for (const category of categories) {
+    if (existingSlugs?.has(category.slug)) { skipped++; continue; }
     const seo = generateCategorySEOContent(
       category.name,
       category.slug,
@@ -577,21 +610,23 @@ export async function generateCategorySeoPages(options: { limit?: number } = {})
     }
   }
 
-  return { created, total: categories.length, examples };
+  return { created, skipped, total: categories.length, examples };
 }
 
 export async function generateCategoryCitySeoPages(options: {
   limit?: number;
   countrySlug?: string;
+  skipExisting?: boolean;
 } = {}): Promise<GenerateResult> {
   const countrySlug = options.countrySlug || "india";
-  const limit = options.limit ?? 100;
+  // Removed hardcoded take:10 (categories) and take:20 (cities).
+  // Fetch all active entities; the caller's limit controls how many pages are written per run.
+  const limit = options.limit;
 
   const [categories, cities] = await Promise.all([
     db.category.findMany({
       where: { isActive: true, parentId: null },
       orderBy: { name: "asc" },
-      take: 10,
       select: { slug: true, name: true },
     }),
     db.city.findMany({
@@ -600,7 +635,6 @@ export async function generateCategoryCitySeoPages(options: {
         state: { country: { slug: countrySlug, isActive: true } },
       },
       orderBy: { name: "asc" },
-      take: 20,
       select: {
         slug: true,
         name: true,
@@ -609,14 +643,19 @@ export async function generateCategoryCitySeoPages(options: {
     }),
   ]);
 
+  const existingSlugs = options.skipExisting ? await getExistingPageSlugs("category_city") : null;
+  const totalCandidates = categories.length * cities.length;
   const examples: GenerateResult["examples"] = [];
   let created = 0;
+  let skipped = 0;
 
   outer: for (const category of categories) {
     for (const city of cities) {
-      if (created >= limit) break outer;
+      if (limit !== undefined && created >= limit) break outer;
 
       const pageSlug = `${category.slug}/${city.slug}`;
+      if (existingSlugs?.has(pageSlug)) { skipped++; continue; }
+
       const seo = generateCategoryCitySEOContent(
         category.name,
         category.slug,
@@ -639,12 +678,13 @@ export async function generateCategoryCitySeoPages(options: {
     }
   }
 
-  return { created, total: created, examples };
+  return { created, skipped, total: totalCandidates, examples };
 }
 
 export async function generateStateSeoPages(options: {
   limit?: number;
   countrySlug?: string;
+  skipExisting?: boolean;
 } = {}): Promise<GenerateResult> {
   const countrySlug = options.countrySlug || "india";
   const states = await db.state.findMany({
@@ -661,10 +701,13 @@ export async function generateStateSeoPages(options: {
     },
   });
 
+  const existingSlugs = options.skipExisting ? await getExistingPageSlugs("state") : null;
   const examples: GenerateResult["examples"] = [];
   let created = 0;
+  let skipped = 0;
 
   for (const state of states) {
+    if (existingSlugs?.has(state.slug)) { skipped++; continue; }
     const seo = generateStateSEOContent(
       state.name,
       state.slug,
@@ -683,10 +726,10 @@ export async function generateStateSeoPages(options: {
     }
   }
 
-  return { created, total: states.length, examples };
+  return { created, skipped, total: states.length, examples };
 }
 
-export async function generateCountrySeoPages(options: { limit?: number } = {}): Promise<GenerateResult> {
+export async function generateCountrySeoPages(options: { limit?: number; skipExisting?: boolean } = {}): Promise<GenerateResult> {
   const countries = await db.country.findMany({
     where: { isActive: true },
     orderBy: { name: "asc" },
@@ -694,10 +737,13 @@ export async function generateCountrySeoPages(options: { limit?: number } = {}):
     select: { slug: true, name: true },
   });
 
+  const existingSlugs = options.skipExisting ? await getExistingPageSlugs("country") : null;
   const examples: GenerateResult["examples"] = [];
   let created = 0;
+  let skipped = 0;
 
   for (const country of countries) {
+    if (existingSlugs?.has(country.slug)) { skipped++; continue; }
     const seo = generateCountrySEOContent(country.name, country.slug);
     const canonicalUrl = `/${country.slug}`;
     await upsertFromContent("country", country.slug, seo, canonicalUrl);
@@ -712,15 +758,18 @@ export async function generateCountrySeoPages(options: { limit?: number } = {}):
     }
   }
 
-  return { created, total: countries.length, examples };
+  return { created, skipped, total: countries.length, examples };
 }
 
 export async function generateLongtailSeoPages(options: {
   limit?: number;
   countrySlug?: string;
+  skipExisting?: boolean;
 } = {}): Promise<GenerateResult> {
   const countrySlug = options.countrySlug || "india";
-  const limit = options.limit ?? 50;
+  // Removed hardcoded take:15 cap on cities.
+  // The caller's limit controls how many pages are written per run.
+  const limit = options.limit;
 
   const cities = await db.city.findMany({
     where: {
@@ -728,7 +777,6 @@ export async function generateLongtailSeoPages(options: {
       state: { country: { slug: countrySlug, isActive: true } },
     },
     orderBy: { name: "asc" },
-    take: 15,
     select: {
       slug: true,
       name: true,
@@ -736,14 +784,19 @@ export async function generateLongtailSeoPages(options: {
     },
   });
 
+  const existingSlugs = options.skipExisting ? await getExistingPageSlugs("longtail") : null;
+  const totalCandidates = LONGTAIL_KEYWORDS.length * cities.length;
   const examples: GenerateResult["examples"] = [];
   let created = 0;
+  let skipped = 0;
 
   outer: for (const keyword of LONGTAIL_KEYWORDS) {
     for (const city of cities) {
-      if (created >= limit) break outer;
+      if (limit !== undefined && created >= limit) break outer;
 
       const pageSlug = `${keyword.slug}/${city.slug}`;
+      if (existingSlugs?.has(pageSlug)) { skipped++; continue; }
+
       const seo = generateLongTailSEOContent(
         keyword.keyword,
         keyword.slug,
@@ -766,7 +819,7 @@ export async function generateLongtailSeoPages(options: {
     }
   }
 
-  return { created, total: created, examples };
+  return { created, skipped, total: totalCandidates, examples };
 }
 
 export async function getSeoPageCountsByType() {
@@ -796,7 +849,7 @@ export async function getSeoPageCountsByType() {
 
 export async function runSeoGeneration(
   type: SeoPageType,
-  options: { limit?: number; countrySlug?: string } = {},
+  options: { limit?: number; countrySlug?: string; skipExisting?: boolean } = {},
 ): Promise<GenerateResult> {
   switch (type) {
     case "city":
@@ -814,4 +867,73 @@ export async function runSeoGeneration(
     default:
       throw new Error(`Unknown SEO page type: ${type}`);
   }
+}
+
+/**
+ * Generate SEO pages for every entity type, skipping pages that already exist.
+ *
+ * - city / category / state / country: processed in full (entity counts are small).
+ * - category_city: up to `categoryCityLimit` (default 500) new pages per call.
+ *   Candidate space = categories × cities ≈ 10 000+; call repeatedly to finish.
+ * - longtail: up to `longtailLimit` (default 500) new pages per call.
+ *   Candidate space = 8 keywords × cities ≈ 6 000+; call repeatedly to finish.
+ *
+ * All types are run sequentially; a failure on one type is captured in `breakdown`
+ * and does not abort the remaining types.
+ */
+export async function generateAllMissingSeoPages(options: {
+  countrySlug?: string;
+  categoryCityLimit?: number;
+  longtailLimit?: number;
+  types?: SeoPageType[];
+} = {}): Promise<GenerateMissingResult> {
+  const countrySlug = options.countrySlug ?? "india";
+  const categoryCityLimit = options.categoryCityLimit ?? 500;
+  const longtailLimit = options.longtailLimit ?? 500;
+  const types: SeoPageType[] = options.types ?? [
+    "city",
+    "category",
+    "state",
+    "country",
+    "category_city",
+    "longtail",
+  ];
+
+  const aggregate: GenerateMissingResult = {
+    generated: 0, skipped: 0, failed: 0, total: 0, breakdown: {},
+  };
+
+  const perTypeLimits: Partial<Record<SeoPageType, number | undefined>> = {
+    city: undefined,
+    category: undefined,
+    state: undefined,
+    country: undefined,
+    category_city: categoryCityLimit,
+    longtail: longtailLimit,
+  };
+
+  for (const type of types) {
+    try {
+      const r = await runSeoGeneration(type, {
+        countrySlug,
+        limit: perTypeLimits[type],
+        skipExisting: true,
+      });
+      const typeResult = {
+        generated: r.created,
+        skipped: r.skipped,
+        failed: 0,
+        total: r.total,
+      };
+      aggregate.generated += typeResult.generated;
+      aggregate.skipped += typeResult.skipped;
+      aggregate.total += typeResult.total;
+      aggregate.breakdown[type] = typeResult;
+    } catch {
+      aggregate.failed++;
+      aggregate.breakdown[type] = { generated: 0, skipped: 0, failed: 1, total: 0 };
+    }
+  }
+
+  return aggregate;
 }
