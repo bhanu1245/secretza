@@ -532,33 +532,45 @@ export async function generateCitySeoPages(options: {
   skipExisting?: boolean;
 } = {}): Promise<GenerateResult> {
   const countrySlug = options.countrySlug || "india";
-  const cities = await db.city.findMany({
-    where: {
-      isActive: true,
-      state: { country: { slug: countrySlug, isActive: true } },
-    },
-    orderBy: { name: "asc" },
-    take: options.limit,
-    select: {
-      slug: true,
-      name: true,
-      state: {
-        select: {
-          name: true,
-          slug: true,
-          country: { select: { name: true, slug: true } },
+  const baseWhere = {
+    isActive: true,
+    state: { country: { slug: countrySlug, isActive: true } },
+  } as const;
+
+  // Pre-fetch existing slugs so the DB-level filter and skipped count are consistent.
+  const existingSlugs = options.skipExisting ? await getExistingPageSlugs("city") : null;
+
+  // Run fetch + count in parallel. notIn filter ensures `take: limit` means
+  // "generate N new pages", not "fetch N cities then skip some".
+  const [cities, totalActive] = await Promise.all([
+    db.city.findMany({
+      where: {
+        ...baseWhere,
+        ...(existingSlugs && existingSlugs.size > 0
+          ? { slug: { notIn: [...existingSlugs] } }
+          : {}),
+      },
+      orderBy: { name: "asc" },
+      take: options.limit,
+      select: {
+        slug: true,
+        name: true,
+        state: {
+          select: {
+            name: true,
+            slug: true,
+            country: { select: { name: true, slug: true } },
+          },
         },
       },
-    },
-  });
+    }),
+    db.city.count({ where: baseWhere }),
+  ]);
 
-  const existingSlugs = options.skipExisting ? await getExistingPageSlugs("city") : null;
   const examples: GenerateResult["examples"] = [];
   let created = 0;
-  let skipped = 0;
 
   for (const city of cities) {
-    if (existingSlugs?.has(city.slug)) { skipped++; continue; }
     const seo = generateCitySEOContent(
       city.name,
       city.slug,
@@ -574,24 +586,32 @@ export async function generateCitySeoPages(options: {
     }
   }
 
-  return { created, skipped, total: cities.length, examples };
+  return { created, skipped: existingSlugs?.size ?? 0, total: totalActive, examples };
 }
 
 export async function generateCategorySeoPages(options: { limit?: number; skipExisting?: boolean } = {}): Promise<GenerateResult> {
-  const categories = await db.category.findMany({
-    where: { isActive: true, parentId: null },
-    orderBy: { name: "asc" },
-    take: options.limit,
-    select: { slug: true, name: true, description: true },
-  });
-
+  const baseWhere = { isActive: true, parentId: null } as const;
   const existingSlugs = options.skipExisting ? await getExistingPageSlugs("category") : null;
+
+  const [categories, totalActive] = await Promise.all([
+    db.category.findMany({
+      where: {
+        ...baseWhere,
+        ...(existingSlugs && existingSlugs.size > 0
+          ? { slug: { notIn: [...existingSlugs] } }
+          : {}),
+      },
+      orderBy: { name: "asc" },
+      take: options.limit,
+      select: { slug: true, name: true, description: true },
+    }),
+    db.category.count({ where: baseWhere }),
+  ]);
+
   const examples: GenerateResult["examples"] = [];
   let created = 0;
-  let skipped = 0;
 
   for (const category of categories) {
-    if (existingSlugs?.has(category.slug)) { skipped++; continue; }
     const seo = generateCategorySEOContent(
       category.name,
       category.slug,
@@ -610,7 +630,7 @@ export async function generateCategorySeoPages(options: { limit?: number; skipEx
     }
   }
 
-  return { created, skipped, total: categories.length, examples };
+  return { created, skipped: existingSlugs?.size ?? 0, total: totalActive, examples };
 }
 
 export async function generateCategoryCitySeoPages(options: {
@@ -647,14 +667,13 @@ export async function generateCategoryCitySeoPages(options: {
   const totalCandidates = categories.length * cities.length;
   const examples: GenerateResult["examples"] = [];
   let created = 0;
-  let skipped = 0;
 
   outer: for (const category of categories) {
     for (const city of cities) {
       if (limit !== undefined && created >= limit) break outer;
 
       const pageSlug = `${category.slug}/${city.slug}`;
-      if (existingSlugs?.has(pageSlug)) { skipped++; continue; }
+      if (existingSlugs?.has(pageSlug)) { continue; }
 
       const seo = generateCategoryCitySEOContent(
         category.name,
@@ -678,7 +697,7 @@ export async function generateCategoryCitySeoPages(options: {
     }
   }
 
-  return { created, skipped, total: totalCandidates, examples };
+  return { created, skipped: existingSlugs?.size ?? 0, total: totalCandidates, examples };
 }
 
 export async function generateStateSeoPages(options: {
@@ -687,27 +706,35 @@ export async function generateStateSeoPages(options: {
   skipExisting?: boolean;
 } = {}): Promise<GenerateResult> {
   const countrySlug = options.countrySlug || "india";
-  const states = await db.state.findMany({
-    where: {
-      isActive: true,
-      country: { slug: countrySlug, isActive: true },
-    },
-    orderBy: { name: "asc" },
-    take: options.limit,
-    select: {
-      slug: true,
-      name: true,
-      country: { select: { name: true, slug: true } },
-    },
-  });
-
+  const baseWhere = {
+    isActive: true,
+    country: { slug: countrySlug, isActive: true },
+  } as const;
   const existingSlugs = options.skipExisting ? await getExistingPageSlugs("state") : null;
+
+  const [states, totalActive] = await Promise.all([
+    db.state.findMany({
+      where: {
+        ...baseWhere,
+        ...(existingSlugs && existingSlugs.size > 0
+          ? { slug: { notIn: [...existingSlugs] } }
+          : {}),
+      },
+      orderBy: { name: "asc" },
+      take: options.limit,
+      select: {
+        slug: true,
+        name: true,
+        country: { select: { name: true, slug: true } },
+      },
+    }),
+    db.state.count({ where: baseWhere }),
+  ]);
+
   const examples: GenerateResult["examples"] = [];
   let created = 0;
-  let skipped = 0;
 
   for (const state of states) {
-    if (existingSlugs?.has(state.slug)) { skipped++; continue; }
     const seo = generateStateSEOContent(
       state.name,
       state.slug,
@@ -726,24 +753,32 @@ export async function generateStateSeoPages(options: {
     }
   }
 
-  return { created, skipped, total: states.length, examples };
+  return { created, skipped: existingSlugs?.size ?? 0, total: totalActive, examples };
 }
 
 export async function generateCountrySeoPages(options: { limit?: number; skipExisting?: boolean } = {}): Promise<GenerateResult> {
-  const countries = await db.country.findMany({
-    where: { isActive: true },
-    orderBy: { name: "asc" },
-    take: options.limit,
-    select: { slug: true, name: true },
-  });
-
+  const baseWhere = { isActive: true } as const;
   const existingSlugs = options.skipExisting ? await getExistingPageSlugs("country") : null;
+
+  const [countries, totalActive] = await Promise.all([
+    db.country.findMany({
+      where: {
+        ...baseWhere,
+        ...(existingSlugs && existingSlugs.size > 0
+          ? { slug: { notIn: [...existingSlugs] } }
+          : {}),
+      },
+      orderBy: { name: "asc" },
+      take: options.limit,
+      select: { slug: true, name: true },
+    }),
+    db.country.count({ where: baseWhere }),
+  ]);
+
   const examples: GenerateResult["examples"] = [];
   let created = 0;
-  let skipped = 0;
 
   for (const country of countries) {
-    if (existingSlugs?.has(country.slug)) { skipped++; continue; }
     const seo = generateCountrySEOContent(country.name, country.slug);
     const canonicalUrl = `/${country.slug}`;
     await upsertFromContent("country", country.slug, seo, canonicalUrl);
@@ -758,7 +793,7 @@ export async function generateCountrySeoPages(options: { limit?: number; skipExi
     }
   }
 
-  return { created, skipped, total: countries.length, examples };
+  return { created, skipped: existingSlugs?.size ?? 0, total: totalActive, examples };
 }
 
 export async function generateLongtailSeoPages(options: {
@@ -788,14 +823,13 @@ export async function generateLongtailSeoPages(options: {
   const totalCandidates = LONGTAIL_KEYWORDS.length * cities.length;
   const examples: GenerateResult["examples"] = [];
   let created = 0;
-  let skipped = 0;
 
   outer: for (const keyword of LONGTAIL_KEYWORDS) {
     for (const city of cities) {
       if (limit !== undefined && created >= limit) break outer;
 
       const pageSlug = `${keyword.slug}/${city.slug}`;
-      if (existingSlugs?.has(pageSlug)) { skipped++; continue; }
+      if (existingSlugs?.has(pageSlug)) { continue; }
 
       const seo = generateLongTailSEOContent(
         keyword.keyword,
@@ -819,7 +853,7 @@ export async function generateLongtailSeoPages(options: {
     }
   }
 
-  return { created, skipped, total: totalCandidates, examples };
+  return { created, skipped: existingSlugs?.size ?? 0, total: totalCandidates, examples };
 }
 
 export async function getSeoPageCountsByType() {

@@ -102,6 +102,18 @@ interface SeoTypeStats {
 
 type GenerateType = 'city' | 'category' | 'category_city' | 'state' | 'country' | 'longtail';
 
+interface GenProgress {
+  type: GenerateType;
+  label: string;
+  generated: number;
+  skipped: number;
+  total: number;
+  totalMissing: number;
+  batchCount: number;
+  failed: number;
+  isRunning: boolean;
+}
+
 type PageTypeOption = 'all' | 'city' | 'category' | 'category_city' | 'state' | 'country' | 'longtail';
 
 const PAGE_TYPE_OPTIONS: { value: PageTypeOption; label: string }[] = [
@@ -204,8 +216,9 @@ export default function SeoManager() {
   const [deleting, setDeleting] = useState(false);
 
   // Bulk generate state
-  const [generatingType, setGeneratingType] = useState<GenerateType | null>(null);
-  const [generatingMissing, setGeneratingMissing] = useState(false);
+  const [batchSize, setBatchSize] = useState(100);
+  const [processAllMissing, setProcessAllMissing] = useState(true);
+  const [genProgress, setGenProgress] = useState<GenProgress | null>(null);
   const [typeStats, setTypeStats] = useState<SeoTypeStats>({
     city: 0,
     category: 0,
@@ -609,68 +622,96 @@ export default function SeoManager() {
   };
 
   // ==========================================
-  // Bulk Generate
+  // Bulk Generate (batch loop driver)
   // ==========================================
+
+  /** Run one generate type to completion, respecting batchSize and processAllMissing. */
   const handleGenerate = async (type: GenerateType) => {
-    setGeneratingType(type);
+    const label = GENERATE_BUTTONS.find(b => b.type === type)?.label ?? type;
+    let cumulativeGenerated = 0;
+    let initialSkipped: number | null = null;
+    let totalEntities = 0;
+    let batchCount = 0;
+    let failed = 0;
+
+    setGenProgress({
+      type, label,
+      generated: 0, skipped: 0, total: 0, totalMissing: 0,
+      batchCount: 0, failed: 0, isRunning: true,
+    });
+
     try {
-      const limits: Partial<Record<GenerateType, number>> = {
-        city: 100,
-        category_city: 100,
-        longtail: 50,
-      };
-      const res = await apiFetch('/api/seo/generate', {
-        method: 'POST',
-        body: JSON.stringify({
-          type,
-          limit: limits[type],
-          countrySlug: 'india',
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || `Failed to generate ${type} SEO pages`);
-        if (res.status === 401) {
-          toast.error('Admin login required');
+      while (true) {
+        let data: Record<string, number> = { created: 0, skipped: 0, total: 0 };
+        try {
+          const res = await apiFetch('/api/seo/generate', {
+            method: 'POST',
+            body: JSON.stringify({
+              type,
+              limit: batchSize,
+              countrySlug: 'india',
+              skipExisting: true,
+            }),
+          });
+          const raw = await res.json();
+          if (!res.ok) {
+            failed++;
+            toast.error((raw.error as string) || `Failed to generate ${label} pages`);
+            break;
+          }
+          data = raw as Record<string, number>;
+        } catch {
+          failed++;
+          toast.error(`Network error generating ${label} pages`);
+          break;
         }
-        return;
+
+        batchCount++;
+        cumulativeGenerated += data.created ?? 0;
+        totalEntities = data.total ?? 0;
+        if (initialSkipped === null) initialSkipped = data.skipped ?? 0;
+        const totalMissing = Math.max(0, totalEntities - (initialSkipped ?? 0));
+
+        setGenProgress({
+          type, label,
+          generated: cumulativeGenerated,
+          skipped: initialSkipped ?? 0,
+          total: totalEntities,
+          totalMissing,
+          batchCount,
+          failed,
+          isRunning: true,
+        });
+
+        // Stop when nothing new was generated, or processAllMissing is OFF (single batch)
+        if ((data.created ?? 0) === 0 || !processAllMissing) break;
+
+        // Brief pause between batches to keep the UI responsive
+        await new Promise<void>(r => setTimeout(r, 120));
       }
-      toast.success(data.message || `Generated ${data.created} ${type} page(s)`);
-      fetchPages();
-      fetchStats();
-    } catch {
-      toast.error(`Failed to generate ${type} SEO pages`);
     } finally {
-      setGeneratingType(null);
+      setGenProgress(prev => prev ? { ...prev, isRunning: false } : null);
+      fetchStats();
+      fetchPages();
+    }
+
+    const totalMissing = Math.max(0, totalEntities - (initialSkipped ?? 0));
+    if (failed === 0) {
+      if (cumulativeGenerated > 0) {
+        toast.success(
+          `Generated ${cumulativeGenerated}${processAllMissing ? ' / ' + totalMissing : ''} ${label} page(s) in ${batchCount} batch${batchCount !== 1 ? 'es' : ''}`,
+        );
+      } else {
+        toast.info(`All ${label} pages already exist (${initialSkipped ?? 0} skipped)`);
+      }
     }
   };
 
-  const handleGenerateMissing = async () => {
-    setGeneratingMissing(true);
-    try {
-      const res = await apiFetch('/api/seo/generate-missing', {
-        method: 'POST',
-        body: JSON.stringify({ countrySlug: 'india' }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || 'Failed to generate missing SEO pages');
-        return;
-      }
-      const { generated, skipped, failed } = data;
-      if (generated === 0 && failed === 0) {
-        toast.success(`All pages already exist — ${skipped} skipped`);
-      } else {
-        toast.success(
-          `Generated ${generated} new page(s) · Skipped ${skipped} existing${failed ? ` · ${failed} type(s) failed` : ''}`,
-        );
-      }
-      fetchPages();
-      fetchStats();
-    } catch {
-      toast.error('Failed to generate missing SEO pages');
-    } finally {
-      setGeneratingMissing(false);
+  /** Run all types sequentially, each respecting batchSize / processAllMissing. */
+  const handleGenerateAll = async () => {
+    const types: GenerateType[] = ['city', 'category', 'state', 'country', 'category_city', 'longtail'];
+    for (const type of types) {
+      await handleGenerate(type);
     }
   };
 
@@ -1048,6 +1089,9 @@ export default function SeoManager() {
     { type: 'country', label: 'Countries' },
     { type: 'longtail', label: 'Longtail' },
   ];
+  const BATCH_SIZES = [10, 20, 50, 100, 500];
+  const isGenerating = genProgress?.isRunning === true;
+  const activeGenerateType = isGenerating ? genProgress?.type : null;
 
   // ==========================================
   // Main SEO Pages List View
@@ -1107,21 +1151,65 @@ export default function SeoManager() {
         })}
       </div>
 
-      {/* Generate buttons */}
+      {/* Generate card */}
       <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm text-[#F5F5F7]">Automatic SEO Generation</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
+
+          {/* Controls row */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            {/* Batch size selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-[#A1A1AA] shrink-0">Batch Size</span>
+              <div className="flex rounded-lg overflow-hidden border border-[rgba(255,255,255,0.1)]">
+                {BATCH_SIZES.map(size => (
+                  <button
+                    key={size}
+                    onClick={() => setBatchSize(size)}
+                    disabled={isGenerating}
+                    className={[
+                      'px-2.5 py-1 text-[11px] font-medium transition-colors',
+                      batchSize === size
+                        ? 'bg-[#7C3AED] text-white'
+                        : 'bg-[#1E1E2D] text-[#A1A1AA] hover:bg-[rgba(255,255,255,0.06)]',
+                      'border-r border-[rgba(255,255,255,0.08)] last:border-r-0',
+                    ].join(' ')}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Process All Missing toggle */}
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <Switch
+                checked={processAllMissing}
+                onCheckedChange={setProcessAllMissing}
+                disabled={isGenerating}
+                className="data-[state=checked]:bg-[#7C3AED]"
+              />
+              <span className="text-[11px] text-[#A1A1AA]">
+                Process All Missing
+                <span className="ml-1 text-[10px] text-[#6B6B7A]">
+                  {processAllMissing ? '(loop until done)' : '(one batch only)'}
+                </span>
+              </span>
+            </label>
+          </div>
+
+          {/* Generate buttons */}
           <div className="flex flex-wrap gap-2">
             {GENERATE_BUTTONS.map(({ type, label }) => (
               <Button
                 key={type}
                 onClick={() => handleGenerate(type)}
-                disabled={generatingType !== null || generatingMissing}
+                disabled={isGenerating}
                 className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
               >
-                {generatingType === type ? (
+                {activeGenerateType === type ? (
                   <Loader2 className="size-3 animate-spin mr-1" />
                 ) : (
                   <RefreshCw className="size-3 mr-1" />
@@ -1130,8 +1218,20 @@ export default function SeoManager() {
               </Button>
             ))}
             <Button
+              onClick={handleGenerateAll}
+              disabled={isGenerating}
+              className="h-8 text-xs bg-sky-600 hover:bg-sky-700 text-white rounded-lg"
+            >
+              {isGenerating && !activeGenerateType ? (
+                <Loader2 className="size-3 animate-spin mr-1" />
+              ) : (
+                <Plus className="size-3 mr-1" />
+              )}
+              Generate All Missing
+            </Button>
+            <Button
               onClick={handleGenerateMissingImages}
-              disabled={generatingImages || generatingType !== null || generatingMissing}
+              disabled={generatingImages || isGenerating}
               className="h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white rounded-lg"
             >
               {generatingImages ? (
@@ -1142,23 +1242,73 @@ export default function SeoManager() {
               Generate SEO Images
             </Button>
           </div>
-          <div className="border-t border-[rgba(255,255,255,0.06)] pt-3">
-            <Button
-              onClick={handleGenerateMissing}
-              disabled={generatingMissing || generatingType !== null || generatingImages}
-              className="h-8 text-xs bg-sky-600 hover:bg-sky-700 text-white rounded-lg"
-            >
-              {generatingMissing ? (
-                <Loader2 className="size-3 animate-spin mr-1" />
-              ) : (
-                <Plus className="size-3 mr-1" />
+
+          {/* Live progress indicator */}
+          {genProgress && (
+            <div className="rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#0E0E17] p-3 space-y-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-medium text-[#F5F5F7] flex items-center gap-1.5">
+                  {genProgress.isRunning && <Loader2 className="size-3 animate-spin text-[#7C3AED]" />}
+                  {genProgress.isRunning ? `Generating ${genProgress.label}` : `${genProgress.label} complete`}
+                  {genProgress.batchCount > 0 && (
+                    <span className="text-[#6B6B7A] font-normal">
+                      · Batch {genProgress.batchCount}
+                    </span>
+                  )}
+                </span>
+                {!genProgress.isRunning && (
+                  <button
+                    onClick={() => setGenProgress(null)}
+                    className="text-[10px] text-[#6B6B7A] hover:text-[#A1A1AA]"
+                  >
+                    dismiss
+                  </button>
+                )}
+              </div>
+
+              {/* Progress bar */}
+              {genProgress.totalMissing > 0 && (
+                <div className="w-full h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#7C3AED] transition-all duration-300 rounded-full"
+                    style={{ width: `${Math.min(100, Math.round((genProgress.generated / genProgress.totalMissing) * 100))}%` }}
+                  />
+                </div>
               )}
-              {generatingMissing ? 'Generating Missing Pages…' : 'Generate All Missing SEO Pages'}
-            </Button>
-            <p className="text-[10px] text-[#A1A1AA] mt-1.5">
-              Scans all entity types and creates only pages that do not yet exist. Safe to run multiple times.
-            </p>
-          </div>
+
+              {/* Metrics */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1">
+                <div>
+                  <p className="text-[10px] text-[#6B6B7A] uppercase tracking-wide">Generated</p>
+                  <p className="text-sm font-semibold text-emerald-400 tabular-nums">
+                    {genProgress.generated.toLocaleString()}
+                    {genProgress.totalMissing > 0 && (
+                      <span className="text-[#6B6B7A] font-normal"> / {genProgress.totalMissing.toLocaleString()}</span>
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-[#6B6B7A] uppercase tracking-wide">Remaining</p>
+                  <p className="text-sm font-semibold text-[#F5F5F7] tabular-nums">
+                    {Math.max(0, genProgress.totalMissing - genProgress.generated).toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-[#6B6B7A] uppercase tracking-wide">Skipped</p>
+                  <p className="text-sm font-semibold text-amber-400 tabular-nums">
+                    {genProgress.skipped.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-[#6B6B7A] uppercase tracking-wide">Failed</p>
+                  <p className={`text-sm font-semibold tabular-nums ${genProgress.failed > 0 ? 'text-red-400' : 'text-[#6B6B7A]'}`}>
+                    {genProgress.failed}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
         </CardContent>
       </Card>
 
