@@ -102,6 +102,20 @@ function generateNonce(): string {
     .replace(/=+$/, "");
 }
 
+/** Allow external schedulers to hit /api/cron/* with x-cron-secret only (no session JWT). */
+function isValidCronSecret(request: NextRequest): boolean {
+  const cronSecret = request.headers.get("x-cron-secret");
+  const expectedSecret = process.env.CRON_SECRET;
+  if (!cronSecret || !expectedSecret) return false;
+  if (cronSecret.length !== expectedSecret.length) return false;
+
+  let diff = 0;
+  for (let i = 0; i < expectedSecret.length; i++) {
+    diff |= cronSecret.charCodeAt(i) ^ expectedSecret.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -167,7 +181,14 @@ export async function proxy(request: NextRequest) {
     const requiresAuth =
       isProtectedRoute || isListingPost || isAdminRoute || isModRoute;
 
+    const isCronRoute = pathname.startsWith("/api/cron/");
+
     if (requiresAuth) {
+      // Cron jobs authenticate via x-cron-secret; route handler re-validates.
+      if (isCronRoute && isValidCronSecret(request)) {
+        return NextResponse.next();
+      }
+
       if (!sessionToken) {
         return NextResponse.json(
           { error: "Authentication required" },
