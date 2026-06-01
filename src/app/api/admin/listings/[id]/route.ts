@@ -5,6 +5,7 @@ import { logAdminAction } from "@/lib/audit-logger";
 import { extractIpAddress } from "@/lib/audit-logger";
 import { createStorageService } from "@/lib/storage";
 import { logError } from "@/lib/monitoring";
+import { syncCityListingCount } from "@/lib/listing-count-sync";
 
 // PATCH /api/admin/listings/[id] — Admin listing moderation
 export async function PATCH(
@@ -43,6 +44,8 @@ export async function PATCH(
           data: { status: "approved" },
         });
         auditAction = "listing_approve";
+        // Sync city count: this listing is now approved
+        if (listing.cityId) await syncCityListingCount(listing.cityId);
         break;
 
       case "reject":
@@ -51,6 +54,10 @@ export async function PATCH(
           data: { status: "rejected" },
         });
         auditAction = "listing_reject";
+        // Sync city count: if previously approved, count drops by 1
+        if (listing.cityId && listing.status === "approved") {
+          await syncCityListingCount(listing.cityId);
+        }
         break;
 
       case "feature":
@@ -87,8 +94,12 @@ export async function PATCH(
             images.map((img) => storage.delete(img.storageKey))
           );
         }
+        const wasApproved = listing.status === "approved";
+        const deletedCityId = listing.cityId;
         await db.listing.delete({ where: { id } });
         auditAction = "listing_delete";
+        // Sync city count: if listing was approved, count drops by 1
+        if (wasApproved && deletedCityId) await syncCityListingCount(deletedCityId);
         break;
       }
 

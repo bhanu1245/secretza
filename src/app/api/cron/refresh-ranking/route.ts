@@ -3,26 +3,32 @@ import { db } from "@/lib/db";
 import {
   computePriorityScore,
   findExpiredListings,
-  getNextBumpBatch,
+  getNextBumpBatchForTier,
+  type ListingTier,
 } from "@/lib/ranking-engine";
 import { timingSafeEqual } from "crypto";
 import { logError } from "@/lib/monitoring";
+import { syncAllCityListingCounts } from "@/lib/listing-count-sync";
 
 /**
- * Cron endpoint: Refresh all listing rankings
- * 
- * This endpoint should be called every 30 minutes by a scheduler.
- * It performs three operations:
- * 1. Expires boost/featured flags for listings past their expiry dates
- * 2. Recomputes priorityScore for ALL approved listings
- * 3. Bumps the next batch of free listings for fair rotation
- * 
+ * Cron endpoint: Refresh all listing rankings (v2 — four-tier architecture)
+ *
+ * Must be called every 30 minutes by a scheduler.
+ * Protected by the x-cron-secret header (constant-time comparison).
+ *
+ * Steps performed:
+ *   1. Expire User.isPremium where premiumExpiry < now
+ *   2. Sync Listing.isPremium from the owning user's live premium status
+ *   3. Fetch all approved listings (including up-to-date isPremium)
+ *   4. Expire isBoosted / isFeatured flags whose windows have closed
+ *   5. Recompute priorityScore for every approved listing
+ *   6. Rotate one batch (≤20) from each of the four tiers (oldest-bumped first)
+ *
  * Usage: GET /api/cron/refresh-ranking
- * Security: In production, protect with a cron secret header
  */
 export async function GET(request: Request) {
   try {
-    // --- Authentication: require cron secret header (constant-time comparison) ---
+    // ── Auth ────────────────────────────────────────────────────────────
     const cronSecret = request.headers.get("x-cron-secret");
     const expectedSecret = process.env.CRON_SECRET;
     if (!cronSecret || !expectedSecret) {
@@ -36,15 +42,42 @@ export async function GET(request: Request) {
 
     const startTime = Date.now();
 
-    // ==========================================
-    // Step 1: Fetch all approved listings for processing
-    // ==========================================
+    // ── Step 1: Expire User.isPremium where premiumExpiry < now ─────────
+    // The JWT callback already enforces this client-side, but the DB must be
+    // authoritative for admin stats and fresh sessions.
+    const { count: expiredPremiumCount } = await db.user.updateMany({
+      where: { isPremium: true, premiumExpiry: { lt: new Date() } },
+      data: { isPremium: false },
+    });
+
+    // ── Step 2: Sync Listing.isPremium from user's live premium status ──
+    // Activate listings whose owner is currently premium.
+    await db.listing.updateMany({
+      where: {
+        user: { isPremium: true, premiumExpiry: { gt: new Date() } },
+        status: "approved",
+      },
+      data: { isPremium: true },
+    });
+    // Deactivate listings whose owner is no longer premium.
+    await db.listing.updateMany({
+      where: {
+        isPremium: true,
+        NOT: {
+          user: { isPremium: true, premiumExpiry: { gt: new Date() } },
+        },
+      },
+      data: { isPremium: false },
+    });
+
+    // ── Step 3: Fetch all approved listings (with up-to-date isPremium) ─
     const allApproved = await db.listing.findMany({
       where: { status: "approved" },
       select: {
         id: true,
         isFeatured: true,
         isBoosted: true,
+        isPremium: true,
         featuredUntil: true,
         boostUntil: true,
         lastBumpedAt: true,
@@ -54,12 +87,8 @@ export async function GET(request: Request) {
       },
     });
 
-    // ==========================================
-    // Step 2: Find and expire boost/featured listings past their expiry
-    // ==========================================
+    // ── Step 4: Expire boost / featured flags past their windows ────────
     const { expiredBoosts, expiredFeatured } = findExpiredListings(allApproved);
-
-    const expiredCount = expiredBoosts.length + expiredFeatured.length;
 
     if (expiredBoosts.length > 0) {
       await db.listing.updateMany({
@@ -67,7 +96,6 @@ export async function GET(request: Request) {
         data: { isBoosted: false, boostUntil: null },
       });
     }
-
     if (expiredFeatured.length > 0) {
       await db.listing.updateMany({
         where: { id: { in: expiredFeatured } },
@@ -75,46 +103,58 @@ export async function GET(request: Request) {
       });
     }
 
-    // ==========================================
-    // Step 3: Recompute priority scores for all approved listings
-    // ==========================================
+    // ── Step 5: Recompute priorityScore for every approved listing ───────
+    // Expire flags from step 4 are already reflected in the in-memory
+    // objects because we update the DB before this point, but allApproved
+    // was fetched before the updates.  Re-read the expired IDs inline so
+    // the score computation sees the cleared flags.
+    const expiredBoostSet = new Set(expiredBoosts);
+    const expiredFeaturedSet = new Set(expiredFeatured);
     const scoreUpdates = allApproved.map((listing) => {
-      const score = computePriorityScore(listing);
+      const normalized = {
+        ...listing,
+        isBoosted: expiredBoostSet.has(listing.id) ? false : listing.isBoosted,
+        isFeatured: expiredFeaturedSet.has(listing.id)
+          ? false
+          : listing.isFeatured,
+        boostUntil: expiredBoostSet.has(listing.id) ? null : listing.boostUntil,
+        featuredUntil: expiredFeaturedSet.has(listing.id)
+          ? null
+          : listing.featuredUntil,
+      };
       return db.listing.update({
         where: { id: listing.id },
-        data: { priorityScore: score },
+        data: { priorityScore: computePriorityScore(normalized) },
       });
     });
-
-    // Batch update (SQLite handles sequential updates well)
     await db.$transaction(scoreUpdates);
 
-    // ==========================================
-    // Step 4: Bump next batch of free listings for rotation
-    // ==========================================
-    const freeListings = allApproved.filter((l) => {
-      const now = Date.now();
-      const boostActive = l.isBoosted && l.boostUntil && new Date(l.boostUntil).getTime() > now;
-      const featuredActive = l.isFeatured && l.featuredUntil && new Date(l.featuredUntil).getTime() > now;
-      return !boostActive && !featuredActive;
-    });
+    // ── Step 6: Rotate one batch from each tier ─────────────────────────
+    // Each tier gets its own fair round-robin bump independently of the others.
+    const TIERS: ListingTier[] = ["boosted", "premium", "featured", "free"];
+    const tierBumpCounts: Record<string, number> = {};
+    let totalBumped = 0;
 
-    const bumpBatchIds = getNextBumpBatch(freeListings, 20);
+    for (const tier of TIERS) {
+      const batchIds = getNextBumpBatchForTier(allApproved, tier, 20);
+      if (batchIds.length === 0) {
+        tierBumpCounts[tier] = 0;
+        continue;
+      }
 
-    let bumpedCount = 0;
-    if (bumpBatchIds.length > 0) {
       await db.listing.updateMany({
-        where: { id: { in: bumpBatchIds } },
+        where: { id: { in: batchIds } },
         data: { lastBumpedAt: new Date() },
       });
 
-      // Recompute scores for bumped listings (they now have new lastBumpedAt)
+      // Re-fetch so computePriorityScore sees the fresh lastBumpedAt value.
       const bumpedListings = await db.listing.findMany({
-        where: { id: { in: bumpBatchIds } },
+        where: { id: { in: batchIds } },
         select: {
           id: true,
           isFeatured: true,
           isBoosted: true,
+          isPremium: true,
           featuredUntil: true,
           boostUntil: true,
           lastBumpedAt: true,
@@ -124,28 +164,39 @@ export async function GET(request: Request) {
         },
       });
 
-      for (const listing of bumpedListings) {
-        const score = computePriorityScore(listing);
-        await db.listing.update({
-          where: { id: listing.id },
-          data: { priorityScore: score },
-        });
-      }
+      await db.$transaction(
+        bumpedListings.map((l) =>
+          db.listing.update({
+            where: { id: l.id },
+            data: { priorityScore: computePriorityScore(l) },
+          }),
+        ),
+      );
 
-      bumpedCount = bumpBatchIds.length;
+      tierBumpCounts[tier] = batchIds.length;
+      totalBumped += batchIds.length;
     }
+
+    // ── Step 7: Reconcile City.listingCount ─────────────────────────────
+    // Safety net: recompute every city's approved listing count from scratch.
+    // Idempotent — only writes rows whose stored value differs from live count.
+    const citySyncResult = await syncAllCityListingCounts();
 
     const elapsed = Date.now() - startTime;
 
     return NextResponse.json({
       success: true,
-      message: "Ranking refresh completed",
+      message: "Ranking refresh completed (v2 four-tier)",
       stats: {
+        expiredPremiumUsers: expiredPremiumCount,
         totalProcessed: allApproved.length,
         expiredBoosts: expiredBoosts.length,
         expiredFeatured: expiredFeatured.length,
         scoresUpdated: allApproved.length,
-        freeListingsRotated: bumpedCount,
+        rotationByTier: tierBumpCounts,
+        totalRotated: totalBumped,
+        cityCountsUpdated: citySyncResult.updated,
+        cityCountsUnchanged: citySyncResult.unchanged,
         elapsedMs: elapsed,
       },
       timestamp: new Date().toISOString(),
@@ -154,7 +205,7 @@ export async function GET(request: Request) {
     logError(error, { component: "route:api/cron/refresh-ranking" });
     return NextResponse.json(
       { error: "Ranking refresh failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

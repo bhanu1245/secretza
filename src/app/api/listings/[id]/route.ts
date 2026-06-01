@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createStorageService } from "@/lib/storage";
 import { logError } from "@/lib/monitoring";
+import { syncCityListingCount } from "@/lib/listing-count-sync";
 import { computePriorityScore,
   getRankLabel,
   isBoostActive,
@@ -399,6 +400,11 @@ export async function PUT(
       ? title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now()
       : existing.slug;
 
+    // Detect city change on an approved listing so we can sync both cities
+    const oldCityId = existing.cityId;
+    const cityChanged = cityId !== oldCityId;
+    const isApproved = existing.status === "approved";
+
     // Update the listing
     const updated = await db.listing.update({
       where: { id },
@@ -501,6 +507,12 @@ export async function PUT(
       });
     }
 
+    // Sync city listingCount when an approved listing moves between cities
+    if (isApproved && cityChanged) {
+      const citiesToSync = [...new Set([oldCityId, cityId].filter(Boolean) as string[])];
+      await Promise.all(citiesToSync.map(syncCityListingCount));
+    }
+
     let persistedCount = 0;
     if (shouldPersist) {
       persistedCount = await persistListingImages(id, {
@@ -574,9 +586,17 @@ export async function DELETE(
       );
     }
 
+    const wasApproved = existing.status === "approved";
+    const deletedCityId = existing.cityId;
+
     await db.listing.delete({
       where: { id },
     });
+
+    // Sync city count: if listing was approved, one fewer approved listing
+    if (wasApproved && deletedCityId) {
+      await syncCityListingCount(deletedCityId);
+    }
 
     return NextResponse.json({
       success: true,
