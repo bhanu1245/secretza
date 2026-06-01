@@ -4,20 +4,16 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Save, Trash2 } from "lucide-react";
 
+/**
+ * PricingPlan — marketing metadata only.
+ * Prices, durations, and limits are managed exclusively in
+ * Admin → Payment Settings (PaymentSettings table).
+ */
 type Plan = {
   id: string;
   name: string;
   slug: string;
   description?: string | null;
-  price: number;
-  currency: string;
-  durationDays: number;
-  featuredDays: number;
-  boostDays: number;
-  listingLimit: number;
-  imageLimit: number;
-  premiumBadge: boolean;
-  priorityScore: number;
   features: string[];
   isActive: boolean;
   isPopular: boolean;
@@ -28,15 +24,6 @@ const emptyPlan: Omit<Plan, "id"> = {
   name: "",
   slug: "",
   description: "",
-  price: 0,
-  currency: "INR",
-  durationDays: 30,
-  featuredDays: 0,
-  boostDays: 0,
-  listingLimit: 1,
-  imageLimit: 5,
-  premiumBadge: false,
-  priorityScore: 0,
   features: [],
   isActive: true,
   isPopular: false,
@@ -102,7 +89,13 @@ export default function AdminPricingPlans() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-[#F5F5F7]">Pricing Plans</h2>
-        <p className="text-sm text-[#A1A1AA] mt-1">Create upgrade packages for featured, boosted, and premium listings.</p>
+        <p className="text-sm text-[#A1A1AA] mt-1">Marketing copy for the public pricing page. Plan names, descriptions, and feature bullets only.</p>
+      </div>
+
+      {/* SOT notice */}
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+        <strong>Prices &amp; durations are managed in Admin → Payment Settings.</strong>{" "}
+        This panel controls marketing display only (name, description, bullet points, display order).
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[380px,1fr] gap-6">
@@ -113,7 +106,7 @@ export default function AdminPricingPlans() {
               <Plus className="size-3" /> New
             </button>
           </div>
-          {(["name", "slug", "description", "currency"] as const).map((field) => (
+          {(["name", "slug", "description"] as const).map((field) => (
             <input
               key={field}
               value={String(editing[field] || "")}
@@ -125,33 +118,24 @@ export default function AdminPricingPlans() {
           <textarea
             value={(editing.features || []).join("\n")}
             onChange={(event) => update("features", event.target.value.split("\n"))}
-            placeholder="Features, one per line"
+            placeholder="Marketing bullet points, one per line"
             rows={5}
             className="w-full rounded-lg bg-[#0B0B0F] border border-[rgba(255,255,255,0.08)] px-3 py-2 text-sm text-[#F5F5F7]"
           />
-          <div className="grid grid-cols-2 gap-3">
-            {(["price", "durationDays", "featuredDays", "boostDays", "listingLimit", "imageLimit", "priorityScore", "sortOrder"] as const).map((field) => (
-              <input
-                key={field}
-                type="number"
-                value={Number(editing[field] || 0)}
-                onChange={(event) => update(field, Number(event.target.value))}
-                placeholder={field}
-                className="w-full rounded-lg bg-[#0B0B0F] border border-[rgba(255,255,255,0.08)] px-3 py-2 text-sm text-[#F5F5F7]"
-              />
-            ))}
-          </div>
-          <label className="flex items-center gap-2 text-sm text-[#A1A1AA]">
-            <input type="checkbox" checked={Boolean(editing.premiumBadge)} onChange={(event) => update("premiumBadge", event.target.checked)} />
-            Premium badge
-          </label>
+          <input
+            type="number"
+            value={Number(editing.sortOrder || 0)}
+            onChange={(event) => update("sortOrder", Number(event.target.value))}
+            placeholder="sortOrder"
+            className="w-full rounded-lg bg-[#0B0B0F] border border-[rgba(255,255,255,0.08)] px-3 py-2 text-sm text-[#F5F5F7]"
+          />
           <label className="flex items-center gap-2 text-sm text-[#A1A1AA]">
             <input type="checkbox" checked={editing.isActive !== false} onChange={(event) => update("isActive", event.target.checked)} />
-            Active
+            Active (show on pricing page)
           </label>
           <label className="flex items-center gap-2 text-sm text-[#A1A1AA]">
             <input type="checkbox" checked={Boolean(editing.isPopular)} onChange={(event) => update("isPopular", event.target.checked)} />
-            Most popular
+            Show "Most Popular" badge
           </label>
           <button disabled={saving} onClick={save} className="w-full rounded-lg bg-[#7C3AED] py-2 text-sm font-semibold text-white hover:bg-[#6D28D9] disabled:opacity-60">
             <Save className="size-4 inline mr-2" /> {saving ? "Saving..." : "Save Plan"}
@@ -173,7 +157,8 @@ export default function AdminPricingPlans() {
                       {!plan.isActive && <span className="text-[10px] text-amber-300">Inactive</span>}
                       {plan.isPopular && <span className="text-[10px] text-[#8B5CF6]">Popular</span>}
                     </div>
-                    <p className="text-xs text-[#A1A1AA]">{plan.currency} {plan.price} / {plan.durationDays} days · {plan.listingLimit} listings · priority {plan.priorityScore}</p>
+                    <p className="text-xs text-[#A1A1AA]">{plan.slug} · order {plan.sortOrder}</p>
+                    {plan.description && <p className="text-xs text-[#52525B] mt-0.5 truncate max-w-xs">{plan.description}</p>}
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => setEditing(plan)} className="rounded-lg border border-[rgba(255,255,255,0.08)] px-3 py-1.5 text-xs text-[#F5F5F7]">Edit</button>

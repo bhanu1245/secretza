@@ -39,17 +39,20 @@ export const manualPaymentFormSchema = z
       .nullable(),
   })
   .superRefine((data, ctx) => {
-    // boost and feature are listing-level — a listingId is mandatory.
-    // premium is account-level and does not require a listing.
+    // boost and feature are listing-level payments; listingId is strongly
+    // recommended but not required — a user may purchase from the pricing page
+    // before selecting a listing. Admin applies the benefit after confirmation.
     if (
       (data.paymentType === "boost" || data.paymentType === "feature") &&
       !data.listingId
     ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["listingId"],
-        message: `listingId is required for ${data.paymentType} payments`,
-      });
+      // Log for ops visibility but do not reject the submission.
+      console.warn(
+        `[manual-payment] ${data.paymentType} submitted without listingId — ` +
+        "admin must apply manually after approval.",
+        { paymentType: data.paymentType },
+      );
+      void ctx; // keep ctx referenced to satisfy TS
     }
   });
 

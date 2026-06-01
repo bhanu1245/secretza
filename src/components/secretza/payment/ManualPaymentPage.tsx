@@ -55,33 +55,6 @@ interface PreviousSubmission {
 // ==========================================
 // Constants
 // ==========================================
-// Fallback tiers used before API loads
-const FALLBACK_TIERS: Record<string, PricingTier[]> = {
-  boost: [
-    { label: "1 Hour Boost", amount: 99, durationMinutes: 60 },
-    { label: "6 Hour Boost", amount: 199, durationMinutes: 360 },
-    { label: "24 Hour Boost", amount: 499, durationMinutes: 1440 },
-  ],
-  feature: [
-    { label: "3 Day Featured", amount: 149, durationDays: 3 },
-    { label: "7 Day Featured", amount: 399, durationDays: 7 },
-    { label: "14 Day Featured", amount: 799, durationDays: 14 },
-  ],
-  premium: [
-    { label: "30 Day Premium", amount: 999, durationDays: 30 },
-  ],
-};
-
-// Default fallback (used before API loads)
-const FALLBACK_UPI_ID = "secretza@ybl";
-const FALLBACK_WHATSAPP = "+919876543210";
-const FALLBACK_INSTRUCTIONS = [
-  "Open any UPI app (Google Pay, PhonePe, Paytm, etc.)",
-  "Scan the QR code or send payment to the UPI ID",
-  "Enter the exact amount shown",
-  "After payment, note down the 12-digit UTR number",
-  "Come back here and submit the UTR with screenshot",
-];
 
 const MAX_SCREENSHOT_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -164,14 +137,12 @@ export default function ManualPaymentPage({
     premiumTiers?: PricingTier[];
   } | null>(null);
 
-  // State
-  const dynamicTiers = paymentConfig
-    ? (paymentConfig.boostTiers && paymentType === "boost" ? paymentConfig.boostTiers
-      : paymentConfig.featuredTiers && paymentType === "feature" ? paymentConfig.featuredTiers
-        : paymentConfig.premiumTiers && paymentType === "premium" ? paymentConfig.premiumTiers
-          : null)
-    : null;
-  const tiers = dynamicTiers || FALLBACK_TIERS[paymentType] || [];
+  // State — tiers come exclusively from PaymentSettings API; show loading until available
+  const tiers = paymentConfig
+    ? (paymentType === "boost"    ? (paymentConfig.boostTiers    ?? [])
+     : paymentType === "feature"  ? (paymentConfig.featuredTiers ?? [])
+     :                              (paymentConfig.premiumTiers   ?? []))
+    : [];
   const [selectedTierIndex, setSelectedTierIndex] = useState(0);
   const tierOriginalAmount = tiers[selectedTierIndex]?.amount ?? 99;
 
@@ -258,9 +229,9 @@ export default function ManualPaymentPage({
     setCouponInput("");
   }, [clearCoupon]);
   const PaymentTypeIcon = paymentTypeIcons[paymentType] || Zap;
-  const upiId = paymentConfig?.upiId || FALLBACK_UPI_ID;
-  const whatsAppNumber = paymentConfig?.whatsappNumber || FALLBACK_WHATSAPP;
-  const instructions = paymentConfig?.instructions || FALLBACK_INSTRUCTIONS;
+  const upiId = paymentConfig?.upiId ?? "";
+  const whatsAppNumber = paymentConfig?.whatsappNumber ?? "";
+  const instructions = paymentConfig?.instructions ?? [];
 
   // ========================
   // Auth guard
@@ -583,11 +554,36 @@ export default function ManualPaymentPage({
   }
 
   // ========================
+  // Loading state — wait for PaymentSettings before showing anything
+  // ========================
+  if (!paymentConfig) {
+    return (
+      <div className="min-h-screen bg-[#0B0B0F] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="size-8 text-[#7C3AED] animate-spin" />
+          <p className="text-sm text-[#A1A1AA]">Loading payment options…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ========================
   // Main page
   // ========================
   return (
     <div className="min-h-screen bg-[#0B0B0F] px-4 py-6 sm:py-8">
       <div className="mx-auto max-w-2xl space-y-6">
+        {/* Listing-required notice for boost/feature when no listing was pre-selected */}
+        {(paymentType === "boost" || paymentType === "feature") && !listingId && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300 flex items-start gap-2">
+            <AlertCircle className="size-4 shrink-0 mt-0.5 text-amber-400" />
+            <span>
+              After payment is confirmed, our team will contact you via WhatsApp to apply this {paymentType === "boost" ? "boost" : "featured badge"} to your listing.
+              You can also go to your <button onClick={goBack} className="underline hover:text-amber-200">dashboard</button> and select a listing directly.
+            </span>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center gap-4">
           <button

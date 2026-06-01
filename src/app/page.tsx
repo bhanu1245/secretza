@@ -7,21 +7,21 @@ import { ADMIN_HOME, isAdminRole } from "@/lib/admin-nav";
 import { useNavigationStore, useUIStore, useAuthStore } from "@/store/useAppStore";
 import { useListing, useListings, useCategories } from "@/hooks/useApiData";
 
-type PricingPlan = {
-  id: string;
-  name: string;
-  description?: string | null;
-  price: number;
-  currency: string;
-  durationDays: number;
-  featuredDays: number;
-  boostDays: number;
-  listingLimit: number;
-  imageLimit: number;
-  premiumBadge: boolean;
-  priorityScore: number;
-  features: string[];
-  isPopular: boolean;
+type PricingTier = {
+  label: string;
+  amount: number;
+  durationMinutes?: number;
+  durationDays?: number;
+};
+
+type PaymentSettingsConfig = {
+  upiId: string;
+  whatsappNumber: string;
+  instructions: string[];
+  qrImageUrl: string | null;
+  boostTiers: PricingTier[];
+  featuredTiers: PricingTier[];
+  premiumTiers: PricingTier[];
 };
 
 // Layout
@@ -56,6 +56,7 @@ import ManualPaymentPage from "@/components/secretza/payment/ManualPaymentPage";
 // Geo Explorer
 import IndiaGeoExplorer from "@/components/secretza/geo/IndiaGeoExplorer";
 import { parseSpaDeepLink } from "@/lib/public-navigation";
+import { toast } from "sonner";
 
 // ==========================================
 // View Transitions
@@ -169,7 +170,7 @@ function LocationPage({
     state,
     city,
     limit: 24,
-    sortBy: "newest",
+    sortBy: "relevance",
   });
 
   const cityLabel = city
@@ -235,40 +236,44 @@ function LocationPage({
 }
 
 // ==========================================
-// Pricing Page — Fetches real plans from the database
+// Pricing Page — reads live tiers from PaymentSettings (single source of truth)
 // ==========================================
+function CheckMark() {
+  return (
+    <svg className="size-4 text-violet shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
 function PricingPage() {
   const navigate = useNavigationStore((s) => s.navigate);
   const { isAuthenticated, setAuthModalOpen, setAuthModalTab } = useAuthStore();
-  const [plans, setPlans] = useState<PricingPlan[]>([]);
+  const [config, setConfig] = useState<PaymentSettingsConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
-    fetch("/api/pricing-plans")
+    fetch("/api/payment-settings")
       .then((res) => res.json())
-      .then((data) => {
-        if (mounted) setPlans(data.plans || []);
-      })
-      .catch(() => {
-        if (mounted) setPlans([]);
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
+      .then((data) => { if (mounted) setConfig(data); })
+      .catch(() => {})
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
   }, []);
 
-  const handleSelectPackage = (pkg: PricingPlan) => {
+  const requireAuth = (cb: () => void) => {
     if (!isAuthenticated) {
       setAuthModalTab("register");
       setAuthModalOpen(true);
       return;
     }
-    navigate("post-ad", { package: pkg.id });
+    cb();
   };
+
+  const boostMin   = config ? Math.min(...config.boostTiers.map((t) => t.amount))   : null;
+  const featureMin = config ? Math.min(...config.featuredTiers.map((t) => t.amount)) : null;
+  const premiumTier = config?.premiumTiers[0] ?? null;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
@@ -283,71 +288,129 @@ function PricingPage() {
           Select the perfect plan to boost your visibility and reach more potential clients.
         </p>
       </div>
+
       {loading ? (
         <div className="text-center text-muted-foreground py-16">Loading pricing plans...</div>
-      ) : plans.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface p-10 text-center">
-          <p className="text-foreground font-medium">No active pricing plans are available.</p>
-          <p className="text-sm text-muted-foreground mt-1">Please check back soon or contact support.</p>
-        </div>
       ) : (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {plans.map((pkg) => (
-          <motion.div
-            key={pkg.id}
-            whileHover={{ y: -4 }}
-            className={`relative rounded-xl border bg-surface p-6 flex flex-col ${
-              pkg.isPopular
-                ? "border-violet/50 violet-glow"
-                : "border-border hover:border-violet/30"
-            }`}
-          >
-            {pkg.isPopular && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-violet text-[10px] font-bold text-white uppercase tracking-wider">
-                Most Popular
-              </div>
-            )}
-            <h3 className="text-lg font-bold text-foreground">{pkg.name}</h3>
-            <p className="text-xs text-muted-foreground mt-1">{pkg.description}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+          {/* ── Free / Basic ─────────────────────────────── */}
+          <motion.div whileHover={{ y: -4 }} className="relative rounded-xl border border-border bg-surface p-6 flex flex-col hover:border-violet/30">
+            <h3 className="text-lg font-bold text-foreground">Basic</h3>
+            <p className="text-xs text-muted-foreground mt-1">Get started with a standard listing</p>
             <div className="mt-4 mb-6">
-              {pkg.price === 0 ? (
-                <span className="text-3xl font-bold text-foreground">Free</span>
-              ) : (
-                <>
-                  <span className="text-3xl font-bold text-foreground">{pkg.currency} {pkg.price}</span>
-                  <span className="text-sm text-muted-foreground">/{pkg.durationDays}d</span>
-                </>
-              )}
-            </div>
-            <div className="mb-4 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
-              <span>{pkg.listingLimit} listings</span>
-              <span>{pkg.imageLimit} images</span>
-              <span>{pkg.featuredDays} featured days</span>
-              <span>{pkg.boostDays} boost days</span>
+              <span className="text-3xl font-bold text-foreground">Free</span>
             </div>
             <ul className="flex-1 space-y-2.5 mb-6">
-              {pkg.features.map((feature: string, i: number) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <svg className="size-4 text-violet shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {feature}
-                </li>
+              {["1 active listing", "3 images per listing", "Standard search visibility", "7-day listing duration"].map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground"><CheckMark />{f}</li>
               ))}
             </ul>
             <button
-              onClick={() => handleSelectPackage(pkg)}
-              className={`w-full py-2.5 rounded-lg font-semibold text-sm transition-all ${
-                pkg.isPopular
-                  ? "gradient-violet text-white hover:opacity-90 shadow-md shadow-violet/20"
-                  : "border border-border text-foreground hover:bg-surface-light hover:border-violet/30"
-              }`}
+              onClick={() => requireAuth(() => navigate("post-ad"))}
+              className="w-full py-2.5 rounded-lg font-semibold text-sm border border-border text-foreground hover:bg-surface-light hover:border-violet/30 transition-all"
             >
-              {pkg.price === 0 ? "Get Started" : "Select Plan"}
+              Post Free Ad
             </button>
           </motion.div>
-        ))}
-      </div>
+
+          {/* ── Boost ────────────────────────────────────── */}
+          <motion.div whileHover={{ y: -4 }} className="relative rounded-xl border border-border bg-surface p-6 flex flex-col hover:border-violet/30">
+            <h3 className="text-lg font-bold text-foreground">Boost</h3>
+            <p className="text-xs text-muted-foreground mt-1">Push your listing to the top temporarily</p>
+            <div className="mt-4 mb-6">
+              {boostMin !== null ? (
+                <>
+                  <span className="text-sm text-muted-foreground">From </span>
+                  <span className="text-3xl font-bold text-foreground">₹{boostMin}</span>
+                </>
+              ) : (
+                <span className="text-3xl font-bold text-foreground">—</span>
+              )}
+            </div>
+            <ul className="flex-1 space-y-2.5 mb-6">
+              {config?.boostTiers.map((t) => (
+                <li key={t.label} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <CheckMark />
+                  {t.label} — ₹{t.amount}
+                </li>
+              )) ?? []}
+              {["Instant visibility boost", "Appears above regular listings"].map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground"><CheckMark />{f}</li>
+              ))}
+            </ul>
+            <button
+              onClick={() => requireAuth(() => navigate("payment-manual", { paymentType: "boost" }))}
+              className="w-full py-2.5 rounded-lg font-semibold text-sm border border-border text-foreground hover:bg-surface-light hover:border-violet/30 transition-all"
+            >
+              Boost a Listing
+            </button>
+          </motion.div>
+
+          {/* ── Featured ─────────────────────────────────── */}
+          <motion.div whileHover={{ y: -4 }} className="relative rounded-xl border border-violet/50 violet-glow bg-surface p-6 flex flex-col">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-violet text-[10px] font-bold text-white uppercase tracking-wider">
+              Most Popular
+            </div>
+            <h3 className="text-lg font-bold text-foreground">Featured</h3>
+            <p className="text-xs text-muted-foreground mt-1">Stand out with a featured listing badge</p>
+            <div className="mt-4 mb-6">
+              {featureMin !== null ? (
+                <>
+                  <span className="text-sm text-muted-foreground">From </span>
+                  <span className="text-3xl font-bold text-foreground">₹{featureMin}</span>
+                </>
+              ) : (
+                <span className="text-3xl font-bold text-foreground">—</span>
+              )}
+            </div>
+            <ul className="flex-1 space-y-2.5 mb-6">
+              {config?.featuredTiers.map((t) => (
+                <li key={t.label} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <CheckMark />
+                  {t.label} — ₹{t.amount}
+                </li>
+              )) ?? []}
+              {["Featured badge on listing", "Priority placement in search"].map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground"><CheckMark />{f}</li>
+              ))}
+            </ul>
+            <button
+              onClick={() => requireAuth(() => navigate("payment-manual", { paymentType: "feature" }))}
+              className="w-full py-2.5 rounded-lg font-semibold text-sm gradient-violet text-white hover:opacity-90 shadow-md shadow-violet/20 transition-all"
+            >
+              Feature a Listing
+            </button>
+          </motion.div>
+
+          {/* ── Premium ──────────────────────────────────── */}
+          <motion.div whileHover={{ y: -4 }} className="relative rounded-xl border border-border bg-surface p-6 flex flex-col hover:border-violet/30">
+            <h3 className="text-lg font-bold text-foreground">Premium</h3>
+            <p className="text-xs text-muted-foreground mt-1">Maximum exposure across all your listings</p>
+            <div className="mt-4 mb-6">
+              {premiumTier ? (
+                <>
+                  <span className="text-3xl font-bold text-foreground">₹{premiumTier.amount}</span>
+                  <span className="text-sm text-muted-foreground">/{premiumTier.durationDays}d</span>
+                </>
+              ) : (
+                <span className="text-3xl font-bold text-foreground">—</span>
+              )}
+            </div>
+            <ul className="flex-1 space-y-2.5 mb-6">
+              {["Premium badge on all listings", "Top-priority ranking", "All listings boosted", "Multiple active listings"].map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground"><CheckMark />{f}</li>
+              ))}
+            </ul>
+            <button
+              onClick={() => requireAuth(() => navigate("payment-manual", { paymentType: "premium" }))}
+              className="w-full py-2.5 rounded-lg font-semibold text-sm border border-border text-foreground hover:bg-surface-light hover:border-violet/30 transition-all"
+            >
+              Get Premium
+            </button>
+          </motion.div>
+
+        </div>
       )}
     </div>
   );
@@ -365,6 +428,8 @@ function HomeApp() {
   const navigate = useNavigationStore((s) => s.navigate);
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const setAuthModalOpen = useAuthStore((s) => s.setAuthModalOpen);
+  const setAuthModalTab = useAuthStore((s) => s.setAuthModalTab);
 
   // Fetch the selected listing from the API (fixes BUG #2)
   const { listing: selectedListing, loading: listingLoading } = useListing(selectedListingId);
@@ -379,6 +444,24 @@ function HomeApp() {
     navigate(deepLink.view, deepLink.params);
     router.replace("/", { scroll: false });
   }, [searchParams, navigate, router]);
+
+  // Handle OAuth errors redirected back to / by NextAuth (pages.error: "/").
+  // OAuthAccountNotLinked: user tried Google sign-in but an email/password
+  // account already exists with the same address.
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (!error) return;
+    if (error === "OAuthAccountNotLinked") {
+      toast.error("Account already exists", {
+        description:
+          "An account with this email already exists. Please sign in with your email and password.",
+      });
+      setAuthModalTab("login");
+      setAuthModalOpen(true);
+    }
+    // Clear the error param from the URL so it does not persist on refresh.
+    router.replace("/", { scroll: false });
+  }, [searchParams, router, setAuthModalOpen, setAuthModalTab]);
 
   // Redirect unauthenticated users away from protected views (after render, not during)
   useEffect(() => {

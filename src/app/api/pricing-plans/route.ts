@@ -5,7 +5,7 @@ export async function GET() {
   const plans = await db.$queryRaw<Array<Record<string, any>>>`
     SELECT * FROM PricingPlan
     WHERE isActive = 1
-    ORDER BY sortOrder ASC, price ASC
+    ORDER BY sortOrder ASC
   `;
 
   return NextResponse.json({

@@ -1,4 +1,4 @@
-import type { Category, Country, State, City, Listing, PricingPackage } from "./types";
+import type { Category, Country, State, City, Listing } from "./types";
 
 // ==========================================
 // Categories
@@ -547,6 +547,7 @@ export const mockListings: Listing[] = listingTitles.map((title, i) => ({
   status: "approved",
   isFeatured: i < 8,
   isBoosted: i < 4,
+  isPremium: i >= 4 && i < 8,
   featuredUntil: i < 8 ? "2026-06-20T00:00:00.000Z" : null,
   boostUntil: i < 4 ? "2026-06-10T00:00:00.000Z" : null,
   lastBumpedAt: i >= 4 && i < 12 ? `2026-06-${String(1 + (i % 28)).padStart(2, "0")}T${String(12 + (i % 12)).padStart(2, "0")}:00:00.000Z` : null,
@@ -566,68 +567,6 @@ export const featuredListings = mockListings.filter((l) => l.isFeatured);
 export const latestListings = [...mockListings]
   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   .slice(0, 12);
-
-// ==========================================
-// Pricing Packages
-// ==========================================
-export const pricingPackages: PricingPackage[] = [
-  {
-    id: "pkg-free",
-    name: "Basic",
-    description: "Get started with a standard listing",
-    price: 0,
-    currency: "USD",
-    duration: 7,
-    features: ["1 active listing", "3 images", "7-day duration", "Basic search visibility"],
-  },
-  {
-    id: "pkg-featured",
-    name: "Featured",
-    description: "Stand out with a featured listing",
-    price: 29.99,
-    currency: "USD",
-    duration: 14,
-    features: ["1 active listing", "8 images", "14-day duration", "Featured badge", "Priority in search", "Boost visibility"],
-    isPopular: true,
-  },
-  {
-    id: "pkg-premium",
-    name: "Premium",
-    description: "Maximum exposure and features",
-    price: 59.99,
-    currency: "USD",
-    duration: 30,
-    features: [
-      "5 active listings",
-      "20 images per listing",
-      "30-day duration",
-      "Featured badge",
-      "Top of search results",
-      "Analytics dashboard",
-      "Priority support",
-      "Auto-renewal option",
-    ],
-  },
-  {
-    id: "pkg-vip",
-    name: "VIP",
-    description: "The ultimate premium experience",
-    price: 149.99,
-    currency: "USD",
-    duration: 30,
-    features: [
-      "Unlimited listings",
-      "Unlimited images",
-      "30-day duration",
-      "VIP badge & glow",
-      "Always top placement",
-      "Full analytics suite",
-      "Dedicated support",
-      "Auto-renewal",
-      "Custom branding",
-    ],
-  },
-];
 
 // ==========================================
 // Admin Stats
