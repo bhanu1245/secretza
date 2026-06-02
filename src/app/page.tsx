@@ -74,21 +74,11 @@ function HomePage() {
   return (
     <div className="flex flex-col gap-0">
       <HeroSection />
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <CategoryGrid />
-      </section>
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <TrendingCities />
-      </section>
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <FeaturedListings />
-      </section>
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <LatestListings />
-      </section>
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <TrustSection />
-      </section>
+      <CategoryGrid />
+      <TrendingCities />
+      <FeaturedListings />
+      <LatestListings />
+      <TrustSection />
     </div>
   );
 }
@@ -138,7 +128,7 @@ function CategoryPage({ slug }: { slug: string }) {
           <p className="text-muted-foreground">Loading listings...</p>
         </div>
       ) : categoryListings.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {categoryListings.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}
@@ -219,7 +209,7 @@ function LocationPage({
           <p className="text-sm text-muted-foreground">{error}</p>
         </div>
       ) : listings.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {listings.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}
@@ -556,7 +546,7 @@ function HomeApp() {
                     <p className="text-muted-foreground">Loading listings...</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
                     {browseListings.map((listing) => (
                       <ListingCard key={listing.id} listing={listing} />
                     ))}

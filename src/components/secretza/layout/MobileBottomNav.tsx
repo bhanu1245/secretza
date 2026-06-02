@@ -91,8 +91,8 @@ export default function MobileBottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden glass border-t border-border safe-area-pb">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 w-full md:hidden glass border-t border-border safe-area-pb">
+      <div className="flex h-16 w-full min-w-0 items-center justify-around px-1.5">
         {navItems.map((item) => {
           const active = isActive(item);
           const Icon = item.icon;
@@ -102,13 +102,13 @@ export default function MobileBottomNav() {
               <button
                 key={item.label}
                 onClick={() => handleClick(item)}
-                className="flex flex-col items-center justify-center -mt-5"
+                className="flex min-w-0 flex-1 flex-col items-center justify-center -mt-5"
                 aria-label={item.label}
               >
                 <div className="flex items-center justify-center w-12 h-12 rounded-full gradient-violet violet-glow shadow-lg shadow-violet/25">
                   <Icon className="size-5 text-white" />
                 </div>
-                <span className="text-[10px] font-medium text-muted-foreground mt-1">
+                <span className="mt-1 max-w-full truncate text-[10px] font-medium text-muted-foreground">
                   {item.label}
                 </span>
               </button>
@@ -119,7 +119,7 @@ export default function MobileBottomNav() {
             <button
               key={item.label}
               onClick={() => handleClick(item)}
-              className="flex flex-col items-center justify-center gap-0.5 w-14 h-full transition-colors"
+              className="flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 transition-colors"
               aria-label={item.label}
             >
               <Icon
@@ -130,7 +130,7 @@ export default function MobileBottomNav() {
                 }`}
               />
               <span
-                className={`text-[10px] font-medium transition-colors duration-200 ${
+                className={`max-w-full truncate text-[10px] font-medium transition-colors duration-200 ${
                   active ? "text-violet" : "text-muted-foreground"
                 }`}
               >

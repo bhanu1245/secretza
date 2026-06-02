@@ -68,23 +68,23 @@ export default function HeroSection() {
   return (
     <section className="relative w-full hero-gradient overflow-hidden">
       {/* Ambient glow orbs */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-violet/8 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-20 left-1/4 w-[300px] h-[300px] bg-violet/5 rounded-full blur-[80px] pointer-events-none" />
+      <div className="absolute inset-x-0 top-0 mx-auto h-80 w-full max-w-4xl rounded-full bg-violet/8 blur-[120px] pointer-events-none sm:h-[600px]" />
+      <div className="absolute top-20 left-4 h-64 w-64 rounded-full bg-violet/5 blur-[80px] pointer-events-none sm:left-1/4 sm:h-72 sm:w-72" />
 
       <motion.div
-        className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-24 pb-16 sm:pb-20"
+        className="relative z-10 mx-auto w-full max-w-6xl px-4 pt-14 pb-14 sm:px-6 sm:pt-24 sm:pb-20 lg:px-8"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
         {/* Heading */}
         <motion.div variants={itemVariants} className="text-center mb-8 sm:mb-10">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
             Discover{" "}
             <span className="text-violet violet-text-glow">Premium</span>
             <br className="hidden sm:block" /> Adult Classifieds
           </h1>
-          <p className="mt-4 sm:mt-6 text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="mt-4 sm:mt-6 text-sm sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
             Worldwide discreet listings. Verified advertisers. Complete privacy.
           </p>
         </motion.div>
@@ -110,7 +110,7 @@ export default function HeroSection() {
 
               {/* Category dropdown */}
               <Select value={categorySlug} onValueChange={setCategorySlug}>
-                <SelectTrigger className="h-12 sm:h-14 w-full sm:w-[180px] bg-transparent border-0 focus:ring-0 focus-visible:ring-0 rounded-lg sm:border-l sm:border-border sm:ml-2">
+                <SelectTrigger className="h-12 w-full rounded-lg border-0 bg-transparent focus:ring-0 focus-visible:ring-0 sm:ml-2 sm:h-14 sm:w-44 sm:border-l sm:border-border md:w-48">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -125,7 +125,7 @@ export default function HeroSection() {
 
               {/* Location dropdown */}
               <Select value={countrySlug} onValueChange={setCountrySlug}>
-                <SelectTrigger className="h-12 sm:h-14 w-full sm:w-[180px] bg-transparent border-0 focus:ring-0 focus-visible:ring-0 rounded-lg sm:border-l sm:border-border sm:ml-2">
+                <SelectTrigger className="h-12 w-full rounded-lg border-0 bg-transparent focus:ring-0 focus-visible:ring-0 sm:ml-2 sm:h-14 sm:w-44 sm:border-l sm:border-border md:w-48">
                   <SelectValue placeholder="Location" />
                 </SelectTrigger>
                 <SelectContent>
@@ -159,7 +159,7 @@ export default function HeroSection() {
           <Button
             onClick={handleSearch}
             size="lg"
-            className="gradient-violet text-white font-semibold px-8 h-12 rounded-lg text-base hover:opacity-90 transition-opacity"
+            className="h-12 w-full max-w-sm rounded-lg gradient-violet px-8 text-base font-semibold text-white transition-opacity hover:opacity-90 sm:w-auto"
           >
             <Search className="size-5" />
             Search Now
@@ -168,7 +168,7 @@ export default function HeroSection() {
             onClick={() => navigate("post-ad")}
             variant="outline"
             size="lg"
-            className="border-violet/40 text-violet hover:bg-violet/10 hover:text-violet font-semibold px-8 h-12 rounded-lg text-base"
+            className="h-12 w-full max-w-sm rounded-lg border-violet/40 px-8 text-base font-semibold text-violet hover:bg-violet/10 hover:text-violet sm:w-auto"
           >
             <Plus className="size-5" />
             Post Free Ad

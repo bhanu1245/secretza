@@ -462,7 +462,7 @@ export default function SearchResults() {
 
           {/* Grid or Empty State */}
           {searchLoading && searchListings.length === 0 ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="rounded-xl bg-surface border border-border overflow-hidden">
@@ -477,7 +477,7 @@ export default function SearchResults() {
             </div>
           ) : searchListings.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {searchListings.map((listing) => (
                   <ListingCard key={listing.id} listing={listing} />
                 ))}
@@ -485,7 +485,7 @@ export default function SearchResults() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="mt-8 flex items-center justify-center gap-2">
+                <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
                   <Button
                     variant="outline"
                     size="icon"
@@ -496,7 +496,7 @@ export default function SearchResults() {
                     <ChevronLeft className="size-4" />
                   </Button>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex flex-wrap items-center justify-center gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter((page) => {
                         // Show first, last, and pages around current

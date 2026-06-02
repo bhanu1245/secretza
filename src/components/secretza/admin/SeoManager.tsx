@@ -1441,7 +1441,7 @@ export default function SeoManager() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[rgba(255,255,255,0.06)]">

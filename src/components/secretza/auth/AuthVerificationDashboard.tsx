@@ -475,7 +475,7 @@ function MiddlewareConfigSection() {
                         Middleware Matcher
                       </span>
                     </div>
-                    <pre className="bg-[#0B0B0F] rounded-lg p-3 text-xs font-mono text-[#A1A1AA] overflow-x-auto border border-[rgba(255,255,255,0.04)]">
+                    <pre className="whitespace-pre-wrap break-words bg-[#0B0B0F] rounded-lg p-3 text-xs font-mono text-[#A1A1AA] border border-[rgba(255,255,255,0.04)]">
                       <code>{`// middleware.ts
 export const config = {
   matcher: [
@@ -551,7 +551,7 @@ export const config = {
                         JWT Strategy
                       </span>
                     </div>
-                    <pre className="bg-[#0B0B0F] rounded-lg p-3 text-xs font-mono text-[#A1A1AA] overflow-x-auto border border-[rgba(255,255,255,0.04)]">
+                    <pre className="whitespace-pre-wrap break-words bg-[#0B0B0F] rounded-lg p-3 text-xs font-mono text-[#A1A1AA] border border-[rgba(255,255,255,0.04)]">
                       <code>{`// Session: JWT (httpOnly cookie)
 // Max Age: 30 days (remember me)
 // Cookie: next-auth.session-token
@@ -591,9 +591,9 @@ function AuthFlowDiagram() {
         </CardHeader>
         <CardContent className="pt-0">
           {/* Flow Diagram - Visual */}
-          <div className="bg-[#0B0B0F] rounded-xl p-4 border border-[rgba(255,255,255,0.04)] overflow-x-auto">
+          <div className="bg-[#0B0B0F] rounded-xl p-4 border border-[rgba(255,255,255,0.04)] overflow-hidden">
             {/* Top Row */}
-            <div className="flex items-center justify-center gap-2 min-w-[640px]">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               {/* Client */}
               <div className="flex flex-col items-center gap-1.5">
                 <div className="w-24 h-16 rounded-lg bg-[#1E1E2A] border border-[rgba(255,255,255,0.08)] flex flex-col items-center justify-center">
@@ -638,7 +638,7 @@ function AuthFlowDiagram() {
             </div>
 
             {/* Connector Lines */}
-            <div className="flex items-center justify-center gap-2 my-2 min-w-[640px]">
+            <div className="hidden items-center justify-center gap-2 my-2 sm:flex">
               <div className="w-24 flex justify-center">
                 <div className="w-px h-4 bg-[rgba(255,255,255,0.08)]" />
               </div>
@@ -657,7 +657,7 @@ function AuthFlowDiagram() {
             </div>
 
             {/* Bottom Row */}
-            <div className="flex items-center justify-center gap-2 min-w-[640px]">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <div className="w-24" />
 
               {/* DB Lookup */}
@@ -755,7 +755,7 @@ function TestUserAccountsTable() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-[rgba(255,255,255,0.06)] hover:bg-transparent">
@@ -897,7 +897,7 @@ function RouteProtectionMatrix() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-[rgba(255,255,255,0.06)] hover:bg-transparent">

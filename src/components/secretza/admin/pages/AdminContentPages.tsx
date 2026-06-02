@@ -313,7 +313,7 @@ export function AdminDashboardPage() {
           <CardTitle className="text-base font-semibold text-[#F5F5F7]">Recent Listings</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[rgba(255,255,255,0.06)]">
@@ -498,7 +498,7 @@ export function AdminUsersPage() {
 
       <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[rgba(255,255,255,0.06)]">
@@ -760,7 +760,7 @@ export function AdminListingsPage() {
       {/* Table */}
       <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[rgba(255,255,255,0.06)]">
@@ -2185,7 +2185,7 @@ export function ManualPaymentQueue() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[rgba(255,255,255,0.06)]">

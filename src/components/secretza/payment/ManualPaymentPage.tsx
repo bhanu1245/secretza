@@ -642,7 +642,7 @@ export default function ManualPaymentPage({
             {/* Coupon */}
             <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#15151D] p-5">
               <h3 className="text-sm font-semibold text-[#F5F5F7] mb-3">Have a coupon?</h3>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   value={couponInput}
                   onChange={(e) => {
@@ -650,13 +650,13 @@ export default function ManualPaymentPage({
                     if (appliedCoupon) clearCoupon();
                   }}
                   placeholder="Enter coupon code"
-                  className="flex-1 rounded-lg bg-[#0B0B0F] border border-[rgba(255,255,255,0.08)] px-3 py-2 text-sm text-[#F5F5F7] uppercase"
+                  className="min-w-0 flex-1 rounded-lg bg-[#0B0B0F] border border-[rgba(255,255,255,0.08)] px-3 py-2 text-sm text-[#F5F5F7] uppercase"
                 />
                 <button
                   type="button"
                   onClick={handleApplyCoupon}
                   disabled={couponLoading || !couponInput.trim()}
-                  className="px-4 py-2 rounded-lg bg-[#7C3AED]/15 text-[#8B5CF6] border border-[#7C3AED]/30 text-sm font-medium disabled:opacity-50"
+                  className="rounded-lg bg-[#7C3AED]/15 px-4 py-2 text-sm font-medium text-[#8B5CF6] border border-[#7C3AED]/30 disabled:opacity-50"
                 >
                   {couponLoading ? "..." : "Apply"}
                 </button>
@@ -720,7 +720,7 @@ export default function ManualPaymentPage({
             <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#15151D] p-5">
               <h3 className="text-sm font-semibold text-[#F5F5F7] mb-3">UPI ID</h3>
               <div className="flex items-center gap-3">
-                <div className="flex-1 px-4 py-2.5 rounded-lg bg-[#1E1E2A] border border-[rgba(255,255,255,0.08)] font-mono text-sm text-[#F5F5F7]">
+                <div className="min-w-0 flex-1 break-all px-4 py-2.5 rounded-lg bg-[#1E1E2A] border border-[rgba(255,255,255,0.08)] font-mono text-sm text-[#F5F5F7]">
                   {upiId}
                 </div>
                 <button
@@ -819,9 +819,9 @@ export default function ManualPaymentPage({
                       />
                       <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-3 py-2">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                          <div className="flex min-w-0 items-center gap-2">
                             <ImageIcon className="size-3 text-[#A1A1AA]" />
-                            <span className="text-xs text-[#F5F5F7] truncate max-w-[180px]">
+                            <span className="min-w-0 flex-1 truncate text-xs text-[#F5F5F7]">
                               {screenshotFile?.name}
                             </span>
                             <span className="text-xs text-[#52525B]">

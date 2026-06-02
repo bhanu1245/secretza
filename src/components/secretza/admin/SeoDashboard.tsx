@@ -394,7 +394,7 @@ export default function SeoDashboard() {
           {data.duplicateRiskPages.length === 0 ? (
             <p className="text-sm text-[#52525B] text-center py-6">No medium/high risk pages in database</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-hidden">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-[#A1A1AA] border-b border-[rgba(255,255,255,0.06)]">

@@ -267,7 +267,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
         {/* Price Overlay (bottom-right of image) */}
         {listing.price && (
           <div className="absolute bottom-2.5 right-2.5 z-10">
-            <span className="rounded-lg bg-violet/90 px-2.5 py-1 text-sm font-bold text-white backdrop-blur-sm">
+            <span className="block max-w-32 truncate rounded-lg bg-violet/90 px-2.5 py-1 text-sm font-bold text-white backdrop-blur-sm">
               {listing.price}
             </span>
           </div>
@@ -275,14 +275,14 @@ export default function ListingCard({ listing }: ListingCardProps) {
       </div>
 
       {/* Content Area */}
-      <div className="flex flex-1 flex-col gap-2 p-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-2 p-3">
         {/* Title */}
         <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-[#F5F5F7]">
           {listing.title}
         </h3>
 
         {/* Location */}
-        <div className="flex items-center gap-1 text-[#A1A1AA]">
+        <div className="flex min-w-0 items-center gap-1 text-[#A1A1AA]">
           <MapPin className="size-3 shrink-0" />
           <span className="truncate text-xs">
             {listing.city.name}, {listing.state.name}
@@ -323,12 +323,12 @@ export default function ListingCard({ listing }: ListingCardProps) {
         )}
 
         {/* Footer */}
-        <div className="mt-auto flex items-center justify-between border-t border-[rgba(255,255,255,0.06)] pt-2">
-          <div className="flex items-center gap-1 text-[#A1A1AA]">
+        <div className="mt-auto flex min-w-0 items-center justify-between gap-2 border-t border-[rgba(255,255,255,0.06)] pt-2">
+          <div className="flex min-w-0 items-center gap-1 text-[#A1A1AA]">
             <Clock className="size-3" />
-            <span className="text-[10px]"><TimeAgo date={listing.createdAt} /></span>
+            <span className="truncate text-[10px]"><TimeAgo date={listing.createdAt} /></span>
           </div>
-          <div className="flex items-center gap-1 text-[#A1A1AA]">
+          <div className="flex shrink-0 items-center gap-1 text-[#A1A1AA]">
             <Eye className="size-3" />
             <span className="text-[10px]">{listing.viewCount.toLocaleString()}</span>
           </div>
@@ -338,7 +338,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
   );
 
   const cardClassName =
-    "card-hover group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-surface";
+    "card-hover group relative flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-surface";
 
   if (!useSpaModal && href) {
     return (

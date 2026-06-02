@@ -194,7 +194,7 @@ export default function SeoPageView({
         </div>
 
         {listings.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-12">
             {listings.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />
             ))}

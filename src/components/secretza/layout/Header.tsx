@@ -123,7 +123,7 @@ export default function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between gap-4">
+        <div className="flex h-16 min-w-0 items-center justify-between gap-2 sm:gap-4">
           {/* Logo */}
           <button
             onClick={goHome}
@@ -171,7 +171,7 @@ export default function Header() {
                     : "opacity-0 invisible -translate-y-1"
                 }`}
               >
-                <div className="w-[420px] rounded-xl border border-border bg-surface p-4 shadow-xl shadow-black/30">
+                <div className="w-full max-w-md rounded-xl border border-border bg-surface p-4 shadow-xl shadow-black/30">
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 px-2">
                     All Categories
                   </p>
@@ -228,7 +228,7 @@ export default function Header() {
           </form>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
             {/* Mobile Search Button */}
             <Button
               variant="ghost"
@@ -253,7 +253,7 @@ export default function Header() {
             {isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 rounded-full p-0.5 pr-3 hover:bg-surface-light transition-colors">
+                  <button className="flex min-w-0 items-center gap-2 rounded-full p-0.5 pr-2 hover:bg-surface-light transition-colors sm:pr-3">
                     <Avatar className="size-8 ring-2 ring-violet/30">
                       <AvatarImage
                         src={user.avatar || undefined}
@@ -358,7 +358,7 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="w-[300px] bg-surface border-border p-0"
+                className="w-full max-w-sm bg-surface border-border p-0"
               >
                 <SheetHeader className="p-4 pb-2 border-b border-border">
                   <div className="flex items-center justify-between">
@@ -420,8 +420,8 @@ export default function Header() {
                               className="w-2 h-2 rounded-full shrink-0"
                               style={{ backgroundColor: cat.color }}
                             />
-                            {cat.name}
-                            <span className="ml-auto text-xs text-muted-foreground/50">
+                            <span className="min-w-0 flex-1 truncate">{cat.name}</span>
+                            <span className="ml-auto shrink-0 text-xs text-muted-foreground/50">
                               {cat.listingCount.toLocaleString()}
                             </span>
                           </button>

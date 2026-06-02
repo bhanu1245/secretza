@@ -81,7 +81,7 @@ export default function CategoryGrid() {
 
       {/* Category Grid */}
       {loading && featuredCategories.length === 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
           {Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="rounded-xl bg-surface border border-border p-4 sm:p-5 animate-pulse">
               <div className="size-10 sm:size-12 rounded-lg bg-muted mb-3" />
@@ -92,7 +92,7 @@ export default function CategoryGrid() {
         </div>
       ) : (
       <motion.div
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4"
         variants={containerVariants}
         initial="hidden"
         whileInView="visible"

@@ -264,7 +264,7 @@ export default function ReviewList({ listingId }: ReviewListProps) {
           <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-surface p-5 mb-6">
             <div className="flex flex-col sm:flex-row gap-6">
               {/* Average + stars */}
-              <div className="flex flex-col items-center justify-center sm:min-w-[120px]">
+              <div className="flex flex-col items-center justify-center sm:min-w-32">
                 <span className="text-4xl font-bold text-[#F5F5F7] tabular-nums">
                   {stats.average.toFixed(1)}
                 </span>
@@ -312,7 +312,7 @@ export default function ReviewList({ listingId }: ReviewListProps) {
           </div>
 
           {/* Sort options */}
-          <div className="flex items-center gap-1.5 mb-4 overflow-x-auto pb-1">
+          <div className="flex flex-wrap items-center gap-1.5 mb-4 pb-1">
             <ArrowUpDown className="size-3.5 text-[#52525B] shrink-0 mr-1" />
             {SORT_OPTIONS.map((opt) => (
               <button

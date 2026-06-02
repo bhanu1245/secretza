@@ -217,7 +217,7 @@ export default function ListingDetail({
 
               {/* Thumbnails */}
               {images.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto bg-surface px-3 py-2 scrollbar-thin">
+                <div className="flex flex-wrap gap-2 bg-surface px-3 py-2">
                   {images.map((img, idx) => (
                     <button
                       key={idx}

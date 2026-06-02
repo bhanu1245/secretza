@@ -749,7 +749,7 @@ export default function AuthModal() {
     <Dialog open={isAuthModalOpen} onOpenChange={setAuthModalOpen}>
       <DialogContent
         showCloseButton={false}
-        className="sm:max-w-[440px] bg-[#15151D] border-[rgba(255,255,255,0.08)] p-0 overflow-hidden rounded-2xl"
+        className="w-full max-w-[calc(100vw-2rem)] bg-[#15151D] border-[rgba(255,255,255,0.08)] p-0 overflow-hidden rounded-2xl sm:max-w-md"
       >
         {/* Header with Logo */}
         <div className="relative px-8 pt-8 pb-2">
