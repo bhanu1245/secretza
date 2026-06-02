@@ -11,17 +11,7 @@ interface CityPageProps {
 }
 
 export async function generateStaticParams() {
-  const cities = await db.city.findMany({
-    where: { isActive: true },
-    include: {
-      state: { include: { country: { select: { slug: true } } } },
-    },
-  });
-  return cities.map((c) => ({
-    country: c.state.country.slug,
-    state: c.state.slug,
-    city: c.slug,
-  }));
+  return [];
 }
 
 export async function generateMetadata({
