@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
@@ -24,6 +25,7 @@ declare global {
   interface Window {
     dataLayer: Record<string, unknown>[];
     gtag: (...args: unknown[]) => void;
+    __SECRETZA_GA_ID__?: string;
   }
 }
 
@@ -33,7 +35,7 @@ declare global {
 
 function loadGA4Script(gaId: string): void {
   if (typeof window === "undefined") return;
-  if (window.dataLayer) return; // Already loaded
+  if (window.dataLayer && typeof window.gtag === "function") return; // Already loaded
 
   window.dataLayer = window.dataLayer || [];
 
@@ -100,7 +102,8 @@ export function useTrackEvent() {
     (eventName: string, properties?: Record<string, string | number | boolean>) => {
       try {
         // GA4
-        if (NEXT_PUBLIC_GA_ID && typeof window.gtag === "function") {
+        const gaId = window.__SECRETZA_GA_ID__ || NEXT_PUBLIC_GA_ID;
+        if (gaId && typeof window.gtag === "function") {
           window.gtag("event", eventName, properties);
         }
 
@@ -129,7 +132,8 @@ export function useTrackPageView() {
     (path: string, title?: string) => {
       try {
         // GA4
-        if (NEXT_PUBLIC_GA_ID && typeof window.gtag === "function") {
+        const gaId = window.__SECRETZA_GA_ID__ || NEXT_PUBLIC_GA_ID;
+        if (gaId && typeof window.gtag === "function") {
           window.gtag("event", "page_view", {
             page_path: path,
             page_title: title ?? document.title,
@@ -154,31 +158,60 @@ export function useTrackPageView() {
 
 interface AnalyticsProviderProps {
   children: ReactNode;
+  gaMeasurementId?: string;
 }
 
 /**
  * Client-side analytics provider.
  *
  * Responsibilities:
- *  1. Loads GA4 gtag.js if NEXT_PUBLIC_GA_ID is set
+ *  1. Loads GA4 gtag.js if a DB-backed or env GA ID is set
  *  2. Loads Plausible script if NEXT_PUBLIC_PLAUSIBLE_DOMAIN is set
  *  3. Automatically tracks page views on route changes via usePathname
  *
  * Usage: wrap inside <SessionProvider> in layout.tsx.
  */
-export default function AnalyticsProvider({ children }: AnalyticsProviderProps) {
+export default function AnalyticsProvider({
+  children,
+  gaMeasurementId,
+}: AnalyticsProviderProps) {
   const pathname = usePathname();
   const previousPathRef = useRef<string | null>(null);
+  const [resolvedGaId, setResolvedGaId] = useState(
+    gaMeasurementId || NEXT_PUBLIC_GA_ID || "",
+  );
+
+  useEffect(() => {
+    if (gaMeasurementId || NEXT_PUBLIC_GA_ID) return;
+
+    let cancelled = false;
+    fetch("/api/site-settings/public")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const publicGaId = data?.analytics?.gaMeasurementId;
+        if (!cancelled && typeof publicGaId === "string" && publicGaId) {
+          setResolvedGaId(publicGaId);
+        }
+      })
+      .catch(() => {
+        // Analytics must never block or break the UI.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [gaMeasurementId]);
 
   // Load analytics scripts once on mount
   useEffect(() => {
-    if (NEXT_PUBLIC_GA_ID) {
-      loadGA4Script(NEXT_PUBLIC_GA_ID);
+    if (resolvedGaId) {
+      window.__SECRETZA_GA_ID__ = resolvedGaId;
+      loadGA4Script(resolvedGaId);
     }
     if (NEXT_PUBLIC_PLAUSIBLE_DOMAIN) {
       loadPlausibleScript(NEXT_PUBLIC_PLAUSIBLE_DOMAIN);
     }
-  }, []);
+  }, [resolvedGaId]);
 
   // Track page views on route changes
   useEffect(() => {
@@ -193,7 +226,7 @@ export default function AnalyticsProvider({ children }: AnalyticsProviderProps) 
       const title = document.title;
 
       // GA4
-      if (NEXT_PUBLIC_GA_ID && typeof window.gtag === "function") {
+      if (resolvedGaId && typeof window.gtag === "function") {
         window.gtag("event", "page_view", {
           page_path: pathname,
           page_title: title,
@@ -208,7 +241,7 @@ export default function AnalyticsProvider({ children }: AnalyticsProviderProps) 
     }, 50);
 
     return () => clearTimeout(timer);
-  }, [pathname]);
+  }, [pathname, resolvedGaId]);
 
   return <>{children}</>;
 }

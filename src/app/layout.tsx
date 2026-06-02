@@ -9,6 +9,7 @@ import StructuredData from "@/components/seo/StructuredData";
 import { getVerificationMetaTag } from '@/lib/seo-verification';
 import { BRAND_NAME, BRAND_ASSETS } from "@/lib/brand";
 import AgeGate from "@/components/secretza/AgeGate";
+import { getAnalyticsSettings } from "@/lib/analytics-settings";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://SecretZa.com";
 
@@ -75,11 +76,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const analytics = await getAnalyticsSettings();
+  const gaMeasurementId = analytics.gaMeasurementId;
+  const serializedGaMeasurementId = JSON.stringify(gaMeasurementId);
+
   return (
     <html lang="en" dir="ltr" className="dark" suppressHydrationWarning>
       <head>
@@ -88,7 +93,27 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://SecretZa.com" />
         {/* Analytics preload hints */}
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://plausible.io" />
+        {gaMeasurementId && (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaMeasurementId)}`}
+            />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', ${serializedGaMeasurementId}, { send_page_view: false });
+                  window.__SECRETZA_GA_ID__ = ${serializedGaMeasurementId};
+                `,
+              }}
+            />
+          </>
+        )}
         <meta name="format-detection" content="telephone=no" />
         <meta name="theme-color" content="#0a0a0f" />
         <StructuredData />
@@ -98,7 +123,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen`}
       >
         <SessionProvider>
-          <Analytics>
+          <Analytics gaMeasurementId={gaMeasurementId}>
             <AuthSync />
             {children}
             <Toaster />

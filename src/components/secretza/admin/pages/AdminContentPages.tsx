@@ -78,6 +78,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/store/useAppStore";
 import { formatNumber } from "@/lib/utils";
+import { DEFAULT_GA_MEASUREMENT_ID } from "@/lib/analytics-constants";
 import type { ListingStatus, User, ModerationItem } from "@/lib/types";
 import { toast } from "sonner";
 import AdminGeoPage from "@/components/secretza/admin/routes/AdminGeoPage";
@@ -1427,6 +1428,63 @@ export function AdminModerationPage() {
 // Admin Settings Page
 // ==========================================
 export function AdminSettingsPage() {
+  const [gaMeasurementId, setGaMeasurementId] = useState(DEFAULT_GA_MEASUREMENT_ID);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analyticsSaving, setAnalyticsSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/admin/site-settings")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const savedId = data?.analytics?.gaMeasurementId;
+        if (!cancelled && typeof savedId === "string" && savedId.trim()) {
+          setGaMeasurementId(savedId.trim().toUpperCase());
+        }
+      })
+      .catch(() => {
+        // Keep the provided production GA4 ID as the editable default.
+      })
+      .finally(() => {
+        if (!cancelled) setAnalyticsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSaveAnalyticsSettings = async () => {
+    setAnalyticsSaving(true);
+    try {
+      const response = await fetch("/api/admin/site-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          analytics: {
+            gaMeasurementId,
+          },
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to save analytics settings.");
+      }
+
+      const savedId = data?.analytics?.gaMeasurementId;
+      if (typeof savedId === "string") {
+        setGaMeasurementId(savedId);
+      }
+      alert("Settings saved.");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Failed to save settings.");
+    } finally {
+      setAnalyticsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -1494,15 +1552,25 @@ export function AdminSettingsPage() {
           </div>
           <div className="space-y-2">
             <Label className="text-sm text-[#A1A1AA]">Analytics ID (GA4)</Label>
-            <Input placeholder="G-XXXXXXXXXX" className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] h-10 rounded-lg" />
+            <Input
+              value={gaMeasurementId}
+              onChange={(event) => setGaMeasurementId(event.target.value)}
+              placeholder="G-XXXXXXXXXX"
+              disabled={analyticsLoading || analyticsSaving}
+              className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] h-10 rounded-lg"
+            />
           </div>
         </CardContent>
       </Card>
 
       {/* Save */}
       <div className="flex justify-end">
-        <Button className="bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#8B5CF6] hover:to-[#A78BFA] text-white rounded-lg shadow-md shadow-[#7C3AED]/20">
-          Save Settings
+        <Button
+          onClick={handleSaveAnalyticsSettings}
+          disabled={analyticsLoading || analyticsSaving}
+          className="bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] hover:from-[#8B5CF6] hover:to-[#A78BFA] text-white rounded-lg shadow-md shadow-[#7C3AED]/20"
+        >
+          {analyticsSaving ? "Saving..." : "Save Settings"}
         </Button>
       </div>
     </div>

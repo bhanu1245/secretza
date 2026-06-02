@@ -6,6 +6,11 @@ import {
   saveSocialSettings,
   type SocialLinks,
 } from "@/lib/social-settings";
+import {
+  getAnalyticsSettings,
+  saveAnalyticsSettings,
+  type AnalyticsSettings,
+} from "@/lib/analytics-settings";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -13,8 +18,11 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const social = await getSocialSettings();
-  return NextResponse.json({ social });
+  const [social, analytics] = await Promise.all([
+    getSocialSettings(),
+    getAnalyticsSettings(),
+  ]);
+  return NextResponse.json({ social, analytics });
 }
 
 export async function PATCH(request: NextRequest) {
@@ -26,12 +34,22 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
     const socialInput = body?.social as Partial<SocialLinks> | undefined;
-    if (!socialInput || typeof socialInput !== "object") {
-      return NextResponse.json({ error: "social object required" }, { status: 400 });
+    const analyticsInput = body?.analytics as Partial<AnalyticsSettings> | undefined;
+    if (
+      (!socialInput || typeof socialInput !== "object") &&
+      (!analyticsInput || typeof analyticsInput !== "object")
+    ) {
+      return NextResponse.json(
+        { error: "social or analytics object required" },
+        { status: 400 },
+      );
     }
 
-    const social = await saveSocialSettings(socialInput);
-    return NextResponse.json({ social });
+    const [social, analytics] = await Promise.all([
+      socialInput ? saveSocialSettings(socialInput) : getSocialSettings(),
+      analyticsInput ? saveAnalyticsSettings(analyticsInput) : getAnalyticsSettings(),
+    ]);
+    return NextResponse.json({ social, analytics });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to save settings";
     return NextResponse.json({ error: message }, { status: 400 });
