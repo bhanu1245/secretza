@@ -59,7 +59,7 @@ export interface PingResult {
 // Ping Search Engines
 // ==========================================
 
-const SITEMAP_URL = 'https://secretza.com/sitemap.xml';
+const SITEMAP_URL = 'https://SecretZa.com/sitemap.xml';
 const MAX_URLS_PER_SITEMAP = 5000;
 
 interface SitemapChunk {

@@ -57,6 +57,7 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import AdminSocialSettings from "@/components/secretza/admin/AdminSocialSettings";
+import { BRAND_NAME } from "@/lib/brand";
 import { logError } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1445,7 +1446,7 @@ export function AdminSettingsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-sm text-[#A1A1AA]">Site Name</Label>
-              <Input defaultValue="Secretza" className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] h-10 rounded-lg" />
+              <Input defaultValue={BRAND_NAME} className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] h-10 rounded-lg" />
             </div>
             <div className="space-y-2">
               <Label className="text-sm text-[#A1A1AA]">Site Description</Label>
@@ -1481,13 +1482,13 @@ export function AdminSettingsPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label className="text-sm text-[#A1A1AA]">Meta Title</Label>
-            <Input defaultValue="Secretza - Premium Adult Classifieds" className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] h-10 rounded-lg" />
+            <Input defaultValue={`${BRAND_NAME} - Premium Adult Classifieds`} className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)] text-[#F5F5F7] h-10 rounded-lg" />
           </div>
           <div className="space-y-2">
             <Label className="text-sm text-[#A1A1AA]">Meta Description</Label>
             <textarea
               rows={3}
-              defaultValue="Browse thousands of verified adult classifieds worldwide. Escorts, massage, dating and more on Secretza."
+              defaultValue={`Browse thousands of verified adult classifieds worldwide. Escorts, massage, dating and more on ${BRAND_NAME}.`}
               className="w-full bg-[#1E1E2A] border border-[rgba(255,255,255,0.08)] text-[#F5F5F7] rounded-lg px-3 py-2 text-sm placeholder:text-[#52525B] focus:outline-none focus:border-[#7C3AED] focus:ring-[#7C3AED]/30 resize-none"
             />
           </div>
@@ -1880,7 +1881,7 @@ export function UPIPaymentSettings() {
             <Input
               value={upiId}
               onChange={(e) => handleUpiChange(e.target.value)}
-              placeholder="secretza@ybl"
+              placeholder="SecretZa@ybl"
               className={`bg-[#1E1E2A] border h-10 rounded-lg text-[#F5F5F7] ${upiError ? "border-red-500/50" : "border-[rgba(255,255,255,0.08)]"}`}
             />
             {upiError && <p className="text-[10px] text-red-400">{upiError}</p>}

@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
 import { logError } from "@/lib/monitoring";
+import { serializeSeoPageForApi } from "@/lib/seo-helpers";
+import {
+  enrichSchemaWithFeaturedImage,
+  resolveSeoImageUrl,
+} from "@/lib/seo-images";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -31,19 +36,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     return NextResponse.json({
       page: {
-        id: page.id,
-        pageType: page.pageType,
-        pageSlug: page.pageSlug,
-        title: page.title,
-        metaDescription: page.metaDescription,
-        h1: page.h1,
-        introContent: page.introContent,
-        canonicalUrl: page.canonicalUrl,
-        noindex: page.noindex,
-        isPublished: page.isPublished,
-        customData: page.customData,
-        createdAt: page.createdAt.toISOString(),
-        updatedAt: page.updatedAt.toISOString(),
+        ...serializeSeoPageForApi(page),
         faqs: page.faqs.map((f) => ({
           id: f.id,
           question: f.question,
@@ -59,7 +52,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     logError(error, { component: "route:api/seo/pages/[id]" });
     return NextResponse.json(
       { error: "Failed to fetch SEO page" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -86,6 +79,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       noindex,
       isPublished,
       customData,
+      featuredImage,
+      imageAlt,
+      imageTitle,
+      imageCaption,
     } = body as {
       title?: string | null;
       metaDescription?: string | null;
@@ -95,15 +92,17 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       noindex?: boolean;
       isPublished?: boolean;
       customData?: string | null;
+      featuredImage?: string | null;
+      imageAlt?: string | null;
+      imageTitle?: string | null;
+      imageCaption?: string | null;
     };
 
-    // Check page exists
     const existing = await db.seoPage.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: "SEO page not found" }, { status: 404 });
     }
 
-    // Build update data with only provided fields
     const updateData: Record<string, unknown> = {};
     if (title !== undefined) updateData.title = title;
     if (metaDescription !== undefined) updateData.metaDescription = metaDescription;
@@ -112,7 +111,24 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if (canonicalUrl !== undefined) updateData.canonicalUrl = canonicalUrl;
     if (noindex !== undefined) updateData.noindex = noindex;
     if (isPublished !== undefined) updateData.isPublished = isPublished;
-    if (customData !== undefined) updateData.customData = customData;
+    if (featuredImage !== undefined) updateData.featuredImage = featuredImage;
+    if (imageAlt !== undefined) updateData.imageAlt = imageAlt;
+    if (imageTitle !== undefined) updateData.imageTitle = imageTitle;
+    if (imageCaption !== undefined) updateData.imageCaption = imageCaption;
+
+    if (customData !== undefined) {
+      updateData.customData = customData;
+    } else if (featuredImage !== undefined && featuredImage) {
+      const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL || "https://secretza.com";
+      const pageUrl = `${siteOrigin.replace(/\/+$/, "")}${canonicalUrl ?? existing.canonicalUrl ?? ""}`;
+      const absoluteImage = resolveSeoImageUrl(featuredImage, siteOrigin);
+      updateData.customData = enrichSchemaWithFeaturedImage(
+        existing.customData,
+        absoluteImage,
+        imageAlt ?? existing.imageAlt ?? existing.title ?? existing.pageSlug,
+        pageUrl,
+      );
+    }
 
     const updatedPage = await db.seoPage.update({
       where: { id },
@@ -121,27 +137,13 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     return NextResponse.json({
       success: true,
-      page: {
-        id: updatedPage.id,
-        pageType: updatedPage.pageType,
-        pageSlug: updatedPage.pageSlug,
-        title: updatedPage.title,
-        metaDescription: updatedPage.metaDescription,
-        h1: updatedPage.h1,
-        introContent: updatedPage.introContent,
-        canonicalUrl: updatedPage.canonicalUrl,
-        noindex: updatedPage.noindex,
-        isPublished: updatedPage.isPublished,
-        customData: updatedPage.customData,
-        createdAt: updatedPage.createdAt.toISOString(),
-        updatedAt: updatedPage.updatedAt.toISOString(),
-      },
+      page: serializeSeoPageForApi(updatedPage),
     });
   } catch (error) {
     logError(error, { component: "route:api/seo/pages/[id]" });
     return NextResponse.json(
       { error: "Failed to update SEO page" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -159,7 +161,6 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
     const { id } = await params;
 
-    // Check page exists
     const existing = await db.seoPage.findUnique({
       where: { id },
       include: { _count: { select: { faqs: true } } },
@@ -168,7 +169,6 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "SEO page not found" }, { status: 404 });
     }
 
-    // Delete page (cascades to FAQs via onDelete: Cascade)
     await db.seoPage.delete({ where: { id } });
 
     return NextResponse.json({
@@ -179,7 +179,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     logError(error, { component: "route:api/seo/pages/[id]" });
     return NextResponse.json(
       { error: "Failed to delete SEO page" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -194,6 +194,30 @@ export async function POST(
             where: { id: submission.userId },
             data: { isPremium: true, premiumExpiry },
           });
+
+          // Immediately sync premium status to the user's approved listings so they
+          // gain Premium-tier ranking without waiting for the next 30-minute cron run.
+          const userListings = await tx.listing.findMany({
+            where: { userId: submission.userId, status: "approved" },
+            select: {
+              id: true,
+              isFeatured: true,
+              isBoosted: true,
+              featuredUntil: true,
+              boostUntil: true,
+              lastBumpedAt: true,
+              viewCount: true,
+              createdAt: true,
+              status: true,
+            },
+          });
+          for (const lst of userListings) {
+            const newScore = computePriorityScore({ ...lst, isPremium: true });
+            await tx.listing.update({
+              where: { id: lst.id },
+              data: { isPremium: true, priorityScore: newScore },
+            });
+          }
         }
 
         // Coupon redemption: graceful — never blocks approval (see redeemCouponOnApproval).

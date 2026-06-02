@@ -1,0 +1,144 @@
+{
+  "timestamp": "2026-05-31T09:10:33.690Z",
+  "score": 100,
+  "passed": 25,
+  "total": 25,
+  "status": "PASS",
+  "checks": [
+    {
+      "id": "1a",
+      "description": "AgeGate.tsx exists",
+      "pass": true
+    },
+    {
+      "id": "1b",
+      "description": "uses 'use client' directive",
+      "pass": true
+    },
+    {
+      "id": "1c",
+      "description": "imports LogoMark",
+      "pass": true
+    },
+    {
+      "id": "1d",
+      "description": "imports Button UI",
+      "pass": true
+    },
+    {
+      "id": "1e",
+      "description": "uses useState(false) — hidden on first render",
+      "pass": true
+    },
+    {
+      "id": "1f",
+      "description": "reads localStorage inside useEffect (not render)",
+      "pass": true
+    },
+    {
+      "id": "1g",
+      "description": "stores acceptance with Date.now()",
+      "pass": true
+    },
+    {
+      "id": "1h",
+      "description": "30-day expiry constant present",
+      "pass": true
+    },
+    {
+      "id": "1i",
+      "description": "Enter handler persists acceptance then hides modal",
+      "pass": true
+    },
+    {
+      "id": "1j",
+      "description": "Exit handler redirects to google.com",
+      "pass": true
+    },
+    {
+      "id": "1k",
+      "description": "scroll-lock applied while visible",
+      "pass": true
+    },
+    {
+      "id": "1l",
+      "description": "scroll-lock cleaned up on unmount",
+      "pass": true
+    },
+    {
+      "id": "1m",
+      "description": "modal has role=dialog and aria-modal=true",
+      "pass": true
+    },
+    {
+      "id": "1n",
+      "description": "contains 18+ / adults-only text",
+      "pass": true
+    },
+    {
+      "id": "1o",
+      "description": "contains Enter button and Exit button",
+      "pass": true
+    },
+    {
+      "id": "1p",
+      "description": "uses z-[9999] for overlay stacking",
+      "pass": true
+    },
+    {
+      "id": "1q",
+      "description": "returns null when not visible (SSR-safe)",
+      "pass": true
+    },
+    {
+      "id": "1r",
+      "description": "logo rendered via LogoMark component",
+      "pass": true
+    },
+    {
+      "id": "2a",
+      "description": "layout.tsx imports AgeGate",
+      "pass": true
+    },
+    {
+      "id": "2b",
+      "description": "layout.tsx renders <AgeGate /> inside body",
+      "pass": true
+    },
+    {
+      "id": "2c",
+      "description": "layout.tsx metadata still has robots: index true",
+      "pass": true
+    },
+    {
+      "id": "2d",
+      "description": "layout.tsx metadata still has metadataBase",
+      "pass": true
+    },
+    {
+      "id": "3a",
+      "description": "AgeGate does NOT use noindex anywhere",
+      "pass": true
+    },
+    {
+      "id": "3b",
+      "description": "AgeGate does NOT modify metadata exports",
+      "pass": true
+    },
+    {
+      "id": "3c",
+      "description": "modal only shown client-side (useEffect gate)",
+      "pass": true
+    }
+  ],
+  "implementation": {
+    "component": "src/components/secretza/AgeGate.tsx",
+    "mountPoint": "src/app/layout.tsx",
+    "storageKey": "sz_age_gate",
+    "expiryDays": 30,
+    "exitUrl": "https://www.google.com",
+    "seoSafe": true,
+    "hydrationSafe": true,
+    "mobileResponsive": true
+  }
+}

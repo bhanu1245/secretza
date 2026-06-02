@@ -1,0 +1,157 @@
+{
+  "timestamp": "2026-05-31T11:09:53.635Z",
+  "score": 100,
+  "passed": 18,
+  "total": 18,
+  "status": "PASS",
+  "rootCause": {
+    "error": "sessionUser.premiumExpiry?.toISOString is not a function",
+    "file": "src/store/useAppStore.ts",
+    "line": 102,
+    "explanation": "NextAuth JWT tokens and sessions are JSON-serialized over HTTP. Date objects become ISO strings during that serialization. The TypeScript declarations say Date | null, but the runtime value is always string | null by the time it reaches the browser. Calling .toISOString() on a string throws TypeError."
+  },
+  "fix": {
+    "file": "src/store/useAppStore.ts",
+    "changes": [
+      "Changed syncFromSession param type: premiumExpiry?: Date | string | null",
+      "Changed conversion: instanceof Date ? .toISOString() : String(value)"
+    ],
+    "premiumLogicChanged": false,
+    "uiBehaviorChanged": false,
+    "otherFilesChanged": false
+  },
+  "flowTrace": [
+    {
+      "layer": "Prisma User.premiumExpiry",
+      "type": "Date | null",
+      "runtime": "Date | null"
+    },
+    {
+      "layer": "authorize() return value",
+      "type": "Date | null",
+      "runtime": "Date | null"
+    },
+    {
+      "layer": "token.premiumExpiry (first sign-in)",
+      "type": "Date | null",
+      "runtime": "Date | null"
+    },
+    {
+      "layer": "token.premiumExpiry (after JWT cookie round-trip)",
+      "type": "Date | null (declared)",
+      "runtime": "string | null (JSON)"
+    },
+    {
+      "layer": "session.user.premiumExpiry (over HTTP)",
+      "type": "Date | null (declared)",
+      "runtime": "string | null (JSON)"
+    },
+    {
+      "layer": "syncFromSession param (before fix)",
+      "type": "Date | null",
+      "runtime": "string → TypeError"
+    },
+    {
+      "layer": "syncFromSession param (after fix)",
+      "type": "Date | string | null",
+      "runtime": "string → String() → OK"
+    },
+    {
+      "layer": "User.premiumExpiry in Zustand store",
+      "type": "string | null",
+      "runtime": "string | null ✓"
+    }
+  ],
+  "checks": [
+    {
+      "id": "1a",
+      "description": "syncFromSession param accepts Date | string | null",
+      "pass": true
+    },
+    {
+      "id": "1b",
+      "description": "old Date | null only param type is gone",
+      "pass": true
+    },
+    {
+      "id": "2a",
+      "description": "instanceof Date branch exists",
+      "pass": true
+    },
+    {
+      "id": "2b",
+      "description": "toISOString() is inside instanceof Date guard",
+      "pass": true
+    },
+    {
+      "id": "2c",
+      "description": "String() fallback for string values exists",
+      "pass": true
+    },
+    {
+      "id": "2d",
+      "description": "null fallback when premiumExpiry is falsy",
+      "pass": true
+    },
+    {
+      "id": "2e",
+      "description": "bare .toISOString() call removed (no longer called without guard)",
+      "pass": true
+    },
+    {
+      "id": "3a",
+      "description": "Date input → ISO string",
+      "pass": true
+    },
+    {
+      "id": "3b",
+      "description": "ISO string input → same string (no error)",
+      "pass": true
+    },
+    {
+      "id": "3c",
+      "description": "null input → null",
+      "pass": true
+    },
+    {
+      "id": "3d",
+      "description": "undefined input → null",
+      "pass": true
+    },
+    {
+      "id": "3e",
+      "description": "expired ISO string converts without error",
+      "pass": true
+    },
+    {
+      "id": "3f",
+      "description": "old pattern (?.toISOString on string) would throw TypeError",
+      "pass": true
+    },
+    {
+      "id": "4a",
+      "description": "JWT token.premiumExpiry typed as Date | null (server-side correct)",
+      "pass": true
+    },
+    {
+      "id": "4b",
+      "description": "session callback passes token.premiumExpiry to session.user",
+      "pass": true
+    },
+    {
+      "id": "4c",
+      "description": "premium expiry enforcement uses new Date(token.premiumExpiry)",
+      "pass": true
+    },
+    {
+      "id": "5a",
+      "description": "User type has premiumExpiry: string | null (client-safe)",
+      "pass": true
+    },
+    {
+      "id": "6a",
+      "description": "AuthSync passes session.user.premiumExpiry to syncFromSession",
+      "pass": true
+    }
+  ]
+}

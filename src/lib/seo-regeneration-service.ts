@@ -4,15 +4,17 @@
 
 import { db } from "@/lib/db";
 import {
-  generateCitySEO,
-  generateCategorySEO,
-  generateCategoryCitySEO,
-  generateStateSEO,
-  generateCountrySEO,
-  generateLongTailSEO,
   resolveIntroContentForStorage,
   type SEOContent,
 } from "@/lib/seo-content";
+import {
+  generateCitySEOContent,
+  generateCategorySEOContent,
+  generateCategoryCitySEOContent,
+  generateStateSEOContent,
+  generateCountrySEOContent,
+  generateLongTailSEOContent,
+} from "@/lib/seo-engine";
 import {
   upsertFromContent,
   computePageQualityMetrics,
@@ -22,6 +24,7 @@ import {
   type SeoPageType,
 } from "@/lib/seo-page-service";
 import { enrichSchemaWithFeaturedImage, resolveSeoImageUrl } from "@/lib/seo-images";
+import { clearSeoPeerCache, getSeoPeerCacheStats } from "@/lib/seo-peer-cache";
 import { SEO_MIN_WORD_COUNT } from "@/lib/seo-quality";
 
 export type RegenerationMode =
@@ -89,6 +92,67 @@ export interface RunProgress {
 }
 
 const LOW_SCORE_DEFAULT = 70;
+
+const cityContextCache = new Map<
+  string,
+  Awaited<ReturnType<typeof loadCityContext>>
+>();
+
+/** Release in-memory caches between regeneration batches. */
+export function clearRegenerationCaches(): void {
+  clearSeoPeerCache();
+  cityContextCache.clear();
+}
+
+export function getRegenerationCacheStats() {
+  return {
+    cityContexts: cityContextCache.size,
+    peers: getSeoPeerCacheStats(),
+  };
+}
+
+function extractCitySlugFromPage(pageType: string, pageSlug: string): string | null {
+  if (pageType === "city") return pageSlug;
+  if (pageType === "category_city" || pageType === "longtail") {
+    const slash = pageSlug.indexOf("/");
+    return slash >= 0 ? pageSlug.slice(slash + 1) : null;
+  }
+  return null;
+}
+
+async function preloadCityContexts(slugs: string[]): Promise<void> {
+  const missing = [...new Set(slugs.filter((slug) => slug && !cityContextCache.has(slug)))];
+  if (missing.length === 0) return;
+
+  const cities = await db.city.findMany({
+    where: { slug: { in: missing }, isActive: true },
+    select: {
+      name: true,
+      slug: true,
+      areas: { where: { isActive: true }, select: { name: true }, take: 12 },
+      state: {
+        select: {
+          name: true,
+          slug: true,
+          country: { select: { name: true, slug: true } },
+        },
+      },
+    },
+  });
+
+  for (const city of cities) {
+    cityContextCache.set(city.slug, city);
+  }
+}
+
+async function getCityContext(slug: string) {
+  if (cityContextCache.has(slug)) {
+    return cityContextCache.get(slug) ?? null;
+  }
+  const city = await loadCityContext(slug);
+  if (city) cityContextCache.set(slug, city);
+  return city;
+}
 
 export async function resolvePagesForRegeneration(input: {
   mode: RegenerationMode;
@@ -165,9 +229,9 @@ export async function buildRegeneratedContent(
   });
 
   if (pageType === "city") {
-    const city = await loadCityContext(pageSlug);
+    const city = await getCityContext(pageSlug);
     if (!city?.state) return null;
-    const content = generateCitySEO(
+    const content = generateCitySEOContent(
       city.name,
       city.slug,
       city.state.name,
@@ -189,7 +253,7 @@ export async function buildRegeneratedContent(
       select: { name: true, slug: true, description: true },
     });
     if (!cat) return null;
-    const content = generateCategorySEO(cat.name, cat.slug, cat.description ?? undefined);
+    const content = generateCategorySEOContent(cat.name, cat.slug, cat.description ?? undefined);
     return { content, canonicalUrl: existing?.canonicalUrl ?? `/category/${cat.slug}` };
   }
 
@@ -200,15 +264,17 @@ export async function buildRegeneratedContent(
     if (!resolvedCat || !resolvedCity) return null;
 
     const category = await db.category.findFirst({ where: { slug: resolvedCat } });
-    const city = await loadCityContext(resolvedCity);
+    const city = await getCityContext(resolvedCity);
     if (!category || !city?.state) return null;
 
-    const content = generateCategoryCitySEO(
+    const content = generateCategoryCitySEOContent(
       category.name,
       category.slug,
       city.name,
       city.slug,
       city.state.name,
+      city.state.slug,
+      city.areas.map((a) => a.name),
     );
     return {
       content,
@@ -222,7 +288,7 @@ export async function buildRegeneratedContent(
       select: { name: true, slug: true, country: { select: { name: true, slug: true } } },
     });
     if (!state) return null;
-    const content = generateStateSEO(state.name, state.slug, state.country?.name || "India");
+    const content = generateStateSEOContent(state.name, state.slug, state.country?.name || "India");
     return {
       content,
       canonicalUrl: existing?.canonicalUrl ?? `/${state.country?.slug || "india"}/${state.slug}`,
@@ -232,7 +298,7 @@ export async function buildRegeneratedContent(
   if (pageType === "country") {
     const country = await db.country.findFirst({ where: { slug: pageSlug } });
     if (!country) return null;
-    const content = generateCountrySEO(country.name, country.slug);
+    const content = generateCountrySEOContent(country.name, country.slug);
     return { content, canonicalUrl: existing?.canonicalUrl ?? `/${country.slug}` };
   }
 
@@ -240,10 +306,18 @@ export async function buildRegeneratedContent(
     const slash = pageSlug.indexOf("/");
     const keywordSlug = slash >= 0 ? pageSlug.slice(0, slash) : pageSlug;
     const citySlug = slash >= 0 ? pageSlug.slice(slash + 1) : "";
-    const city = await loadCityContext(citySlug);
+    const city = await getCityContext(citySlug);
     if (!city) return null;
     const keyword = keywordSlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    const content = generateLongTailSEO(keyword, keywordSlug, city.name, city.slug);
+    const content = generateLongTailSEOContent(
+      keyword,
+      keywordSlug,
+      city.name,
+      city.slug,
+      city.state?.name ?? "",
+      city.state?.slug ?? "",
+      city.areas.map((a) => a.name),
+    );
     return {
       content,
       canonicalUrl: existing?.canonicalUrl ?? `/${keywordSlug}/${citySlug}`,
@@ -256,24 +330,26 @@ export async function buildRegeneratedContent(
 export async function predictRegeneration(
   pageType: string,
   pageSlug: string,
+  built?: { content: SEOContent; canonicalUrl: string } | null,
 ): Promise<RegenerationPrediction | null> {
-  const built = await buildRegeneratedContent(pageType, pageSlug);
-  if (!built) return null;
+  const resolved = built ?? (await buildRegeneratedContent(pageType, pageSlug));
+  if (!resolved) return null;
 
-  const introContent = resolveIntroContentForStorage(built.content);
+  const introContent = resolveIntroContentForStorage(resolved.content);
   const existing = await db.seoPage.findUnique({
     where: { pageType_pageSlug: { pageType, pageSlug } },
-    select: { featuredImage: true },
+    select: { id: true, featuredImage: true },
   });
 
   const metrics = await computePageQualityMetrics(
     pageType as SeoPageType,
     pageSlug,
-    built.content,
+    resolved.content,
     introContent,
     {
       featuredImage: existing?.featuredImage,
-      canonicalUrl: built.canonicalUrl,
+      canonicalUrl: resolved.canonicalUrl,
+      excludePageId: existing?.id,
     },
   );
 
@@ -282,8 +358,8 @@ export async function predictRegeneration(
     uniquenessScore: metrics.uniquenessScore,
     seoQualityScore: metrics.seoQualityScore,
     duplicateRisk: metrics.duplicateRisk,
-    title: built.content.title,
-    h1: built.content.h1,
+    title: resolved.content.title,
+    h1: resolved.content.h1,
   };
 }
 
@@ -330,14 +406,34 @@ async function applyRegeneration(
 ): Promise<{ ok: boolean; skipped?: boolean; error?: string; prediction?: RegenerationPrediction; versionId?: string }> {
   const existing = await db.seoPage.findUnique({
     where: { pageType_pageSlug: { pageType, pageSlug } },
+    select: { id: true, featuredImage: true },
   });
   if (!existing) return { ok: false, error: "Page not found" };
 
   const built = await buildRegeneratedContent(pageType, pageSlug);
   if (!built) return { ok: false, error: "Could not build content" };
 
-  const prediction = await predictRegeneration(pageType, pageSlug);
-  if (!prediction) return { ok: false, error: "Could not predict metrics" };
+  const introContent = resolveIntroContentForStorage(built.content);
+  const metrics = await computePageQualityMetrics(
+    pageType as SeoPageType,
+    pageSlug,
+    built.content,
+    introContent,
+    {
+      featuredImage: existing.featuredImage,
+      canonicalUrl: built.canonicalUrl,
+      excludePageId: existing.id,
+    },
+  );
+
+  const prediction: RegenerationPrediction = {
+    wordCount: metrics.wordCount,
+    uniquenessScore: metrics.uniquenessScore,
+    seoQualityScore: metrics.seoQualityScore,
+    duplicateRisk: metrics.duplicateRisk,
+    title: built.content.title,
+    h1: built.content.h1,
+  };
 
   if (dryRun) {
     return { ok: true, prediction };
@@ -350,7 +446,12 @@ async function applyRegeneration(
     pageSlug,
     built.content,
     built.canonicalUrl,
-    { skipImage: true, existingFeaturedImage: existing.featuredImage },
+    {
+      skipImage: true,
+      existingFeaturedImage: existing.featuredImage,
+      precomputedMetrics: metrics,
+      excludePageId: existing.id,
+    },
   );
 
   return { ok: true, prediction, versionId: version?.id };
@@ -480,12 +581,18 @@ export async function processRegenerationBatch(runId: string, batchSize?: number
     data: { status: "processing", lastProcessedAt: new Date() },
   });
 
+  const citySlugs = items
+    .map((item) => extractCitySlugFromPage(item.pageType, item.pageSlug))
+    .filter(Boolean) as string[];
+  await preloadCityContexts(citySlugs);
+
   let processed = 0;
   const createdBy = run.createdById
     ? { id: run.createdById, email: run.createdByEmail ?? "" }
     : undefined;
 
-  for (const item of items) {
+  try {
+    for (const item of items) {
     await db.seoRegenerationItem.update({
       where: { id: item.id },
       data: { status: "processing" },
@@ -544,6 +651,9 @@ export async function processRegenerationBatch(runId: string, batchSize?: number
         data: { failedCount: { increment: 1 }, queuedCount: { decrement: 1 } },
       });
     }
+    }
+  } finally {
+    clearRegenerationCaches();
   }
 
   const remaining = await db.seoRegenerationItem.count({ where: { runId, status: "queued" } });
@@ -614,11 +724,15 @@ async function finalizeRun(runId: string) {
 export async function processRunUntilDone(runId: string, maxBatches = 500) {
   let batches = 0;
   let totalProcessed = 0;
-  while (batches < maxBatches) {
-    const result = await processRegenerationBatch(runId);
-    totalProcessed += result.processed;
-    if (result.done) break;
-    batches++;
+  try {
+    while (batches < maxBatches) {
+      const result = await processRegenerationBatch(runId);
+      totalProcessed += result.processed;
+      if (result.done) break;
+      batches++;
+    }
+  } finally {
+    clearRegenerationCaches();
   }
   return { totalProcessed, batches };
 }

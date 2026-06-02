@@ -6,8 +6,9 @@ import AdminShell from "@/components/secretza/admin/routes/AdminShell";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const session = await getServerSession(authOptions);
+  const role = session?.user?.role;
 
-  if (session?.user?.role !== "admin") {
+  if (role !== "admin" && role !== "moderator") {
     redirect("/");
   }
 

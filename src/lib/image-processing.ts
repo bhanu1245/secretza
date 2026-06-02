@@ -1,5 +1,5 @@
 // ==========================================
-// Secretza Image Processing Pipeline
+// SecretZa Image Processing Pipeline
 // ==========================================
 // Validates, normalises, and multi-size-encodes uploaded images using sharp.
 // Produces thumbnails, medium variants, and processed originals — all in WebP.

@@ -1,0 +1,27 @@
+SEO UNIQUENESS ROOT CAUSE AUDIT
+==================================================
+
+ROOT CAUSE: B — fallback generic enrichment is structurally identical across cities
+Secondary: A — scoring uses only 3 substantive v3 peers (Agra/Ahmedabad/Mumbai), but generic content still matches their paragraph skeletons and FAQ templates
+
+PEER BASELINE:
+  Total city pages: 153
+  Substantive (>=350w): 3 → agra, ahmedabad, mumbai
+  Legacy thin pages: 150
+
+20 RANDOM CITIES — CURRENT ENGINE:
+  Avg uniqueness: 40.7%
+  Avg SEO score:  77.2%
+  LOW/MED/HIGH:   0/0/20
+  Batch max intro similarity: 97%
+
+20 RANDOM CITIES — IMPROVED ENGINE:
+  Avg uniqueness: 44.4%
+  Avg SEO score:  78.3%
+  LOW/MED/HIGH:   0/0/20
+  Batch max intro similarity: 88%
+
+GOAL (>70% unique, >90 SEO, LOW risk) — improved engine:
+  Uniqueness >=70%: 0/20
+  SEO >=90%:        0/20
+  LOW risk:         0/20

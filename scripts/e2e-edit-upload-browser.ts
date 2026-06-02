@@ -9,8 +9,12 @@ import { encode } from "next-auth/jwt";
 loadEnvConfig(process.cwd());
 const db = new PrismaClient();
 const BASE = process.env.BASE_URL || "http://localhost:3000";
-const EMAIL = process.env.ADMIN_EMAIL || "admin@secretza.com";
-const PASSWORD = process.env.ADMIN_PASSWORD || "Admin@123";
+const EMAIL = process.env.ADMIN_EMAIL;
+const PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!EMAIL || !PASSWORD) {
+  throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD are required.");
+}
 
 const PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Age Gate Verification — SecretZa</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0b0b0f; color: #e5e5ea; padding: 2rem; }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .sub { color: #888; font-size: 0.85rem; margin-bottom: 2rem; }
+    .score { font-size: 3rem; font-weight: 900; color: #22c55e; }
+    .section { margin-bottom: 2rem; }
+    .section h2 { font-size: 1rem; font-weight: 600; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; border-bottom: 1px solid #27272a; padding-bottom: 0.5rem; }
+    .check { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.5rem 0; border-bottom: 1px solid #18181b; }
+    .icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .pass { color: #22c55e; }
+    .fail { color: #ef4444; }
+    .desc { font-size: 0.875rem; }
+    .id { color: #52525b; font-size: 0.75rem; margin-right: 0.25rem; }
+    .detail { color: #ef4444; font-size: 0.75rem; margin-top: 0.25rem; }
+    .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; background: #166534; color: #86efac; }
+    .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+    .meta-card { background: #18181b; border: 1px solid #27272a; border-radius: 0.75rem; padding: 1rem; }
+    .meta-card .label { font-size: 0.7rem; color: #71717a; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.25rem; }
+    .meta-card .value { font-size: 0.95rem; font-weight: 600; color: #e5e5ea; }
+
+    /* Mock modal preview */
+    .preview-wrap { background: rgba(11,11,15,0.97); border-radius: 1rem; padding: 3rem 2rem; display: flex; justify-content: center; align-items: center; margin-top: 1rem; }
+    .modal-card { background: #18181b; border: 1px solid #27272a; border-radius: 1rem; padding: 2.5rem 2rem; max-width: 380px; width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1.25rem; }
+    .mock-logo { width: 52px; height: 52px; background: #0b0b0f; border-radius: 8px; border: 1px solid rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; font-family: Georgia, serif; font-size: 22px; font-weight: 700; color: #fff; }
+    .badge-red { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; padding: 0.25rem 0.75rem; border-radius: 9999px; }
+    .modal-h { font-family: Georgia, serif; font-size: 1.4rem; font-weight: 700; color: #e5e5ea; line-height: 1.3; }
+    .modal-p { font-size: 0.8rem; color: #71717a; line-height: 1.6; }
+    .btn-row { display: flex; gap: 0.75rem; width: 100%; }
+    .btn-enter { flex: 1; background: #e5e5ea; color: #0b0b0f; font-weight: 700; font-size: 0.85rem; padding: 0.6rem 1rem; border-radius: 0.5rem; border: none; cursor: pointer; }
+    .btn-exit { flex: 1; background: transparent; color: #a1a1aa; font-size: 0.85rem; padding: 0.6rem 1rem; border-radius: 0.5rem; border: 1px solid #3f3f46; cursor: pointer; }
+    .modal-footnote { font-size: 0.65rem; color: #52525b; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <h1>Age Gate Verification — SecretZa</h1>
+  <p class="sub">Generated: 2026-05-31T09:10:33.693Z</p>
+
+  <div class="section">
+    <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem;">
+      <div class="score">100/100</div>
+      <div>
+        <div class="badge">PASS</div>
+        <div style="font-size:0.85rem;color:#888;margin-top:0.4rem;">25/25 checks passed</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Implementation Details</h2>
+    <div class="meta-grid">
+      <div class="meta-card"><div class="label">Component</div><div class="value">AgeGate.tsx</div></div>
+      <div class="meta-card"><div class="label">Mount Point</div><div class="value">layout.tsx</div></div>
+      <div class="meta-card"><div class="label">Storage Key</div><div class="value">sz_age_gate</div></div>
+      <div class="meta-card"><div class="label">Expiry</div><div class="value">30 days</div></div>
+      <div class="meta-card"><div class="label">Exit URL</div><div class="value">google.com</div></div>
+      <div class="meta-card"><div class="label">SEO Safe</div><div class="value" style="color:#22c55e;">Yes — renders null on server</div></div>
+      <div class="meta-card"><div class="label">Hydration Safe</div><div class="value" style="color:#22c55e;">Yes — useState(false) initial</div></div>
+      <div class="meta-card"><div class="label">Mobile Responsive</div><div class="value" style="color:#22c55e;">Yes — flex-col → sm:flex-row</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Checks</h2>
+    
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1a]</span>AgeGate.tsx exists</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1b]</span>uses 'use client' directive</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1c]</span>imports LogoMark</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1d]</span>imports Button UI</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1e]</span>uses useState(false) — hidden on first render</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1f]</span>reads localStorage inside useEffect (not render)</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1g]</span>stores acceptance with Date.now()</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1h]</span>30-day expiry constant present</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1i]</span>Enter handler persists acceptance then hides modal</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1j]</span>Exit handler redirects to google.com</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1k]</span>scroll-lock applied while visible</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1l]</span>scroll-lock cleaned up on unmount</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1m]</span>modal has role=dialog and aria-modal=true</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1n]</span>contains 18+ / adults-only text</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1o]</span>contains Enter button and Exit button</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1p]</span>uses z-[9999] for overlay stacking</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1q]</span>returns null when not visible (SSR-safe)</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[1r]</span>logo rendered via LogoMark component</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[2a]</span>layout.tsx imports AgeGate</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[2b]</span>layout.tsx renders <AgeGate /> inside body</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[2c]</span>layout.tsx metadata still has robots: index true</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[2d]</span>layout.tsx metadata still has metadataBase</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[3a]</span>AgeGate does NOT use noindex anywhere</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[3b]</span>AgeGate does NOT modify metadata exports</div>
+          
+        </div>
+      </div>
+      <div class="check">
+        <div class="icon pass">✓</div>
+        <div>
+          <div class="desc"><span class="id">[3c]</span>modal only shown client-side (useEffect gate)</div>
+          
+        </div>
+      </div>
+  </div>
+
+  <div class="section">
+    <h2>Modal Preview</h2>
+    <div class="preview-wrap">
+      <div class="modal-card">
+        <div class="mock-logo">SZ</div>
+        <div class="badge-red">Adults Only · 18+</div>
+        <div class="modal-h">This website contains<br>adult content</div>
+        <div class="modal-p">You must be <strong style="color:#e5e5ea">18 years of age or older</strong> to access this site. By entering you confirm you meet the minimum age requirement.</div>
+        <div class="btn-row">
+          <button class="btn-enter">I am 18+ — Enter</button>
+          <button class="btn-exit">Exit</button>
+        </div>
+        <div class="modal-footnote">Your choice will be remembered for 30 days. SecretZa operates in compliance with applicable law. If you are under 18, please leave now.</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

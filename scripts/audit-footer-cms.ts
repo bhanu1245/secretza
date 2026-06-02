@@ -95,6 +95,9 @@ async function main() {
     console.log("Dev server offline — validating CMS slugs in DB only\n");
   }
 
+  const linkTitle = (link: (typeof allLinks)[number]) =>
+    `${link.section}: ${"label" in link ? link.label : link.name}`;
+
   for (const link of allLinks) {
     if (serverUp) {
       try {
@@ -105,7 +108,7 @@ async function main() {
         const html = await res.text();
         const pass = res.status === 200 && html.length > 500;
         checks.push({
-          name: `${link.section}: ${link.name}`,
+          name: linkTitle(link),
           href: link.href,
           pass,
           status: res.status,
@@ -114,7 +117,7 @@ async function main() {
         console.log(`${pass ? "✓" : "✗"} ${link.href} → ${res.status}`);
       } catch (e) {
         checks.push({
-          name: `${link.section}: ${link.name}`,
+          name: linkTitle(link),
           href: link.href,
           pass: false,
           detail: String(e),
@@ -129,10 +132,10 @@ async function main() {
           SELECT slug, isPublished FROM CmsPage WHERE slug = ${slug} LIMIT 1
         `;
         const pass = pages.length > 0 && !!pages[0].isPublished;
-        checks.push({ name: `CMS: ${link.name}`, href: link.href, pass, detail: pass ? "published" : "missing" });
+        checks.push({ name: `CMS: ${"label" in link ? link.label : link.name}`, href: link.href, pass, detail: pass ? "published" : "missing" });
         console.log(`${pass ? "✓" : "✗"} CMS slug ${slug}`);
       } else {
-        checks.push({ name: `${link.section}: ${link.name}`, href: link.href, pass: true, detail: "rewrite configured" });
+        checks.push({ name: linkTitle(link), href: link.href, pass: true, detail: "rewrite configured" });
       }
     }
   }

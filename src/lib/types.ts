@@ -1,5 +1,5 @@
 // ==========================================
-// Secretza Type Definitions
+// SecretZa Type Definitions
 // ==========================================
 
 export type UserRole = "user" | "admin" | "moderator";
@@ -106,7 +106,7 @@ export interface ContactInfo {
   customText?: string;
 }
 
-export type RankLabel = "boosted" | "featured" | "rotated" | "standard";
+export type RankLabel = "boosted" | "premium" | "featured" | "rotated" | "standard";
 
 export interface Listing {
   id: string;
@@ -128,6 +128,7 @@ export interface Listing {
   status: ListingStatus;
   isFeatured: boolean;
   isBoosted: boolean;
+  isPremium: boolean;
   featuredUntil: string | null;
   boostUntil: string | null;
   lastBumpedAt: string | null;
@@ -181,7 +182,7 @@ export interface SearchFilters {
   featured?: boolean;
   minPrice?: number;
   maxPrice?: number;
-  sortBy?: "relevance" | "newest" | "featured" | "price_low" | "price_high";
+  sortBy?: "relevance" | "ranking" | "newest" | "featured" | "price_low" | "price_high";
   page?: number;
   limit?: number;
 }

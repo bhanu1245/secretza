@@ -1,0 +1,470 @@
+{
+  "simulatedAt": "2026-05-29T10:23:27.167Z",
+  "mode": "dry_run",
+  "queueRunId": "cmpqrxjfu00000s2s6na9qx4r",
+  "queueProgress": {
+    "id": "cmpqrxjfu00000s2s6na9qx4r",
+    "status": "dry_run_completed",
+    "mode": "selected_cities",
+    "dryRun": true,
+    "confirmed": false,
+    "batchSize": 10,
+    "totalPages": 10,
+    "queued": 0,
+    "processing": 0,
+    "completed": 10,
+    "failed": 0,
+    "skipped": 0,
+    "remaining": 0,
+    "avgUniqueness": 41.2,
+    "avgSeoScore": 85.4,
+    "lowRiskCount": 0,
+    "mediumRiskCount": 0,
+    "highRiskCount": 10,
+    "startedAt": "2026-05-29T10:23:23.561Z",
+    "completedAt": "2026-05-29T10:23:25.276Z",
+    "elapsedMs": 1715,
+    "createdByEmail": "seo-sim-10@script",
+    "errorMessage": null
+  },
+  "selectedCities": [
+    {
+      "slug": "adoni",
+      "name": "Adoni",
+      "state": "Andhra Pradesh"
+    },
+    {
+      "slug": "balasore",
+      "name": "Balasore",
+      "state": "Odisha"
+    },
+    {
+      "slug": "bhavnagar",
+      "name": "Bhavnagar",
+      "state": "Gujarat"
+    },
+    {
+      "slug": "azamgarh",
+      "name": "Azamgarh",
+      "state": "Uttar Pradesh"
+    },
+    {
+      "slug": "bhopal",
+      "name": "Bhopal",
+      "state": "Madhya Pradesh"
+    },
+    {
+      "slug": "bhilai",
+      "name": "Bhilai",
+      "state": "Chhattisgarh"
+    },
+    {
+      "slug": "dindigul",
+      "name": "Dindigul",
+      "state": "Tamil Nadu"
+    },
+    {
+      "slug": "dhanbad",
+      "name": "Dhanbad",
+      "state": "Jharkhand"
+    },
+    {
+      "slug": "dibrugarh",
+      "name": "Dibrugarh",
+      "state": "Assam"
+    },
+    {
+      "slug": "firozpur",
+      "name": "Firozpur",
+      "state": "Punjab"
+    }
+  ],
+  "pages": [
+    {
+      "slug": "adoni",
+      "cityName": "Adoni",
+      "stateName": "Andhra Pradesh",
+      "stateSlug": "andhra-pradesh",
+      "wordCount": 548,
+      "uniquenessScore": 34,
+      "seoQualityScore": 84,
+      "duplicateRisk": "high",
+      "title": "Adoni Nightlife & Adult Listings | Secretza",
+      "h1": "Adoni Adult Classifieds & Escort Listings",
+      "metaDescription": "Discover Adoni's best adult classifieds. Escorts, Massage, Dating, Trans, Male Escorts across Civil Lines Adoni, New Township Adoni. Secretza.",
+      "faqCount": 8,
+      "faqFingerprint": "Are Massage ads separate from escort zones?||Massage-heavy blocks differ from escort-heavy blocks — Market Area Adoni vs Civil Lines Adoni in Adoni. Filter by category first.:::Can residents post in Central Adoni?||Posting is citywide; visibility boosts apply when your pin matches active search zones like New Township Adoni, Central Adoni, Station Road Adoni.:::Do listings mention Adoni Bus Terminal proximity?||Many Adoni ads reference Adoni Bus Terminal or Adoni Railway Station for incall directions without publishing exact addresses.:::How are disputes handled in Andhra Pradesh?||Report Adoni listings in-app; moderators review Andhra Pradesh tickets within 24 hours with locale context.:::How do Civil Lines Adoni prices compare to New Township Adoni?||Civil Lines Adoni premium listings run higher than Central Adoni mid-market profiles — use price sliders on Secretza Adoni.:::What makes Adoni different from Visakhapatnam?||Adoni FAQ content references Adoni Bus Terminal and New Township Adoni — Visakhapatnam uses its own stations and districts.:::Where do locals search \"massage Civil Lines Adoni\"?||That query maps to New Township Adoni and Station Road Adoni on our intent index for Adoni.:::Which Adoni areas have the fastest response times?||Independent providers in Civil Lines Adoni, New Township Adoni, Central Adoni often reply quickest during evenings; business districts near New Township Adoni peak weekday lunch slots.",
+      "contentVariant": 1,
+      "faqGroup": 1
+    },
+    {
+      "slug": "balasore",
+      "cityName": "Balasore",
+      "stateName": "Odisha",
+      "stateSlug": "odisha",
+      "wordCount": 541,
+      "uniquenessScore": 45,
+      "seoQualityScore": 86,
+      "duplicateRisk": "high",
+      "title": "Verified Adult Services in Balasore, Odisha | Secretza",
+      "h1": "Discreet Listings in Balasore",
+      "metaDescription": "Browse verified adult classifieds in Balasore, Odisha. Escorts, Massage, Dating, Trans, Male Escorts near Industrial Belt Balasore. Updated daily on Secretza.",
+      "faqCount": 8,
+      "faqFingerprint": "Does Old City Balasore have weekend listings?||Corporate zones quiet Saturday morning; Market Area Balasore picks up Friday night — time filters help in Balasore.:::How does Balasore rank for Escorts within Odisha?||Balasore sits among Odisha's active tier-2 markets — inventory depth exceeds smaller Rourkela towns.:::Internal links from Balasore to category pages?||Escort, massage, and dating URLs embed Balasore slug paths — e.g. /escorts/balasore — with unique anchor text per district.:::Safety checklist specific to Balasore?||Use in-app chat, meet near Balasore Ring Road commercial exits or Industrial Belt Balasore cafés, avoid wire transfers.:::Top verified searches in Balasore this month?||\"verified escorts Balasore\", \"discreet services Balasore Odisha\", and \"adult classifieds near Balasore central railway station\" lead Balasore intent logs on Secretza.:::Verification badges — what is checked in Balasore?||Photo match, duplicate-image scan, and phone sanity checks; Balasore moderators reject stock-photo batches common in template spam.:::Why is this Balasore page longer than older city pages?||We replaced 150-word template intros with 500+ word district-level guides so Balasore content stands alone for SEO quality.:::Will Balasore content match Cuttack's page?||No — Cuttack runs a different variant group with its own hotels (Balasore Grand Residency vs their local names) and FAQs.",
+      "contentVariant": 2,
+      "faqGroup": 2
+    },
+    {
+      "slug": "bhavnagar",
+      "cityName": "Bhavnagar",
+      "stateName": "Gujarat",
+      "stateSlug": "gujarat",
+      "wordCount": 525,
+      "uniquenessScore": 40,
+      "seoQualityScore": 85,
+      "duplicateRisk": "high",
+      "title": "Explore Bhavnagar Adult Services & Escorts | Secretza",
+      "h1": "Your Bhavnagar Adult Services Resource",
+      "metaDescription": "Premium Bhavnagar listings — Escorts, Massage, Dating, Trans, Male Escorts. Serving Ahmedabad, Surat. Safe, verified adult classifieds.",
+      "faqCount": 8,
+      "faqFingerprint": "Are Massage ads separate from escort zones?||Massage-heavy blocks differ from escort-heavy blocks — Station Road Bhavnagar vs Central Bhavnagar in Bhavnagar. Filter by category first.:::Can residents post in Residential Colony Bhavnagar?||Posting is citywide; visibility boosts apply when your pin matches active search zones like Old City Bhavnagar, Residential Colony Bhavnagar, New Township Bhavnagar.:::Do listings mention Bhavnagar Bus Terminal proximity?||Many Bhavnagar ads reference Bhavnagar Bus Terminal or Bhavnagar Ring Road for incall directions without publishing exact addresses.:::How are disputes handled in Gujarat?||Report Bhavnagar listings in-app; moderators review Gujarat tickets within 24 hours with locale context.:::How do Central Bhavnagar prices compare to Old City Bhavnagar?||Central Bhavnagar premium listings run higher than Residential Colony Bhavnagar mid-market profiles — use price sliders on Secretza Bhavnagar.:::What makes Bhavnagar different from Ahmedabad?||Bhavnagar FAQ content references Bhavnagar Bus Terminal and Residential Colony Bhavnagar — Ahmedabad uses its own stations and districts.:::Where do locals search \"massage Central Bhavnagar\"?||That query maps to Old City Bhavnagar and New Township Bhavnagar on our intent index for Bhavnagar.:::Which Bhavnagar areas have the fastest response times?||Independent providers in Central Bhavnagar, Old City Bhavnagar, Residential Colony Bhavnagar often reply quickest during evenings; business districts near Residential Colony Bhavnagar peak weekday lunch slots.",
+      "contentVariant": 0,
+      "faqGroup": 1
+    },
+    {
+      "slug": "azamgarh",
+      "cityName": "Azamgarh",
+      "stateName": "Uttar Pradesh",
+      "stateSlug": "uttar-pradesh",
+      "wordCount": 536,
+      "uniquenessScore": 37,
+      "seoQualityScore": 84,
+      "duplicateRisk": "high",
+      "title": "Azamgarh Verified Providers — Escorts, Massage, Dating, Trans, Male Escorts | Secretza",
+      "h1": "Adult Classifieds & Companions in Azamgarh",
+      "metaDescription": "Azamgarh escorts & adult services — real photos, reviews & secure messaging. Coverage: Central Azamgarh & Old City Azamgarh.",
+      "faqCount": 8,
+      "faqFingerprint": "Are outcall services common from Azamgarh Grand Residency?||Outcall-friendly profiles near New Township Azamgarh often note travel radius from central Azamgarh. Confirm boundaries in chat.:::Can I combine a Azamgarh trip with Lucknow?||Many travellers open Lucknow and Kanpur pages separately; each city FAQ references its own hotels and stations.:::Does tourism around Azamgarh city museum district affect listing availability?||Peak seasons at Azamgarh city museum district and Azamgarh riverside promenade can increase visitor-side searches; locals in Central Azamgarh still dominate supply. Book ahead during major holidays.:::How fresh are Azamgarh traveller-focused listings?||Tourism corridors refresh daily; verify timestamps and reviews before paying deposits for Azamgarh stays.:::I'm arriving at Azamgarh Bus Terminal. Can I browse before check-in?||Yes. Use Secretza's Azamgarh page linked to Azamgarh Bus Terminal and Azamgarh Ring Road zones, then message providers who accept bookings near your onward neighbourhood.:::Is Azamgarh city museum district itself a safe meeting point?||Meet in public commercial zones near Old City Azamgarh, not inside heritage sites — providers list by district for privacy.:::What Escorts options exist near Central Azamgarh?||Central Azamgarh and Station Road Azamgarh strips in Azamgarh carry evening-weighted listings — distinct from daytime categories citywide.:::Which Azamgarh hotels have listings within a short drive?||Guests at Azamgarh Grand Residency, Azamgarh Station Lodge, Azamgarh Central Hotel typically browse providers tagged to Central Azamgarh, New Township Azamgarh, Old City Azamgarh — not the hotel lobby itself. Filter by district after checking in near Azamgarh Grand Residency.",
+      "contentVariant": 1,
+      "faqGroup": 0
+    },
+    {
+      "slug": "bhopal",
+      "cityName": "Bhopal",
+      "stateName": "Madhya Pradesh",
+      "stateSlug": "madhya-pradesh",
+      "wordCount": 544,
+      "uniquenessScore": 44,
+      "seoQualityScore": 86,
+      "duplicateRisk": "high",
+      "title": "Bhopal Escorts, Massage, Dating, Trans, Male Escorts Listings — Updated Daily | Secretza",
+      "h1": "Premium Adult Directory — Bhopal",
+      "metaDescription": "Trusted adult directory for Bhopal, Madhya Pradesh. Verified escorts, massage, dating, trans, male escorts near Bhopal central railway station. Browse now.",
+      "faqCount": 8,
+      "faqFingerprint": "Are outcall services common from Bhopal Central Hotel?||Outcall-friendly profiles near Market Area Bhopal often note travel radius from central Bhopal. Confirm boundaries in chat.:::Can I combine a Bhopal trip with Indore?||Many travellers open Indore and Jabalpur pages separately; each city FAQ references its own hotels and stations.:::Does tourism around Bhopal central railway station affect listing availability?||Peak seasons at Bhopal central railway station and Bhopal main commercial district can increase visitor-side searches; locals in Industrial Belt Bhopal still dominate supply. Book ahead during major holidays.:::How fresh are Bhopal traveller-focused listings?||Tourism corridors refresh daily; verify timestamps and reviews before paying deposits for Bhopal stays.:::I'm arriving at Bhopal Bus Terminal. Can I browse before check-in?||Yes. Use Secretza's Bhopal page linked to Bhopal Bus Terminal and Bhopal Ring Road zones, then message providers who accept bookings near your onward neighbourhood.:::Is Bhopal central railway station itself a safe meeting point?||Meet in public commercial zones near Residential Colony Bhopal, not inside heritage sites — providers list by district for privacy.:::What Escorts options exist near Market Area Bhopal?||Market Area Bhopal and Civil Lines Bhopal strips in Bhopal carry evening-weighted listings — distinct from daytime categories citywide.:::Which Bhopal hotels have listings within a short drive?||Guests at Bhopal Central Hotel, Bhopal Station Lodge, Bhopal Grand Residency typically browse providers tagged to Industrial Belt Bhopal, Market Area Bhopal, Residential Colony Bhopal — not the hotel lobby itself. Filter by district after checking in near Bhopal Central Hotel.",
+      "contentVariant": 2,
+      "faqGroup": 0
+    },
+    {
+      "slug": "bhilai",
+      "cityName": "Bhilai",
+      "stateName": "Chhattisgarh",
+      "stateSlug": "chhattisgarh",
+      "wordCount": 520,
+      "uniquenessScore": 42,
+      "seoQualityScore": 86,
+      "duplicateRisk": "high",
+      "title": "Verified Adult Services in Bhilai, Chhattisgarh | Secretza",
+      "h1": "Bhilai Adult Classifieds & Escort Listings",
+      "metaDescription": "Nightlife corridor New Township Bhilai: Escorts, Massage, Dating, Trans, Male Escorts in Bhilai, Chhattisgarh. Secretza daily updates.",
+      "faqCount": 8,
+      "faqFingerprint": "Are Massage ads separate from escort zones?||Massage-heavy blocks differ from escort-heavy blocks — Civil Lines Bhilai vs Central Bhilai in Bhilai. Filter by category first.:::Can residents post in Old City Bhilai?||Posting is citywide; visibility boosts apply when your pin matches active search zones like New Township Bhilai, Old City Bhilai, Station Road Bhilai.:::Do listings mention Bhilai Ring Road proximity?||Many Bhilai ads reference Bhilai Ring Road or Bhilai Bus Terminal for incall directions without publishing exact addresses.:::How are disputes handled in Chhattisgarh?||Report Bhilai listings in-app; moderators review Chhattisgarh tickets within 24 hours with locale context.:::How do Central Bhilai prices compare to New Township Bhilai?||Central Bhilai premium listings run higher than Old City Bhilai mid-market profiles — use price sliders on Secretza Bhilai.:::What makes Bhilai different from Raipur?||Bhilai FAQ content references Bhilai Ring Road and New Township Bhilai — Raipur uses its own stations and districts.:::Where do locals search \"massage Central Bhilai\"?||That query maps to New Township Bhilai and Station Road Bhilai on our intent index for Bhilai.:::Which Bhilai areas have the fastest response times?||Independent providers in Central Bhilai, New Township Bhilai, Old City Bhilai often reply quickest during evenings; business districts near New Township Bhilai peak weekday lunch slots.",
+      "contentVariant": 0,
+      "faqGroup": 1
+    },
+    {
+      "slug": "dindigul",
+      "cityName": "Dindigul",
+      "stateName": "Tamil Nadu",
+      "stateSlug": "tamil-nadu",
+      "wordCount": 545,
+      "uniquenessScore": 40,
+      "seoQualityScore": 85,
+      "duplicateRisk": "high",
+      "title": "Find Escorts, Massage, Dating, Trans, Male Escorts in Dindigul — Discreet & Verified | Secretza",
+      "h1": "Your Dindigul Adult Services Resource",
+      "metaDescription": "Secretza Dindigul: Escorts, Massage, Dating, Trans, Male Escorts with verified profiles. Popular areas: Old City Dindigul, Central Dindigul.",
+      "faqCount": 8,
+      "faqFingerprint": "Are outcall services common from Dindigul Central Hotel?||Outcall-friendly profiles near Central Dindigul often note travel radius from central Dindigul. Confirm boundaries in chat.:::Can I combine a Dindigul trip with Chennai?||Many travellers open Chennai and Coimbatore pages separately; each city FAQ references its own hotels and stations.:::Does tourism around Dindigul city museum district affect listing availability?||Peak seasons at Dindigul city museum district and Dindigul main commercial district can increase visitor-side searches; locals in Old City Dindigul still dominate supply. Book ahead during major holidays.:::How fresh are Dindigul traveller-focused listings?||Tourism corridors refresh daily; verify timestamps and reviews before paying deposits for Dindigul stays.:::I'm arriving at Dindigul Bus Terminal. Can I browse before check-in?||Yes. Use Secretza's Dindigul page linked to Dindigul Bus Terminal and Dindigul Ring Road zones, then message providers who accept bookings near your onward neighbourhood.:::Is Dindigul city museum district itself a safe meeting point?||Meet in public commercial zones near Market Area Dindigul, not inside heritage sites — providers list by district for privacy.:::What Escorts options exist near Industrial Belt Dindigul?||Industrial Belt Dindigul and Old City Dindigul strips in Dindigul carry evening-weighted listings — distinct from daytime categories citywide.:::Which Dindigul hotels have listings within a short drive?||Guests at Dindigul Central Hotel, Dindigul Grand Residency, Dindigul Station Lodge typically browse providers tagged to Old City Dindigul, Central Dindigul, Market Area Dindigul — not the hotel lobby itself. Filter by district after checking in near Dindigul Central Hotel.",
+      "contentVariant": 1,
+      "faqGroup": 0
+    },
+    {
+      "slug": "dhanbad",
+      "cityName": "Dhanbad",
+      "stateName": "Jharkhand",
+      "stateSlug": "jharkhand",
+      "wordCount": 518,
+      "uniquenessScore": 44,
+      "seoQualityScore": 86,
+      "duplicateRisk": "high",
+      "title": "Find Escorts, Massage, Dating, Trans, Male Escorts in Dhanbad — Discreet & Verified | Secretza",
+      "h1": "Verified Adult Services in Dhanbad, Jharkhand",
+      "metaDescription": "Trusted adult directory for Dhanbad, Jharkhand. Verified escorts, massage, dating, trans, male escorts near Dhanbad city museum district. Browse now.",
+      "faqCount": 8,
+      "faqFingerprint": "Are outcall services common from Dhanbad Station Lodge?||Outcall-friendly profiles near Central Dhanbad often note travel radius from central Dhanbad. Confirm boundaries in chat.:::Can I combine a Dhanbad trip with Ranchi?||Many travellers open Ranchi and Jamshedpur pages separately; each city FAQ references its own hotels and stations.:::Does tourism around Dhanbad city museum district affect listing availability?||Peak seasons at Dhanbad city museum district and Dhanbad central railway station can increase visitor-side searches; locals in New Township Dhanbad still dominate supply. Book ahead during major holidays.:::How fresh are Dhanbad traveller-focused listings?||Tourism corridors refresh daily; verify timestamps and reviews before paying deposits for Dhanbad stays.:::I'm arriving at Dhanbad Railway Station. Can I browse before check-in?||Yes. Use Secretza's Dhanbad page linked to Dhanbad Railway Station and Dhanbad Bus Terminal zones, then message providers who accept bookings near your onward neighbourhood.:::Is Dhanbad city museum district itself a safe meeting point?||Meet in public commercial zones near Old City Dhanbad, not inside heritage sites — providers list by district for privacy.:::What Escorts options exist near Civil Lines Dhanbad?||Civil Lines Dhanbad and New Township Dhanbad strips in Dhanbad carry evening-weighted listings — distinct from daytime categories citywide.:::Which Dhanbad hotels have listings within a short drive?||Guests at Dhanbad Station Lodge, Dhanbad Central Hotel, Dhanbad Grand Residency typically browse providers tagged to New Township Dhanbad, Central Dhanbad, Old City Dhanbad — not the hotel lobby itself. Filter by district after checking in near Dhanbad Station Lodge.",
+      "contentVariant": 0,
+      "faqGroup": 0
+    },
+    {
+      "slug": "dibrugarh",
+      "cityName": "Dibrugarh",
+      "stateName": "Assam",
+      "stateSlug": "assam",
+      "wordCount": 542,
+      "uniquenessScore": 40,
+      "seoQualityScore": 85,
+      "duplicateRisk": "high",
+      "title": "Top-Rated Dibrugarh Adult Classifieds in Assam | Secretza",
+      "h1": "Verified Adult Services in Dibrugarh, Assam",
+      "metaDescription": "Trusted adult directory for Dibrugarh, Assam. Verified escorts, massage, dating, trans, male escorts near Dibrugarh central railway station. Browse now.",
+      "faqCount": 8,
+      "faqFingerprint": "Does New Township Dibrugarh have weekend listings?||Corporate zones quiet Saturday morning; Market Area Dibrugarh picks up Friday night — time filters help in Dibrugarh.:::How does Dibrugarh rank for Escorts within Assam?||Dibrugarh sits among Assam's active tier-2 markets — inventory depth exceeds smaller Jorhat towns.:::Internal links from Dibrugarh to category pages?||Escort, massage, and dating URLs embed Dibrugarh slug paths — e.g. /escorts/dibrugarh — with unique anchor text per district.:::Safety checklist specific to Dibrugarh?||Use in-app chat, meet near Dibrugarh Ring Road commercial exits or Industrial Belt Dibrugarh cafés, avoid wire transfers.:::Top verified searches in Dibrugarh this month?||\"verified escorts Dibrugarh\", \"discreet services Dibrugarh Assam\", and \"adult classifieds near Dibrugarh central railway station\" lead Dibrugarh intent logs on Secretza.:::Verification badges — what is checked in Dibrugarh?||Photo match, duplicate-image scan, and phone sanity checks; Dibrugarh moderators reject stock-photo batches common in template spam.:::Why is this Dibrugarh page longer than older city pages?||We replaced 150-word template intros with 500+ word district-level guides so Dibrugarh content stands alone for SEO quality.:::Will Dibrugarh content match Silchar's page?||No — Silchar runs a different variant group with its own hotels (Dibrugarh Grand Residency vs their local names) and FAQs.",
+      "contentVariant": 1,
+      "faqGroup": 2
+    },
+    {
+      "slug": "firozpur",
+      "cityName": "Firozpur",
+      "stateName": "Punjab",
+      "stateSlug": "punjab",
+      "wordCount": 536,
+      "uniquenessScore": 46,
+      "seoQualityScore": 87,
+      "duplicateRisk": "high",
+      "title": "Firozpur Verified Providers — Escorts, Massage, Dating, Trans, Male Escorts | Secretza",
+      "h1": "Adult Classifieds & Companions in Firozpur",
+      "metaDescription": "Firozpur listings near Firozpur Station Lodge & Firozpur Ring Road. Escorts, Massage, Dating, Trans, Male Escorts in Punjab.",
+      "faqCount": 8,
+      "faqFingerprint": "Does New Township Firozpur have weekend listings?||Corporate zones quiet Saturday morning; Civil Lines Firozpur picks up Friday night — time filters help in Firozpur.:::How does Firozpur rank for Escorts within Punjab?||Firozpur sits among Punjab's active tier-2 markets — inventory depth exceeds smaller Jalandhar towns.:::Internal links from Firozpur to category pages?||Escort, massage, and dating URLs embed Firozpur slug paths — e.g. /escorts/firozpur — with unique anchor text per district.:::Safety checklist specific to Firozpur?||Use in-app chat, meet near Firozpur Ring Road commercial exits or Market Area Firozpur cafés, avoid wire transfers.:::Top verified searches in Firozpur this month?||\"verified escorts Firozpur\", \"discreet services Firozpur Punjab\", and \"adult classifieds near Firozpur riverside promenade\" lead Firozpur intent logs on Secretza.:::Verification badges — what is checked in Firozpur?||Photo match, duplicate-image scan, and phone sanity checks; Firozpur moderators reject stock-photo batches common in template spam.:::Why is this Firozpur page longer than older city pages?||We replaced 150-word template intros with 500+ word district-level guides so Firozpur content stands alone for SEO quality.:::Will Firozpur content match Amritsar's page?||No — Amritsar runs a different variant group with its own hotels (Firozpur Station Lodge vs their local names) and FAQs.",
+      "contentVariant": 2,
+      "faqGroup": 2
+    }
+  ],
+  "averages": {
+    "wordCount": 535.5,
+    "uniquenessScore": 41.2,
+    "seoQualityScore": 85.4
+  },
+  "riskCounts": {
+    "low": 0,
+    "medium": 0,
+    "high": 10
+  },
+  "bestPage": {
+    "slug": "firozpur",
+    "cityName": "Firozpur",
+    "uniquenessScore": 46,
+    "seoQualityScore": 87,
+    "wordCount": 536,
+    "duplicateRisk": "high"
+  },
+  "worstPage": {
+    "slug": "adoni",
+    "cityName": "Adoni",
+    "uniquenessScore": 34,
+    "seoQualityScore": 84,
+    "wordCount": 548,
+    "duplicateRisk": "high"
+  },
+  "duplicateChecks": {
+    "titles": [],
+    "h1": [],
+    "metaDescriptions": [],
+    "faqSets": [],
+    "allClear": true
+  },
+  "withinBatchUniqueness": {
+    "average": 21.4,
+    "riskCounts": {
+      "low": 0,
+      "medium": 0,
+      "high": 10
+    },
+    "pages": [
+      {
+        "slug": "adoni",
+        "batchUnique": 26,
+        "batchRisk": "high"
+      },
+      {
+        "slug": "balasore",
+        "batchUnique": 24,
+        "batchRisk": "high"
+      },
+      {
+        "slug": "bhavnagar",
+        "batchUnique": 26,
+        "batchRisk": "high"
+      },
+      {
+        "slug": "azamgarh",
+        "batchUnique": 23,
+        "batchRisk": "high"
+      },
+      {
+        "slug": "bhopal",
+        "batchUnique": 12,
+        "batchRisk": "high"
+      },
+      {
+        "slug": "bhilai",
+        "batchUnique": 26,
+        "batchRisk": "high"
+      },
+      {
+        "slug": "dindigul",
+        "batchUnique": 19,
+        "batchRisk": "high"
+      },
+      {
+        "slug": "dhanbad",
+        "batchUnique": 17,
+        "batchRisk": "high"
+      },
+      {
+        "slug": "dibrugarh",
+        "batchUnique": 21,
+        "batchRisk": "high"
+      },
+      {
+        "slug": "firozpur",
+        "batchUnique": 20,
+        "batchRisk": "high"
+      }
+    ],
+    "note": "Compared only against the other 9 generated pages in this simulation batch"
+  },
+  "auditTable": [
+    {
+      "slug": "adoni",
+      "state": "Andhra Pradesh",
+      "words": 548,
+      "unique": "34%",
+      "batchUnique": "26%",
+      "seo": "84%",
+      "risk": "HIGH",
+      "batchRisk": "HIGH",
+      "variant": 1,
+      "faqGroup": 1
+    },
+    {
+      "slug": "balasore",
+      "state": "Odisha",
+      "words": 541,
+      "unique": "45%",
+      "batchUnique": "24%",
+      "seo": "86%",
+      "risk": "HIGH",
+      "batchRisk": "HIGH",
+      "variant": 2,
+      "faqGroup": 2
+    },
+    {
+      "slug": "bhavnagar",
+      "state": "Gujarat",
+      "words": 525,
+      "unique": "40%",
+      "batchUnique": "26%",
+      "seo": "85%",
+      "risk": "HIGH",
+      "batchRisk": "HIGH",
+      "variant": 0,
+      "faqGroup": 1
+    },
+    {
+      "slug": "azamgarh",
+      "state": "Uttar Pradesh",
+      "words": 536,
+      "unique": "37%",
+      "batchUnique": "23%",
+      "seo": "84%",
+      "risk": "HIGH",
+      "batchRisk": "HIGH",
+      "variant": 1,
+      "faqGroup": 0
+    },
+    {
+      "slug": "bhopal",
+      "state": "Madhya Pradesh",
+      "words": 544,
+      "unique": "44%",
+      "batchUnique": "12%",
+      "seo": "86%",
+      "risk": "HIGH",
+      "batchRisk": "HIGH",
+      "variant": 2,
+      "faqGroup": 0
+    },
+    {
+      "slug": "bhilai",
+      "state": "Chhattisgarh",
+      "words": 520,
+      "unique": "42%",
+      "batchUnique": "26%",
+      "seo": "86%",
+      "risk": "HIGH",
+      "batchRisk": "HIGH",
+      "variant": 0,
+      "faqGroup": 1
+    },
+    {
+      "slug": "dindigul",
+      "state": "Tamil Nadu",
+      "words": 545,
+      "unique": "40%",
+      "batchUnique": "19%",
+      "seo": "85%",
+      "risk": "HIGH",
+      "batchRisk": "HIGH",
+      "variant": 1,
+      "faqGroup": 0
+    },
+    {
+      "slug": "dhanbad",
+      "state": "Jharkhand",
+      "words": 518,
+      "unique": "44%",
+      "batchUnique": "17%",
+      "seo": "86%",
+      "risk": "HIGH",
+      "batchRisk": "HIGH",
+      "variant": 0,
+      "faqGroup": 0
+    },
+    {
+      "slug": "dibrugarh",
+      "state": "Assam",
+      "words": 542,
+      "unique": "40%",
+      "batchUnique": "21%",
+      "seo": "85%",
+      "risk": "HIGH",
+      "batchRisk": "HIGH",
+      "variant": 1,
+      "faqGroup": 2
+    },
+    {
+      "slug": "firozpur",
+      "state": "Punjab",
+      "words": 536,
+      "unique": "46%",
+      "batchUnique": "20%",
+      "seo": "87%",
+      "risk": "HIGH",
+      "batchRisk": "HIGH",
+      "variant": 2,
+      "faqGroup": 2
+    }
+  ]
+}

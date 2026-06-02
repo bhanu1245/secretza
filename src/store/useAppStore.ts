@@ -71,7 +71,10 @@ interface AuthStore {
     isVerified?: boolean;
     isSuspended?: boolean;
     isPremium?: boolean;
-    premiumExpiry?: Date | null;
+    // NextAuth sessions are JSON-serialized over HTTP, so Date objects
+    // become ISO strings by the time they reach the client. Accept both
+    // to avoid a runtime "toISOString is not a function" error.
+    premiumExpiry?: Date | string | null;
     provider?: string;
   } | null) => void;
 }
@@ -99,7 +102,14 @@ export const useAuthStore = create<AuthStore>((set) => ({
           isVerified: sessionUser.isVerified ?? false,
           isSuspended: sessionUser.isSuspended ?? false,
           isPremium: sessionUser.isPremium ?? false,
-          premiumExpiry: sessionUser.premiumExpiry?.toISOString() || null,
+          // premiumExpiry arrives as a Date on the first JWT sign-in and as an
+          // ISO string on every subsequent request (JSON round-trip through the
+          // JWT cookie and the /api/auth/session HTTP response). Handle both.
+          premiumExpiry: sessionUser.premiumExpiry
+            ? (sessionUser.premiumExpiry instanceof Date
+                ? sessionUser.premiumExpiry.toISOString()
+                : String(sessionUser.premiumExpiry))
+            : null,
           provider: (sessionUser.provider as User["provider"]) || "email",
           createdAt: new Date().toISOString(),
         },
@@ -122,7 +132,7 @@ interface SearchStore {
 }
 
 const defaultFilters: SearchFilters = {
-  sortBy: "featured",
+  sortBy: "relevance",
   page: 1,
   limit: 20,
 };

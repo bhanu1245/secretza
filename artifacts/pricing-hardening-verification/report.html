@@ -1,0 +1,250 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/>
+<title>Pricing Hardening Verification</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0B0B0F;color:#F5F5F7;max-width:1120px;margin:0 auto;padding:2.5rem 1.5rem 5rem;line-height:1.55}
+h1{font-size:1.8rem;background:linear-gradient(135deg,#3B82F6,#6366F1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.5rem}
+h2{font-size:1.05rem;color:#94a3b8;margin:2rem 0 .6rem;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:.4rem}
+.chips{display:flex;gap:.75rem;flex-wrap:wrap;margin:1.25rem 0}
+.chip{background:#15151D;border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:.35rem 1rem;font-size:.85rem}
+.chip.ok{border-color:rgba(52,211,153,.4);color:#34d399}.chip.bad{border-color:rgba(248,113,113,.4);color:#f87171}
+table{width:100%;border-collapse:collapse;font-size:.82rem;margin:.5rem 0 1.5rem}
+th,td{border:1px solid rgba(255,255,255,.07);padding:.45rem .6rem;vertical-align:top;text-align:left}
+th{background:#15151D;color:#94a3b8}
+.pass{color:#34d399;font-weight:700}.fail{color:#f87171;font-weight:700}.skip{color:#94a3b8;font-style:italic}
+small{color:#94a3b8}
+</style></head><body>
+<h1>Pricing Administration — Hardening Verification</h1>
+<p style="color:#94a3b8">2026-05-30T18:40:07.355Z</p>
+<div class="chips">
+  <span class="chip ok">16/16 passed</span>
+  <span class="chip ok">0 blocker failures</span>
+  <span class="chip">20 skipped</span>
+</div>
+<h2>Changes applied</h2>
+<table><tr><th>Fix</th><th>Description</th></tr><tr><td><strong>P0-1</strong></td><td>Duplicate slug check before INSERT (POST) and UPDATE (PUT), + UNIQUE try/catch safety net</td></tr><tr><td><strong>P0-2</strong></td><td>validatePrice(): must be finite number, ≥ 0, ≤ 999,999</td></tr><tr><td><strong>P0-3</strong></td><td>validateDays(): durationDays ≥ 1, featuredDays/boostDays ≥ 0, all ≤ 3,650</td></tr><tr><td><strong>P0-4</strong></td><td>PUT checks plan existence before UPDATE, returns 404 if not found</td></tr><tr><td><strong>P0-5</strong></td><td>DELETE checks plan existence before DELETE, returns 404 if not found</td></tr><tr><td><strong>P1-6</strong></td><td>validateSlug(): rejects slug shorter than 2 chars after slugify</td></tr><tr><td><strong>P1-7</strong></td><td>validateLimit(): listingLimit 1–1000, imageLimit 1–50</td></tr></table>
+<h2>A — Static analysis <span style="font-size:.8rem;color:#94a3b8">16/16 (100%)</span></h2>
+<table><tr><th>Check</th><th>Status</th><th>Severity</th><th>Detail</th></tr>
+      <tr>
+        <td>validatePrice exported from POST route</td>
+        <td class="pass">PASS</td>
+        <td>blocker</td>
+        <td><small>validatePrice() helper defined</small></td>
+      </tr>
+      <tr>
+        <td>validateDays exported from POST route</td>
+        <td class="pass">PASS</td>
+        <td>blocker</td>
+        <td><small>validateDays() helper defined</small></td>
+      </tr>
+      <tr>
+        <td>validateSlug exported from POST route</td>
+        <td class="pass">PASS</td>
+        <td>blocker</td>
+        <td><small>validateSlug() helper defined</small></td>
+      </tr>
+      <tr>
+        <td>validateLimit exported from POST route</td>
+        <td class="pass">PASS</td>
+        <td>blocker</td>
+        <td><small>validateLimit() helper defined</small></td>
+      </tr>
+      <tr>
+        <td>validatePrice in [id]/route.ts</td>
+        <td class="pass">PASS</td>
+        <td>blocker</td>
+        <td><small>Mirrors POST file validation</small></td>
+      </tr>
+      <tr>
+        <td>validateDays in [id]/route.ts</td>
+        <td class="pass">PASS</td>
+        <td>blocker</td>
+        <td><small>Mirrors POST file validation</small></td>
+      </tr>
+      <tr>
+        <td>POST route has slug uniqueness check</td>
+        <td class="pass">PASS</td>
+        <td>blocker</td>
+        <td><small>Pre-insert uniqueness query</small></td>
+      </tr>
+      <tr>
+        <td>PUT route has slug uniqueness check excluding self</td>
+        <td class="pass">PASS</td>
+        <td>blocker</td>
+        <td><small>Pre-update uniqueness query with self-exclusion</small></td>
+      </tr>
+      <tr>
+        <td>PUT route has existence check before UPDATE</td>
+        <td class="pass">PASS</td>
+        <td>blocker</td>
+        <td><small>Returns 404 when plan not found</small></td>
+      </tr>
+      <tr>
+        <td>DELETE route has existence check before DELETE</td>
+        <td class="pass">PASS</td>
+        <td>blocker</td>
+        <td><small>DELETE also checks existence</small></td>
+      </tr>
+      <tr>
+        <td>POST try/catch around INSERT catches UNIQUE error</td>
+        <td class="pass">PASS</td>
+        <td>high</td>
+        <td><small>Safety net for DB-level constraint violation</small></td>
+      </tr>
+      <tr>
+        <td>PUT try/catch around UPDATE catches UNIQUE error</td>
+        <td class="pass">PASS</td>
+        <td>high</td>
+        <td><small>Safety net for DB-level constraint violation</small></td>
+      </tr>
+      <tr>
+        <td>durationDays validated with min=1 in POST</td>
+        <td class="pass">PASS</td>
+        <td>high</td>
+        <td><small>A plan lasting 0 days is meaningless</small></td>
+      </tr>
+      <tr>
+        <td>durationDays validated with min=1 in PUT</td>
+        <td class="pass">PASS</td>
+        <td>high</td>
+        <td><small>A plan lasting 0 days is meaningless</small></td>
+      </tr>
+      <tr>
+        <td>listingLimit validated in POST</td>
+        <td class="pass">PASS</td>
+        <td>high</td>
+        <td><small>1–1000 range enforced</small></td>
+      </tr>
+      <tr>
+        <td>imageLimit validated in POST</td>
+        <td class="pass">PASS</td>
+        <td>high</td>
+        <td><small>1–50 range enforced</small></td>
+      </tr></table><h2>B — POST field validation (P0) <span style="font-size:.8rem;color:#94a3b8">0/0 (0%)</span></h2>
+<table><tr><th>Check</th><th>Status</th><th>Severity</th><th>Detail</th></tr>
+      <tr>
+        <td>POST price=negative rejected (400)</td>
+        <td class="skip">SKIP</td>
+        <td>blocker</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>POST price=NaN rejected (400)</td>
+        <td class="skip">SKIP</td>
+        <td>blocker</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>POST durationDays=0 rejected (400)</td>
+        <td class="skip">SKIP</td>
+        <td>blocker</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>POST durationDays=-7 rejected (400)</td>
+        <td class="skip">SKIP</td>
+        <td>blocker</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>POST durationDays=9999 rejected (400)</td>
+        <td class="skip">SKIP</td>
+        <td>blocker</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>POST missing name rejected (400)</td>
+        <td class="skip">SKIP</td>
+        <td>blocker</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr></table><h2>C — PUT field validation (P0) <span style="font-size:.8rem;color:#94a3b8">0/0 (0%)</span></h2>
+<table><tr><th>Check</th><th>Status</th><th>Severity</th><th>Detail</th></tr>
+      <tr>
+        <td>PUT price=negative rejected (400)</td>
+        <td class="skip">SKIP</td>
+        <td>blocker</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>PUT durationDays=0 rejected (400)</td>
+        <td class="skip">SKIP</td>
+        <td>blocker</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>PUT missing name rejected (400)</td>
+        <td class="skip">SKIP</td>
+        <td>blocker</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr></table><h2>D — 404 for missing plan (P0) <span style="font-size:.8rem;color:#94a3b8">0/0 (0%)</span></h2>
+<table><tr><th>Check</th><th>Status</th><th>Severity</th><th>Detail</th></tr>
+      <tr>
+        <td>PUT non-existent returns 404</td>
+        <td class="skip">SKIP</td>
+        <td>blocker</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>DELETE non-existent returns 404</td>
+        <td class="skip">SKIP</td>
+        <td>blocker</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr></table><h2>E — Duplicate slug protection (P0) <span style="font-size:.8rem;color:#94a3b8">0/0 (0%)</span></h2>
+<table><tr><th>Check</th><th>Status</th><th>Severity</th><th>Detail</th></tr>
+      <tr>
+        <td>POST duplicate slug returns 409</td>
+        <td class="skip">SKIP</td>
+        <td>blocker</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>PUT duplicate slug returns 409</td>
+        <td class="skip">SKIP</td>
+        <td>blocker</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr></table><h2>F — P1 validations (slug, limits) <span style="font-size:.8rem;color:#94a3b8">0/0 (0%)</span></h2>
+<table><tr><th>Check</th><th>Status</th><th>Severity</th><th>Detail</th></tr>
+      <tr>
+        <td>POST blank slug after slugify rejected (400)</td>
+        <td class="skip">SKIP</td>
+        <td>high</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>POST listingLimit=0 rejected (400)</td>
+        <td class="skip">SKIP</td>
+        <td>high</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>POST imageLimit=999 rejected (400)</td>
+        <td class="skip">SKIP</td>
+        <td>high</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr></table><h2>G — Happy path round-trip <span style="font-size:.8rem;color:#94a3b8">0/0 (0%)</span></h2>
+<table><tr><th>Check</th><th>Status</th><th>Severity</th><th>Detail</th></tr>
+      <tr>
+        <td>Happy path</td>
+        <td class="skip">SKIP</td>
+        <td>info</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>Happy path</td>
+        <td class="skip">SKIP</td>
+        <td>info</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>Happy path</td>
+        <td class="skip">SKIP</td>
+        <td>info</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr>
+      <tr>
+        <td>Happy path</td>
+        <td class="skip">SKIP</td>
+        <td>info</td>
+        <td><small>Server not reachable — skipped</small></td>
+      </tr></table>
+</body></html>

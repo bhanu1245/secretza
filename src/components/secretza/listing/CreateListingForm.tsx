@@ -102,8 +102,8 @@ const emptyValues: ListingFormValues = {
 
 function getDraftKey(editMode?: boolean, editListingId?: string | null) {
   return editMode && editListingId
-    ? `secretza:listing-draft:edit:${editListingId}`
-    : "secretza:listing-draft:create";
+    ? `SecretZa:listing-draft:edit:${editListingId}`
+    : "SecretZa:listing-draft:create";
 }
 
 function slugify(value: string) {

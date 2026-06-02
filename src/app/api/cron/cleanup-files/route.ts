@@ -4,6 +4,7 @@ import { readdir, stat, unlink } from "fs/promises";
 import path, { join } from "path";
 import { timingSafeEqual } from "crypto";
 import { logInfo, logWarning, logError } from "@/lib/monitoring";
+import { getUploadsBasePath } from "@/lib/storage";
 
 /**
  * Cron endpoint: Cleanup orphaned uploaded files
@@ -86,7 +87,7 @@ export async function GET(request: Request) {
     // ==========================================
     // Step 3: Scan upload directories for orphaned files
     // ==========================================
-    const uploadsDir = join(process.cwd(), "uploads");
+    const uploadsDir = getUploadsBasePath();
     const gracePeriod = 24 * 60 * 60 * 1000; // 24 hours
     const cutoff = Date.now() - gracePeriod;
 

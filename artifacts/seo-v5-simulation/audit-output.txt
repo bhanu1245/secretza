@@ -1,0 +1,20 @@
+SEO v5 — 20-CITY SIMULATION (NO DB WRITES)
+==================================================
+
+Cities: 20
+Intro variants used: 13/20
+FAQ families used: 8/12
+Architectures: {"business_traveler":4,"local_resident":5,"premium":4,"nightlife":2,"transport_hub":3,"tourism":2}
+Max pairwise intro similarity: 58%
+
+VS BATCH PEERS (19 other v5 pages — post-regen scenario):
+  Avg uniqueness: 50.3%
+  Avg SEO score:  83.7%
+  LOW / MED / HIGH: 0 / 9 / 11
+  Uniqueness >=70%: 0/20
+  SEO >=90%:        0/20
+
+VS V3 SUBSTANTIVE DB PEERS (Agra/Ahmedabad/Mumbai):
+  Avg uniqueness: 86.7%
+  Avg SEO score:  92.7%
+  LOW / MED / HIGH: 20 / 0 / 0

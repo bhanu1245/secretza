@@ -41,6 +41,7 @@
     "examples",
     "prisma-backup",
     "skills",
-    "upload-extract"
+    "upload-extract",
+    "scripts"
   ]
 }

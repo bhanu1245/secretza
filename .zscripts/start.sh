@@ -60,6 +60,7 @@ ls -lah
 # re-deploy. Symlinking it to a persistent VPS path keeps files across deploys.
 # Override UPLOADS_DIR in the environment to use a custom mount point.
 PERSISTENT_UPLOADS="${UPLOADS_DIR:-/data/uploads}"
+export UPLOADS_DIR="$PERSISTENT_UPLOADS"
 mkdir -p "$PERSISTENT_UPLOADS"
 if [ -d "./next-service-dist" ]; then
     # Remove any stale real directory left by a previous deploy before linking
@@ -89,6 +90,8 @@ if [ -f "./next-service-dist/server.js" ]; then
     export PORT="${PORT:-3000}"
     export HOSTNAME="${HOSTNAME:-0.0.0.0}"
     export DATABASE_URL="${DATABASE_URL:-$DEFAULT_PACKAGED_DATABASE_URL}"
+    export STORAGE_PROVIDER="${STORAGE_PROVIDER:-local}"
+    export UPLOADS_DIR="${UPLOADS_DIR:-/data/uploads}"
 
     # ── First-run DB seeding for external persistent path ──────────────────
     # If DATABASE_URL points to an external file that does not yet exist

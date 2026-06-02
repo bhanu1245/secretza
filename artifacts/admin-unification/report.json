@@ -1,0 +1,191 @@
+{
+  "generatedAt": "2026-05-29T15:16:20.515Z",
+  "canonicalAdmin": "/admin",
+  "totalNavItems": 18,
+  "navigationMap": [
+    {
+      "label": "Dashboard",
+      "href": "/admin",
+      "id": "dashboard",
+      "moderatorAllowed": true
+    },
+    {
+      "label": "Users",
+      "href": "/admin/users",
+      "id": "users",
+      "moderatorAllowed": false
+    },
+    {
+      "label": "Listings",
+      "href": "/admin/listings",
+      "id": "listings",
+      "moderatorAllowed": true
+    },
+    {
+      "label": "Moderation",
+      "href": "/admin/moderation",
+      "id": "moderation",
+      "moderatorAllowed": true
+    },
+    {
+      "label": "Categories",
+      "href": "/admin/categories",
+      "id": "categories",
+      "moderatorAllowed": false
+    },
+    {
+      "label": "Geo Management",
+      "href": "/admin/geo",
+      "id": "geo",
+      "moderatorAllowed": false
+    },
+    {
+      "label": "Pricing",
+      "href": "/admin/pricing",
+      "id": "pricing",
+      "moderatorAllowed": false
+    },
+    {
+      "label": "Payments",
+      "href": "/admin/payments",
+      "id": "payments",
+      "moderatorAllowed": false
+    },
+    {
+      "label": "Reviews",
+      "href": "/admin/reviews",
+      "id": "reviews",
+      "moderatorAllowed": true
+    },
+    {
+      "label": "Review Analytics",
+      "href": "/admin/review-analytics",
+      "id": "review-analytics",
+      "moderatorAllowed": true
+    },
+    {
+      "label": "Coupons",
+      "href": "/admin/coupons",
+      "id": "coupons",
+      "moderatorAllowed": false
+    },
+    {
+      "label": "CMS Pages",
+      "href": "/admin/cms",
+      "id": "cms",
+      "moderatorAllowed": false
+    },
+    {
+      "label": "SEO",
+      "href": "/admin/seo",
+      "id": "seo",
+      "moderatorAllowed": true
+    },
+    {
+      "label": "SEO Dashboard",
+      "href": "/admin/seo/dashboard",
+      "id": "seo-dashboard",
+      "moderatorAllowed": true
+    },
+    {
+      "label": "SEO Audit",
+      "href": "/admin/seo/audit",
+      "id": "seo-audit",
+      "moderatorAllowed": true
+    },
+    {
+      "label": "SEO Regeneration",
+      "href": "/admin/seo/regeneration",
+      "id": "seo-regeneration",
+      "moderatorAllowed": true
+    },
+    {
+      "label": "Reports",
+      "href": "/admin/reports",
+      "id": "reports",
+      "moderatorAllowed": true
+    },
+    {
+      "label": "Settings",
+      "href": "/admin/settings",
+      "id": "settings",
+      "moderatorAllowed": false
+    }
+  ],
+  "routeChecks": [
+    {
+      "route": "/admin",
+      "status": 307,
+      "ok": true
+    },
+    {
+      "route": "/admin/seo/dashboard",
+      "status": 307,
+      "ok": true
+    },
+    {
+      "route": "/admin/seo/audit",
+      "status": 307,
+      "ok": true
+    },
+    {
+      "route": "/admin/seo/regeneration",
+      "status": 307,
+      "ok": true
+    },
+    {
+      "route": "/admin/moderation",
+      "status": 307,
+      "ok": true
+    },
+    {
+      "route": "/admin/cms",
+      "status": 307,
+      "ok": true
+    },
+    {
+      "route": "/admin/reports",
+      "status": 307,
+      "ok": true
+    },
+    {
+      "route": "/admin/reviews",
+      "status": 307,
+      "ok": true
+    },
+    {
+      "route": "/admin/coupons",
+      "status": 307,
+      "ok": true
+    },
+    {
+      "route": "/admin/pricing",
+      "status": 307,
+      "ok": true
+    },
+    {
+      "route": "/admin/settings",
+      "status": 307,
+      "ok": true
+    }
+  ],
+  "screenshots": [
+    {
+      "route": "/admin",
+      "file": "artifacts\\admin-unification\\admin.png",
+      "status": 200
+    },
+    {
+      "route": "/admin/seo/dashboard",
+      "file": "artifacts\\admin-unification\\admin-seo-dashboard.png",
+      "status": 200
+    },
+    {
+      "route": "/admin/moderation",
+      "file": "artifacts\\admin-unification\\admin-moderation.png",
+      "status": 200
+    }
+  ],
+  "removedSpaAdmin": true,
+  "catchAllRoute": "src/app/admin/[[...segments]]/page.tsx"
+}

@@ -1,0 +1,190 @@
+{
+  "generatedAt": "2026-05-30T09:30:53.379Z",
+  "baseUrl": "http://localhost:3000",
+  "summary": {
+    "totalLinksChecked": 67,
+    "passed": 67,
+    "failed": 0,
+    "placeholders": 0,
+    "sourceInventory": {
+      "linkComponents": 12,
+      "routerPush": 8,
+      "anchorTags": 17,
+      "navigateCalls": 38
+    }
+  },
+  "broken": [],
+  "placeholders": [],
+  "adminRoutes": [
+    {
+      "href": "/admin",
+      "source": "Dashboard",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/users",
+      "source": "Users",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/listings",
+      "source": "Listings",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/moderation",
+      "source": "Moderation",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/categories",
+      "source": "Categories",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/geo",
+      "source": "Geo Management",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/pricing",
+      "source": "Pricing",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/payments",
+      "source": "Payments",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/reviews",
+      "source": "Reviews",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/review-analytics",
+      "source": "Review Analytics",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/coupons",
+      "source": "Coupons",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/cms",
+      "source": "CMS Pages",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/seo",
+      "source": "SEO",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/seo/dashboard",
+      "source": "SEO Dashboard",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/seo/audit",
+      "source": "SEO Audit",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/seo/regeneration",
+      "source": "SEO Regeneration",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/reports",
+      "source": "Reports",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/admin/settings",
+      "source": "Settings",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "userFlow": [
+    {
+      "href": "/",
+      "source": "Homepage",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/escorts",
+      "source": "Category",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/mumbai",
+      "source": "City",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/listing/elena-independent-escort-elegant-discreet-professional-companion-1779984338275",
+      "source": "Listing",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/contact",
+      "source": "Contact",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/?view=pricing",
+      "source": "Pricing",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/create-listing",
+      "source": "Post Ad",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "href": "/?view=dashboard",
+      "source": "Dashboard",
+      "status": 200,
+      "ok": true
+    }
+  ],
+  "fixesApplied": [
+    "src/lib/public-navigation.ts — unified SPA/SSR path mapping",
+    "src/hooks/usePublicNavigation.ts — cross-route navigation hook",
+    "src/components/secretza/layout/Header.tsx — real routes from CMS/SEO pages",
+    "src/components/secretza/layout/MobileBottomNav.tsx — My Ads tab, cross-route nav",
+    "src/components/secretza/listing/ListingCard.tsx — Link to /listing/[slug] on SSR pages",
+    "src/app/listing/[slug]/page.tsx — breadcrumb fix + PublicSiteLayout",
+    "src/app/create-listing/page.tsx — PublicSiteLayout shell",
+    "src/app/page.tsx — SPA deep-link query param support",
+    "src/components/secretza/geo/IndiaGeoExplorer.tsx — search result navigation",
+    "src/app/api/geo/india/search/route.ts — return geo slugs for navigation"
+  ]
+}

@@ -1,0 +1,247 @@
+{
+  "generatedAt": "2026-05-30T07:16:28.609Z",
+  "allPass": true,
+  "counts": {
+    "countries": 95,
+    "states": 449,
+    "cities": 847,
+    "areas": 360,
+    "districts": 349,
+    "localities": 177,
+    "seoPages": 346,
+    "listings": 7
+  },
+  "beforeAfter": {
+    "countries": {
+      "before": 95,
+      "after": 95
+    },
+    "states": {
+      "before": 449,
+      "after": 449
+    },
+    "cities": {
+      "before": 840,
+      "after": 847
+    },
+    "areas": {
+      "before": 32,
+      "after": 360
+    }
+  },
+  "checks": [
+    {
+      "name": "Countries: total in database",
+      "pass": true,
+      "detail": "95 countries"
+    },
+    {
+      "name": "Countries: world seed coverage",
+      "pass": true,
+      "detail": "All world-geo-data countries present"
+    },
+    {
+      "name": "Countries: no duplicate slugs",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "Countries: no duplicate names",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "Countries: inactive count (informational)",
+      "pass": true,
+      "detail": "0 inactive"
+    },
+    {
+      "name": "India: country exists and active",
+      "pass": true,
+      "detail": {
+        "slug": "india",
+        "code": "IN"
+      }
+    },
+    {
+      "name": "India: all 36 states/UTs present",
+      "pass": true,
+      "detail": "36/36 present"
+    },
+    {
+      "name": "India: state slugs match canonical",
+      "pass": true,
+      "detail": "all match"
+    },
+    {
+      "name": "India: all states active",
+      "pass": true,
+      "detail": "all active"
+    },
+    {
+      "name": "India: states linked to IN country",
+      "pass": true,
+      "detail": "36 states under India"
+    },
+    {
+      "name": "Cities: no states with zero cities (India)",
+      "pass": true,
+      "detail": {
+        "indiaZeroCityStates": [],
+        "totalZeroCityStates": 67
+      }
+    },
+    {
+      "name": "Cities: no duplicate slug per state",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "Cities: valid state relationships",
+      "pass": true,
+      "detail": "0 orphaned cities"
+    },
+    {
+      "name": "India cities: seed coverage",
+      "pass": true,
+      "detail": "321 canonical cities present"
+    },
+    {
+      "name": "Areas: major Indian cities have areas",
+      "pass": true,
+      "detail": "all tier-1/metro cities have areas"
+    },
+    {
+      "name": "Areas: no duplicate slug per city",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "Areas: valid city relationships",
+      "pass": true,
+      "detail": "360 areas total, 0 orphaned"
+    },
+    {
+      "name": "Districts/localities seeded",
+      "pass": true,
+      "detail": {
+        "districts": 349,
+        "localities": 177
+      }
+    },
+    {
+      "name": "SEO: city pages match geo cities",
+      "pass": true,
+      "detail": "153 city SEO pages OK"
+    },
+    {
+      "name": "SEO: state pages match geo states",
+      "pass": true,
+      "detail": "OK"
+    },
+    {
+      "name": "SEO: country pages match geo countries",
+      "pass": true,
+      "detail": "OK"
+    },
+    {
+      "name": "SEO: no broken slugs",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "Listings: no missing country FK",
+      "pass": true,
+      "detail": "0 broken"
+    },
+    {
+      "name": "Listings: no missing state FK",
+      "pass": true,
+      "detail": "0 broken"
+    },
+    {
+      "name": "Listings: no missing city FK",
+      "pass": true,
+      "detail": "0 broken"
+    },
+    {
+      "name": "Listings: no missing area FK",
+      "pass": true,
+      "detail": "0 broken"
+    },
+    {
+      "name": "Data quality: no null names/slugs",
+      "pass": true,
+      "detail": {
+        "countries": 0,
+        "states": 0,
+        "cities": 0,
+        "areas": 0
+      }
+    },
+    {
+      "name": "Data quality: inactive records not referenced by listings",
+      "pass": true,
+      "detail": {
+        "countries": [],
+        "states": [],
+        "cities": [],
+        "areas": []
+      }
+    },
+    {
+      "name": "India completeness: states/UTs",
+      "pass": true,
+      "detail": "36/36 states"
+    },
+    {
+      "name": "India completeness: cities from seed",
+      "pass": true,
+      "detail": "322 India cities, 0 missing from seed"
+    },
+    {
+      "name": "India completeness: areas structure for metros",
+      "pass": true,
+      "detail": "360 India areas"
+    }
+  ],
+  "summary": {
+    "countries": {
+      "total": 95,
+      "inactive": 0,
+      "missingFromWorldSeed": 0,
+      "missingFromIso": 154,
+      "duplicateSlugs": 0
+    },
+    "india": {
+      "states": 36,
+      "missingStates": [],
+      "missingCities": 0,
+      "indiaAreas": 360
+    },
+    "cities": {
+      "total": 847,
+      "statesWithZeroCities": 67,
+      "inactive": 0,
+      "duplicates": 0
+    },
+    "areas": {
+      "total": 360,
+      "districts": 349,
+      "localities": 177,
+      "majorCitiesWithoutAreas": 0
+    },
+    "seo": {
+      "total": 346,
+      "cityPagesOrphaned": 0,
+      "statePagesOrphaned": 0,
+      "activeCitiesWithoutSeo": 3
+    },
+    "listings": {
+      "missingCountry": 0,
+      "missingState": 0,
+      "missingCity": 0,
+      "missingArea": 0
+    }
+  }
+}

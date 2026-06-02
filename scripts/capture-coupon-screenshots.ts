@@ -31,8 +31,13 @@ async function main() {
 
   const emailInput = page.locator('input[type="email"]').first();
   if (await emailInput.isVisible().catch(() => false)) {
-    await emailInput.fill("admin@secretza.com");
-    await page.locator('input[type="password"]').first().fill("Admin@123");
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminEmail || !adminPassword) {
+      throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD are required.");
+    }
+    await emailInput.fill(adminEmail);
+    await page.locator('input[type="password"]').first().fill(adminPassword);
     await page.getByRole("button", { name: /sign in|log in/i }).last().click();
     await page.waitForTimeout(3000);
   }

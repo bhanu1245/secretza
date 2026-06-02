@@ -31,7 +31,17 @@ export async function GET() {
         _sum: { amount: true },
       }),
       db.listing.count({ where: { isFeatured: true } }),
-      db.user.count({ where: { isPremium: true } }),
+      // Count only genuinely active premium users: isPremium=true with no expiry
+      // set (admin-granted, no expiry) OR with an expiry that has not yet passed.
+      db.user.count({
+        where: {
+          isPremium: true,
+          OR: [
+            { premiumExpiry: null },
+            { premiumExpiry: { gt: new Date() } },
+          ],
+        },
+      }),
       // Monthly revenue: fetch completed payments from the last 8 months
       (() => {
         const eightMonthsAgo = new Date();

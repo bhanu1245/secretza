@@ -113,12 +113,12 @@ const TEST_EVIDENCE: Record<string, string> = {
 };
 
 const TEST_ACCOUNTS: TestAccount[] = [
-  { email: "admin@secretza.com", role: "admin", verified: true, suspended: false, password: "•••••••", status: "active" },
-  { email: "moderator@secretza.com", role: "moderator", verified: true, suspended: false, password: "••••••••", status: "active" },
-  { email: "test@secretza.com", role: "user", verified: true, suspended: false, password: "••••••••", status: "active" },
-  { email: "premium@secretza.com", role: "user", verified: true, suspended: false, password: "••••••••••", status: "active" },
-  { email: "suspended@secretza.com", role: "user", verified: true, suspended: true, password: "••••••••••••", status: "suspended" },
-  { email: "unverified@secretza.com", role: "user", verified: false, suspended: false, password: "••••••••••••", status: "unverified" },
+  { email: "admin@SecretZa.com", role: "admin", verified: true, suspended: false, password: "•••••••", status: "active" },
+  { email: "moderator@SecretZa.com", role: "moderator", verified: true, suspended: false, password: "••••••••", status: "active" },
+  { email: "test@SecretZa.com", role: "user", verified: true, suspended: false, password: "••••••••", status: "active" },
+  { email: "premium@SecretZa.com", role: "user", verified: true, suspended: false, password: "••••••••••", status: "active" },
+  { email: "suspended@SecretZa.com", role: "user", verified: true, suspended: true, password: "••••••••••••", status: "suspended" },
+  { email: "unverified@SecretZa.com", role: "user", verified: false, suspended: false, password: "••••••••••••", status: "unverified" },
 ];
 
 const ROUTE_PROTECTION: RouteProtectionEntry[] = [
@@ -1111,7 +1111,7 @@ export default function AuthVerificationDashboard() {
                 Authentication Stress Verification
               </h1>
               <p className="text-sm text-[#A1A1AA] mt-0.5">
-                Secretza Auth System — Production Stability Check
+                SecretZa Auth System — Production Stability Check
               </p>
             </div>
           </div>
@@ -1256,7 +1256,7 @@ export default function AuthVerificationDashboard() {
         {/* Footer */}
         <div className="pt-4 pb-8 border-t border-[rgba(255,255,255,0.04)]">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-[#52525B]">
-            <span>Secretza Auth Verification Dashboard v1.0</span>
+            <span>SecretZa Auth Verification Dashboard v1.0</span>
             <span>
               Powered by NextAuth.js v4 + JWT Strategy + Middleware Protection
             </span>

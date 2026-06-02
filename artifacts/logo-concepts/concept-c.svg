@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="SecretZa Concept C  Minimal luxury monogram">
+  <defs>
+    <linearGradient id="c-grad" x1="96" y1="96" x2="416" y2="416" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6"/>
+      <stop offset="0.45" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#A78BFA"/>
+    </linearGradient>
+    <linearGradient id="c-ring" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.05"/>
+    </linearGradient>
+    <filter id="c-glow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="14" result="g"/>
+      <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="c-round"><rect width="512" height="512" rx="112"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#c-round)">
+    <!-- Deep luxe background -->
+    <rect width="512" height="512" rx="112" fill="#08080C"/>
+    <rect width="512" height="512" rx="112" fill="url(#c-grad)" opacity="0.92"/>
+
+    <!-- Outer soft glow ring -->
+    <circle cx="256" cy="256" r="200" stroke="url(#c-ring)" stroke-width="2" fill="none" opacity="0.6"/>
+    <circle cx="256" cy="256" r="168" fill="#6366F1" opacity="0.12" filter="url(#c-glow)"/>
+
+    <!-- Interlocked minimal S + Z as single luxury mark -->
+    <g filter="url(#c-glow)">
+      <!-- S: single continuous stroke -->
+      <path
+        d="M148 188
+           C148 148 188 128 232 128
+           C276 128 308 152 308 188
+           C308 220 280 240 236 252
+           C192 264 168 284 168 316
+           C168 356 208 384 256 384
+           C296 384 328 364 336 332"
+        stroke="#FFFFFF"
+        stroke-width="24"
+        stroke-linecap="round"
+        fill="none"
+      />
+      <!-- Z: integrated diagonal cutting through S counter -->
+      <path
+        d="M296 148 L368 148
+           M296 148 L368 268
+           M296 268 L368 268"
+        stroke="#FFFFFF"
+        stroke-width="22"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        opacity="0.88"
+      />
+
+      <!-- Silhouette: one elegant curve  forehead to neck  pure negative space -->
+      <path
+        d="M248 156
+           C262 142 284 144 292 162
+           C298 176 292 192 280 204
+           C268 216 258 232 262 252
+           C266 272 282 288 298 296
+           C310 302 316 314 312 328
+           C306 344 286 352 270 346
+           C254 340 244 322 242 302
+           C240 278 238 254 236 230
+           C234 206 238 172 248 156 Z"
+        fill="#08080C"
+        opacity="0.88"
+      />
+      <!-- Hairline accent  luxury editorial feel -->
+      <path
+        d="M252 162 C268 152 286 158 290 172
+           M274 208 C282 220 288 234 284 248
+           M288 302 C294 314 300 326 292 336"
+        stroke="rgba(255,255,255,0.18)"
+        stroke-width="2"
+        fill="none"
+        stroke-linecap="round"
+      />
+    </g>
+
+    <!-- Minimal trust dot -->
+    <circle cx="256" cy="420" r="6" fill="#BFDBFE" opacity="0.8"/>
+  </g>
+</svg>

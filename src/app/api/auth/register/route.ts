@@ -1,26 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+
 import { db } from "@/lib/db";
 import { generateToken } from "@/lib/auth-helpers";
 import { sendVerificationEmail } from "@/lib/email";
-import { rateLimit, RATE_LIMITS, getClientIp, recordFailure } from "@/lib/rate-limit";
+import {
+  rateLimit,
+  RATE_LIMITS,
+  getClientIp,
+  recordFailure,
+} from "@/lib/rate-limit";
 import { logError } from "@/lib/monitoring";
 
-// Validation helpers
+// ======================
+// VALIDATION HELPERS
+// ======================
+
 function validateName(name: unknown): string | null {
   if (typeof name !== "string" || name.trim().length < 2) {
     return "Name must be at least 2 characters long.";
   }
+
   if (name.trim().length > 100) {
     return "Name must be less than 100 characters.";
   }
+
   return null;
 }
 
 function validateEmail(email: unknown): string | null {
-  if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (
+    typeof email !== "string" ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  ) {
     return "Please provide a valid email address.";
   }
+
   return null;
 }
 
@@ -28,40 +43,61 @@ function validatePassword(password: unknown): string | null {
   if (typeof password !== "string" || password.length < 8) {
     return "Password must be at least 8 characters long.";
   }
+
   if (password.length > 128) {
     return "Password must be at most 128 characters.";
   }
+
   if (!/[A-Z]/.test(password)) {
     return "Password must contain at least one uppercase letter.";
   }
+
   if (!/[0-9]/.test(password)) {
     return "Password must contain at least one number.";
   }
+
   return null;
 }
 
+// ======================
+// REGISTER ROUTE
+// ======================
+
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting by IP
-    const ip = getClientIp(request);
-    const rl = await rateLimit(`register:${ip}`, RATE_LIMITS.register);
+    // ----------------------
+    // RATE LIMITING
+    // ----------------------
 
-    if (!rl.success) {
+    const ip = getClientIp(request);
+    const registerLimit = await rateLimit(`register:${ip}`, RATE_LIMITS.register);
+    if (!registerLimit.success) {
       return NextResponse.json(
-        { errors: ["Too many registration attempts. Please try again later."] },
         {
-          status: 429,
-          headers: {
-            "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)),
-          },
-        }
+          errors: ["Too many registration attempts. Please try again later."],
+          resetAt: registerLimit.resetAt,
+        },
+        { status: 429 },
       );
     }
 
-    const body = await request.json();
-    const { name, email, password, confirmPassword } = body;
+    // ----------------------
+    // PARSE BODY
+    // ----------------------
 
-    // Validate all fields
+    const body = await request.json();
+
+    const {
+      name,
+      email,
+      password,
+      confirmPassword,
+    } = body;
+
+    // ----------------------
+    // VALIDATION
+    // ----------------------
+
     const errors: string[] = [];
 
     const nameError = validateName(name);
@@ -73,46 +109,86 @@ export async function POST(request: NextRequest) {
     const passwordError = validatePassword(password);
     if (passwordError) errors.push(passwordError);
 
-    if (typeof confirmPassword !== "string" || password !== confirmPassword) {
+    if (
+      typeof confirmPassword !== "string" ||
+      password !== confirmPassword
+    ) {
       errors.push("Passwords do not match.");
     }
 
     if (errors.length > 0) {
-      return NextResponse.json({ errors }, { status: 400 });
+      return NextResponse.json(
+        { errors },
+        { status: 400 }
+      );
     }
 
-    // Check if user already exists
+    // ----------------------
+    // CHECK EXISTING USER
+    // ----------------------
+
     const existingUser = await db.user.findUnique({
-      where: { email: email as string },
+      where: {
+        email: email.toLowerCase(),
+      },
     });
 
     if (existingUser) {
       recordFailure(`register:${ip}`);
+
       return NextResponse.json(
-        { errors: ["An account with this email already exists."] },
+        {
+          errors: [
+            "An account with this email already exists.",
+          ],
+        },
         { status: 409 }
       );
     }
 
-    // Hash password
-    const saltRounds = 12;
-    const passwordHash = await bcrypt.hash(password as string, saltRounds);
+    // ----------------------
+    // HASH PASSWORD
+    // ----------------------
 
-    // Create user
+    const passwordHash = await bcrypt.hash(
+      password,
+      12
+    );
+
+    // ----------------------
+    // CREATE USER
+    // IMPORTANT:
+    // Ensure enum values match Prisma schema
+    // ----------------------
+
     const user = await db.user.create({
       data: {
-        email: email as string,
-        name: (name as string).trim(),
+        name: name.trim(),
+        email: email.toLowerCase(),
         passwordHash,
-        role: "user",
+
+        // VERY IMPORTANT
+        // Change these if your Prisma enums differ
+
+        role: "USER",
+
+        // Email/password users must verify the token sent below before
+        // accessing flows that require a verified account.
         isVerified: false,
+
         provider: "email",
       },
     });
 
-    // Generate verification token
+    // ----------------------
+    // VERIFICATION TOKEN
+    // ----------------------
+
     const verificationToken = generateToken(32);
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    const expires = new Date(
+      Date.now() + 24 * 60 * 60 * 1000
+    );
 
     await db.verificationToken.create({
       data: {
@@ -122,11 +198,33 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send verification email
-    await sendVerificationEmail(user.email, user.name || "User", verificationToken);
+    // ----------------------
+    // EMAIL
+    // DO NOT CRASH REGISTRATION
+    // IF EMAIL FAILS
+    // ----------------------
+
+    try {
+      await sendVerificationEmail(
+        user.email,
+        user.name || "User",
+        verificationToken
+      );
+    } catch (emailError) {
+      console.error(
+        "Verification email failed:",
+        emailError
+      );
+    }
+
+    // ----------------------
+    // SUCCESS
+    // ----------------------
 
     return NextResponse.json(
       {
+        success: true,
+
         user: {
           id: user.id,
           email: user.email,
@@ -140,10 +238,28 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    logError(error, { component: "route:api/auth/register" });
-    // recordFailure for registration failures is handled by rate limiting above
+    console.error(
+      "REGISTER API ERROR:",
+      error
+    );
+
+    logError(error, {
+      component: "route:api/auth/register",
+    });
+
     return NextResponse.json(
-      { errors: ["An unexpected error occurred. Please try again."] },
+      {
+        errors: [
+          "An unexpected error occurred. Please try again.",
+        ],
+
+        debug:
+          process.env.NODE_ENV === "development"
+            ? error instanceof Error
+              ? error.message
+              : "Unknown error"
+            : undefined,
+      },
       { status: 500 }
     );
   }

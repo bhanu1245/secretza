@@ -9,6 +9,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+import Logo from "@/components/brand/Logo";
+import { BRAND_NAME } from "@/lib/brand";
 import { Separator } from "@/components/ui/separator";
 import {
   FOOTER_BROWSE_LINKS,
@@ -53,11 +55,8 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-8 py-12 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <div className="flex items-center justify-center w-9 h-9 rounded-xl gradient-violet">
-                <span className="text-white font-bold text-lg leading-none select-none">S</span>
-              </div>
-              <span className="text-xl font-bold text-foreground tracking-tight">Secretza</span>
+            <Link href="/" className="flex items-center mb-4">
+              <Logo variant="full" theme="dark" />
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed mb-5 max-w-[250px]">
               Premium Adult Classifieds Worldwide. Connecting people safely and discreetly since 2024.
@@ -136,7 +135,7 @@ export default function Footer() {
         <Separator className="bg-border" />
         <div className="py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} Secretza. All rights reserved.
+            &copy; {new Date().getFullYear()} {BRAND_NAME}. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <ShieldCheck className="size-3.5 text-warning" />

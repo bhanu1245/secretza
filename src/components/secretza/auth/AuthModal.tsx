@@ -31,6 +31,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/store/useAppStore";
+import Logo from "@/components/brand/Logo";
+import { BRAND_NAME } from "@/lib/brand";
 import type { User as UserType } from "@/lib/types";
 
 // ==========================================
@@ -100,6 +102,11 @@ const tabVariants = {
   exit: { opacity: 0, x: -20 },
 };
 
+// Build-time flag — when false the Google button is hidden entirely.
+// Set NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED=true in .env to enable.
+const GOOGLE_OAUTH_ENABLED =
+  process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === "true";
+
 // ==========================================
 // Google OAuth Button
 // ==========================================
@@ -116,17 +123,13 @@ function GoogleButton({
       variant="outline"
       className="w-full h-11 rounded-lg border-[rgba(255,255,255,0.08)] bg-[#1E1E2A] text-[#F5F5F7] hover:bg-[#26263A] hover:border-[rgba(255,255,255,0.15)] transition-all"
       disabled={isLoading}
-      onClick={async () => {
+      onClick={() => {
+        // Full-page redirect to Google's OAuth consent screen.
+        // redirect: false is only valid for the Credentials provider.
         onLoadingChange(true);
-        try {
-          await signIn("google", { redirect: false });
-        } catch {
-          toast.error("Google sign-in failed", {
-            description: "Please try again.",
-          });
-        } finally {
-          onLoadingChange(false);
-        }
+        void signIn("google", { callbackUrl: "/" });
+        // Note: the page navigates away immediately — the loading state
+        // keeps the button disabled to prevent double-clicks.
       }}
     >
       <svg className="size-4 mr-2" viewBox="0 0 24 24">
@@ -316,9 +319,12 @@ function LoginForm() {
         )}
       </Button>
 
-      <OAuthDivider />
-
-      <GoogleButton isLoading={isLoading} onLoadingChange={setIsLoading} />
+      {GOOGLE_OAUTH_ENABLED && (
+        <>
+          <OAuthDivider />
+          <GoogleButton isLoading={isLoading} onLoadingChange={setIsLoading} />
+        </>
+      )}
     </form>
   );
 }
@@ -568,9 +574,12 @@ function RegisterForm() {
         )}
       </Button>
 
-      <OAuthDivider />
-
-      <GoogleButton isLoading={isLoading} onLoadingChange={setIsLoading} />
+      {GOOGLE_OAUTH_ENABLED && (
+        <>
+          <OAuthDivider />
+          <GoogleButton isLoading={isLoading} onLoadingChange={setIsLoading} />
+        </>
+      )}
     </form>
   );
 }
@@ -726,11 +735,11 @@ export default function AuthModal() {
     },
     register: {
       title: "Create account",
-      desc: "Join Secretza and start reaching thousands of potential clients.",
+      desc: `Join ${BRAND_NAME} and start reaching thousands of potential clients.`,
     },
     "forgot-password": {
       title: "Reset Password",
-      desc: "Recover access to your Secretza account.",
+      desc: `Recover access to your ${BRAND_NAME} account.`,
     },
   };
 
@@ -765,7 +774,10 @@ export default function AuthModal() {
           </button>
 
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-[#F5F5F7] mb-1">
+            <div className="flex justify-center mb-3">
+              <Logo variant="icon" theme="dark" iconSize={44} />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-[#F5F5F7] mb-1 text-center">
               {tabTitles[authModalTab]?.title}
             </DialogTitle>
             <DialogDescription className="text-sm text-[#A1A1AA]">
@@ -851,7 +863,7 @@ export default function AuthModal() {
         {/* Footer */}
         <div className="px-8 pb-6">
           <p className="text-center text-xs text-[#52525B]">
-            By continuing, you agree to Secretza&apos;s Terms of Service and Privacy Policy.
+            By continuing, you agree to {BRAND_NAME}&apos;s Terms of Service and Privacy Policy.
           </p>
         </div>
       </DialogContent>

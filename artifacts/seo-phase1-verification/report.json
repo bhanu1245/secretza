@@ -1,0 +1,137 @@
+{
+  "generatedAt": "2026-05-30T22:27:32.167Z",
+  "verdict": "PASS",
+  "score": "100%",
+  "passed": 14,
+  "total": 14,
+  "checks": [
+    {
+      "id": "H2-01",
+      "description": "Mumbai introContent contains ##H2:: sentinels",
+      "pass": true,
+      "detail": "found 9 sentinels (expected ≥3)"
+    },
+    {
+      "id": "H2-02",
+      "description": "Each sentinel contains city name or keyword",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "H2-03",
+      "description": "Delhi introContent contains ##H2:: sentinels (different labels)",
+      "pass": true,
+      "detail": "Mumbai: 9 sentinels, Delhi: 10 sentinels"
+    },
+    {
+      "id": "H2-04",
+      "description": "First paragraph has NO ##H2:: sentinel (intro is plain text)",
+      "pass": true,
+      "detail": "First para starts with: Privacy tip: heritage zones around Mumbai Deccan plateau tra"
+    },
+    {
+      "id": "H2-05",
+      "description": "Last paragraph has NO ##H2:: sentinel (entropy paragraph is plain text)",
+      "pass": true,
+      "detail": "Last para: Editorial fingerprint Mumbai-7942: architecture=local_reside"
+    },
+    {
+      "id": "URL-01",
+      "description": "No broken URL patterns (/escorts/{slug}, /adult-services/{slug}, etc.)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "URL-02",
+      "description": "Architecture anchor links point to /{country}/{state}/{city} canonical URL",
+      "pass": true,
+      "detail": "found 7 city-canonical links (expected ≥3)"
+    },
+    {
+      "id": "URL-03",
+      "description": "Category links use /category/{slug} route",
+      "pass": true,
+      "detail": "found 4 /category/ links: /category/escorts, /category/massage, /category/dating, /category/adult-jobs"
+    },
+    {
+      "id": "ANCHOR-01",
+      "description": "No city link uses the old \"{city} ← {current}\" pattern",
+      "pass": true,
+      "detail": "Found arrow links: "
+    },
+    {
+      "id": "ANCHOR-02",
+      "description": "All city links use \"escorts in {city}\" anchor text",
+      "pass": true,
+      "detail": "City link anchors: escorts in Pune; escorts in Nagpur; escorts in Thane"
+    },
+    {
+      "id": "CAT-01",
+      "description": "Category links include city name in anchor text",
+      "pass": true,
+      "detail": "escorts in Mumbai; massage in Mumbai; dating in Mumbai; adult jobs in Mumbai"
+    },
+    {
+      "id": "COMPAT-01",
+      "description": "Flat introContent (legacy pages) produces 0 H2 sentinels",
+      "pass": true,
+      "detail": "found 0 sentinels in flat content"
+    },
+    {
+      "id": "STATE-01",
+      "description": "Nearby city URLs include country+state slug (/in/maharashtra/{nearbySlug})",
+      "pass": true,
+      "detail": "URLs: /in/maharashtra/pune, /in/maharashtra/nagpur, /in/maharashtra/thane"
+    },
+    {
+      "id": "STATE-02",
+      "description": "City canonical URL formed correctly for Mumbai",
+      "pass": true,
+      "detail": "Expected at least one link to /in/maharashtra/mumbai"
+    }
+  ],
+  "samples": {
+    "mumbaiH2Labels": [
+      "Escorts for Business Travellers in Patel Vihar, Mumbai",
+      "Adult Services in Mumbai College Areas",
+      "Adult Services During Mumbai Peak Season",
+      "Safe & Verified Adult Classifieds in Mumbai",
+      "Outcall Escorts Delivering to Mumbai Business Tower, Mumbai",
+      "Nightlife & Escorts in Patel Vihar, Mumbai",
+      "Safety, Verification & Trust — Mumbai Adult Services",
+      "Mumbai Adult Listings: Tourist Zones vs Service Areas"
+    ],
+    "cityLinks": [
+      {
+        "text": "escorts in Pune",
+        "url": "/in/maharashtra/pune"
+      },
+      {
+        "text": "escorts in Nagpur",
+        "url": "/in/maharashtra/nagpur"
+      },
+      {
+        "text": "escorts in Thane",
+        "url": "/in/maharashtra/thane"
+      }
+    ],
+    "categoryLinks": [
+      {
+        "text": "escorts in Mumbai",
+        "url": "/category/escorts"
+      },
+      {
+        "text": "massage in Mumbai",
+        "url": "/category/massage"
+      },
+      {
+        "text": "dating in Mumbai",
+        "url": "/category/dating"
+      },
+      {
+        "text": "adult jobs in Mumbai",
+        "url": "/category/adult-jobs"
+      }
+    ]
+  }
+}

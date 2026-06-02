@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><title>SecretZa Logo Rollout Audit</title>
+<style>
+:root{--bg:#0B0B0F;--surface:#15151D;--border:rgba(255,255,255,.08);--text:#F5F5F7;--muted:#94a3b8;--blue:#3B82F6;--violet:#6366F1}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:2rem;line-height:1.5}
+h1{background:linear-gradient(135deg,var(--blue),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.pass{color:#34d399}.fail{color:#f87171}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:1rem 0}
+th,td{border:1px solid var(--border);padding:.5rem;text-align:left;vertical-align:top}
+th{background:var(--surface)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin:1.5rem 0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem}
+.card img{max-width:100%;border-radius:8px;background:#0B0B0F}
+code{font-size:12px;color:var(--muted)}
+.box{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:12px;padding:1rem;margin:1rem 0}
+</style></head><body>
+<h1>SecretZa Logo Rollout Audit</h1>
+<p style="color:var(--muted)">2026-05-30T13:36:35.060Z</p>
+<div class="box">
+  <strong>Finding:</strong> Header/Footer/Admin/Auth render LogoIcon inline SVG (LogoMark.tsx), NOT public/brand/*.svg. Old design persisted because LogoIcon.tsx was never updated to the premium mark.<br/>
+  <strong>Resolution:</strong> LogoMark.tsx is now the single React source; public/brand/* synced via scripts/generate-brand-assets.mjs
+</div>
+<p>Premium mark in React: <span class="pass">YES</span> ·
+Static assets updated: <span class="pass">YES</span></p>
+
+<h2>Where the logo is rendered</h2>
+<table><tr><th>Surface</th><th>Component</th><th>Actual render source</th><th>Static asset</th></tr>
+<tr><td>Header (desktop)</td><td><code>src/components/secretza/layout/Header.tsx</code></td><td>Logo variant=full → LogoIcon (LogoMark.tsx inline SVG)</td><td>—</td></tr><tr><td>Footer</td><td><code>src/components/secretza/layout/Footer.tsx</code></td><td>Logo variant=full → LogoMark + BrandWordmark</td><td>—</td></tr><tr><td>Mobile header / sheet</td><td><code>src/components/secretza/layout/Header.tsx</code></td><td>Logo variant=mobile in mobile sheet</td><td>—</td></tr><tr><td>Admin sidebar</td><td><code>src/components/secretza/admin/routes/AdminShell.tsx</code></td><td>Logo variant=icon iconSize=32 → LogoMark</td><td>—</td></tr><tr><td>Login / Register</td><td><code>src/components/secretza/auth/AuthModal.tsx</code></td><td>Logo variant=icon iconSize=44 → LogoMark</td><td>—</td></tr><tr><td>Email templates</td><td><code>src/lib/email.ts</code></td><td>emailBrandHeader() → img src BRAND_ASSETS.logoIconDark</td><td>public/brand/logo-icon-dark.svg</td></tr><tr><td>Favicon / tab icon</td><td><code>src/app/layout.tsx</code></td><td>metadata.icons → BRAND_ASSETS.favicon</td><td>public/brand/favicon.svg</td></tr><tr><td>Social / OG image</td><td><code>src/app/layout.tsx</code></td><td>openGraph.images → BRAND_ASSETS.ogImage</td><td>public/brand/og-image.svg</td></tr><tr><td>404 page</td><td><code>src/app/not-found.tsx</code></td><td>img src={BRAND_ASSETS.logoIconDark}</td><td>public/brand/logo-icon-dark.svg</td></tr>
+</table>
+
+<h2>UI files used</h2>
+<table><tr><th>Surface</th><th>Files</th></tr>
+<tr><td>Header</td><td><code>src/components/secretza/layout/Header.tsx</code><br/><code>src/components/brand/Logo.tsx</code><br/><code>src/components/brand/LogoIcon.tsx</code><br/><code>src/components/brand/LogoMark.tsx</code><br/><code>src/components/brand/BrandWordmark.tsx</code></td></tr><tr><td>Footer</td><td><code>src/components/secretza/layout/Footer.tsx</code><br/><code>src/components/brand/Logo.tsx</code><br/><code>src/components/brand/LogoMark.tsx</code><br/><code>src/components/brand/BrandWordmark.tsx</code></td></tr><tr><td>Mobile header sheet</td><td><code>src/components/secretza/layout/Header.tsx</code><br/><code>src/components/brand/Logo.tsx (variant=mobile)</code></td></tr><tr><td>Admin sidebar</td><td><code>src/components/secretza/admin/routes/AdminShell.tsx</code><br/><code>src/components/brand/Logo.tsx (variant=icon)</code></td></tr><tr><td>Dashboard mobile nav</td><td><code>src/components/secretza/dashboard/Dashboard.tsx</code><br/><code>src/components/brand/Logo.tsx (variant=mobile)</code></td></tr><tr><td>Auth modal</td><td><code>src/components/secretza/auth/AuthModal.tsx</code><br/><code>src/components/brand/Logo.tsx (variant=icon)</code></td></tr><tr><td>CMS pages</td><td><code>src/components/secretza/cms/CmsPageContent.tsx</code><br/><code>src/components/brand/Logo.tsx (variant=mobile)</code></td></tr><tr><td>Emails</td><td><code>src/lib/email.ts</code><br/><code>src/lib/brand.ts</code><br/><code>public/brand/logo-icon-dark.svg</code></td></tr><tr><td>Favicon / metadata</td><td><code>src/app/layout.tsx</code><br/><code>src/app/icon.svg</code><br/><code>public/brand/favicon.svg</code></td></tr><tr><td>404 / global error</td><td><code>src/app/not-found.tsx</code><br/><code>src/app/global-error.tsx</code><br/><code>public/brand/logo-icon-dark.svg</code></td></tr><tr><td>PWA manifest</td><td><code>src/app/manifest.ts</code><br/><code>public/brand/icon-192.svg</code><br/><code>public/brand/icon-512.svg</code></td></tr>
+</table>
+
+<h2>Before / After</h2>
+<div class="grid">
+  <div class="card"><h3>Before (old SZ monogram)</h3>
+  <img src="../before/logo-icon-dark.svg" width="120" alt="before"/>
+  <p><code>artifacts/logo-rollout/before/</code></p></div>
+  <div class="card"><h3>After (premium shield + silhouette)</h3>
+  <img src="../../public/brand/logo-icon-dark.svg" width="120" alt="after"/>
+  <p><code>LogoMark.tsx + public/brand/*</code></p></div>
+</div>
+
+<h2>Screenshots</h2>
+<div class="grid">
+<div class="card"><h3>after-header.png</h3><img src="screenshots/after-header.png" alt="after-header.png"/></div><div class="card"><h3>after-footer.png</h3><img src="screenshots/after-footer.png" alt="after-footer.png"/></div><div class="card"><h3>after-favicon.png</h3><img src="screenshots/after-favicon.png" alt="after-favicon.png"/></div><div class="card"><h3>after-logo-icon-dark.png</h3><img src="screenshots/after-logo-icon-dark.png" alt="after-logo-icon-dark.png"/></div><div class="card"><h3>after-logo-full-dark.png</h3><img src="screenshots/after-logo-full-dark.png" alt="after-logo-full-dark.png"/></div><div class="card"><h3>after-og-image.png</h3><img src="screenshots/after-og-image.png" alt="after-og-image.png"/></div><div class="card"><h3>after-not-found.png</h3><img src="screenshots/after-not-found.png" alt="after-not-found.png"/></div><div class="card"><h3>before-assets-comparison.png</h3><img src="screenshots/before-assets-comparison.png" alt="before-assets-comparison.png"/></div><div class="card"><h3>after-assets-comparison.png</h3><img src="screenshots/after-assets-comparison.png" alt="after-assets-comparison.png"/></div>
+
+</div>
+</body></html>

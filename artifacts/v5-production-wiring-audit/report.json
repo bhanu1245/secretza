@@ -1,0 +1,83 @@
+{
+  "generatedAt": "2026-05-29T12:36:03.105Z",
+  "activeEngine": "v5",
+  "engineInfo": {
+    "activeEngine": "v5",
+    "version": "v5",
+    "envVar": "v5",
+    "cityEngine": "seo-city-content-v5",
+    "enrichment": "seo-city-enrichment-improved (via V5)",
+    "removedPaths": [
+      "v3 city variants (seo-content generateCitySEO)",
+      "v4 generateImprovedCitySEO production"
+    ]
+  },
+  "codePath": "seo-engine.ts → seo-city-content-v5.ts (city) | seo-content.ts shells merged with V5 body (category_city, longtail)",
+  "featureFlag": "SEO_ENGINE=v5",
+  "samples": [
+    {
+      "path": "Generate Cities / autoGenerateCitySeoPage",
+      "engine": "v5",
+      "wordCount": 530,
+      "faqCount": 8,
+      "title": "Verified Adult Services in Mumbai, Maharashtra | Secretza",
+      "h1": "Mumbai Adult Classifieds & Escort Listings",
+      "passed": true
+    },
+    {
+      "path": "Generate Categories",
+      "engine": "v5",
+      "wordCount": 93,
+      "faqCount": 5,
+      "title": "Escorts in India - Verified escorts Listings Nationwide | Secretza",
+      "h1": "Escorts in India",
+      "passed": true
+    },
+    {
+      "path": "Generate Category+City",
+      "engine": "v5",
+      "wordCount": 530,
+      "faqCount": 8,
+      "title": "Escorts in Mumbai - 270+ Verified Listings, Maharashtra | Secretza",
+      "h1": "Verified Escorts in Mumbai",
+      "passed": true
+    },
+    {
+      "path": "Generate States",
+      "engine": "v5",
+      "wordCount": 102,
+      "faqCount": 5,
+      "title": "Maharashtra Adult Classifieds - Browse All Cities in Maharashtra | Secretza",
+      "h1": "Maharashtra Adult Classifieds",
+      "passed": true
+    },
+    {
+      "path": "Generate Countries",
+      "engine": "v5",
+      "wordCount": 83,
+      "faqCount": 5,
+      "title": "India Adult Classifieds - Premium Listings in All Indian Cities | Secretza",
+      "h1": "Adult Classifieds in India",
+      "passed": true
+    },
+    {
+      "path": "Generate Longtail",
+      "engine": "v5",
+      "wordCount": 530,
+      "faqCount": 8,
+      "title": "Independent Escorts in Mumbai - Find independent escorts Mumbai Listings | Secretza",
+      "h1": "Independent Escorts in Mumbai",
+      "passed": true
+    },
+    {
+      "path": "Bulk Regeneration (buildRegeneratedContent city)",
+      "engine": "v5",
+      "wordCount": 500,
+      "faqCount": 8,
+      "title": "Verified Adult Services in Mumbai, Maharashtra | Secretza",
+      "h1": "Mumbai Adult Classifieds & Escort Listings",
+      "passed": true
+    }
+  ],
+  "allPassed": true
+}

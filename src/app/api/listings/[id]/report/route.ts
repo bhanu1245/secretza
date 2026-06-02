@@ -73,7 +73,7 @@ export async function POST(
     });
 
     // Notify listing owner
-    if (listing.userId !== session.user.id) {
+    if (listing.userId && listing.userId !== session.user.id) {
       createNotification({
         userId: listing.userId,
         type: "listing_reported",

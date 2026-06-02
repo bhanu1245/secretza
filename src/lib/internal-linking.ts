@@ -3,7 +3,7 @@
  *
  * Generates related searches, trending cities, seasonal suggestions,
  * anchor variations, breadcrumbs, auto-links, and silo structures
- * for the Secretza adult classifieds platform.
+ * for the SecretZa adult classifieds platform.
  *
  * This module is server-side only — it uses no client-side APIs.
  */
@@ -52,7 +52,7 @@ export interface AnchorVariation {
 // ---------------------------------------------------------------------------
 
 /**
- * Master list of all categories on Secretza.
+ * Master list of all categories on SecretZa.
  * Used throughout the internal linking engine.
  */
 export const ALL_CATEGORIES = [

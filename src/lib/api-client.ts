@@ -47,7 +47,11 @@ export async function apiFetch(
     headers.set(CSRF_HEADER_NAME, await fetchCsrfToken());
   }
 
-  if (options.body && !headers.has("Content-Type")) {
+  if (
+    options.body &&
+    !headers.has("Content-Type") &&
+    !(options.body instanceof FormData)
+  ) {
     headers.set("Content-Type", "application/json");
   }
 

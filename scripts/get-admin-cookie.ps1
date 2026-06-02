@@ -1,5 +1,12 @@
 # Get admin session cookie and run live pricing tests
 $base = "http://localhost:3001"
+$adminEmail = $env:ADMIN_EMAIL
+$adminPassword = $env:ADMIN_PASSWORD
+
+if (-not $adminEmail -or -not $adminPassword) {
+    Write-Error "ADMIN_EMAIL and ADMIN_PASSWORD are required."
+    exit 1
+}
 
 # Step 1: Get CSRF token from next-auth
 try {
@@ -14,7 +21,7 @@ try {
 
 # Step 2: Sign in
 try {
-    $body = "csrfToken=$csrfToken&email=admin@secretza.com&password=admin123&callbackUrl=$base&json=true"
+    $body = "csrfToken=$csrfToken&email=$([uri]::EscapeDataString($adminEmail))&password=$([uri]::EscapeDataString($adminPassword))&callbackUrl=$base&json=true"
     $login = Invoke-WebRequest `
         -Uri "$base/api/auth/callback/credentials" `
         -Method POST `

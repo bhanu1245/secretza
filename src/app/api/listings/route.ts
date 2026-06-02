@@ -153,7 +153,10 @@ export async function GET(request: Request) {
       orderBy = { price: "desc" };
       break;
     case "featured":
-      orderBy = [{ isFeatured: "desc" }, { priorityScore: "desc" }] as any;
+      // "Featured" sort now uses the same priorityScore ordering as ranking —
+      // featured/premium/boosted are baked into the tier base scores so they
+      // naturally appear first without a separate isFeatured sort key.
+      orderBy = { priorityScore: "desc" };
       break;
     case "ranking":
     case "relevance":
@@ -223,6 +226,7 @@ export async function GET(request: Request) {
       id: l.id,
       isFeatured: l.isFeatured,
       isBoosted: l.isBoosted,
+      isPremium: (l as any).isPremium || false,
       featuredUntil: l.featuredUntil,
       boostUntil: l.boostUntil,
       lastBumpedAt: l.lastBumpedAt,

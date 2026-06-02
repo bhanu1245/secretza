@@ -1,0 +1,38 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"/><title>SEO Structured Data Audit</title>
+<style>body{font-family:system-ui;background:#0b0b0f;color:#f5f5f7;padding:24px;max-width:960px;margin:0 auto}
+table{border-collapse:collapse;width:100%;margin:16px 0}th,td{border:1px solid #333;padding:8px;text-align:left}
+th{background:#15151d}.pass{color:#4ade80}.fail{color:#f87171}pre{background:#15151d;padding:12px;overflow:auto;font-size:12px}
+</style></head><body>
+<h1>SEO Structured Data Audit</h1>
+<p>DB pages: 346/346 pass | Cities: 5/5 pass</p>
+<h2>Schema type pass/fail (DB corpus)</h2>
+<table><tr><th>Schema</th><th>Pass</th><th>Fail</th></tr>
+<tr><td>Organization</td><td class="pass">346</td><td class="fail">0</td></tr><tr><td>WebSite</td><td class="pass">346</td><td class="fail">0</td></tr><tr><td>WebPage</td><td class="pass">346</td><td class="fail">0</td></tr><tr><td>BreadcrumbList</td><td class="pass">346</td><td class="fail">0</td></tr><tr><td>FAQPage</td><td class="pass">346</td><td class="fail">0</td></tr><tr><td>ImageObject</td><td class="pass">346</td><td class="fail">0</td></tr>
+</table>
+<h2>City checks (independent-escorts)</h2>
+<table><tr><th>City</th><th>Source</th><th>Schemas</th><th>Pass</th><th>Issues</th></tr>
+<tr><td>/independent-escorts/ahmedabad</td><td>published</td><td>Organization, WebSite, WebPage, BreadcrumbList, FAQPage, ImageObject</td><td class="pass">PASS</td><td>—</td></tr><tr><td>/independent-escorts/mumbai</td><td>fallback</td><td>Organization, WebSite, WebPage, BreadcrumbList</td><td class="pass">PASS</td><td>—</td></tr><tr><td>/independent-escorts/delhi</td><td>fallback</td><td>Organization, WebSite, WebPage, BreadcrumbList</td><td class="pass">PASS</td><td>—</td></tr><tr><td>/independent-escorts/bangalore</td><td>fallback</td><td>Organization, WebSite, WebPage, BreadcrumbList</td><td class="pass">PASS</td><td>—</td></tr><tr><td>/independent-escorts/hyderabad</td><td>fallback</td><td>Organization, WebSite, WebPage, BreadcrumbList</td><td class="pass">PASS</td><td>—</td></tr>
+</table>
+<h2>Live HTML</h2><table><tr><th>City</th><th>Schemas</th><th>Pass</th></tr>
+<tr><td>/independent-escorts/ahmedabad</td><td>Organization, WebSite, WebPage, BreadcrumbList, FAQPage, ImageObject</td><td class="pass">PASS</td></tr><tr><td>/independent-escorts/mumbai</td><td>Organization, WebSite, WebPage, BreadcrumbList</td><td class="pass">PASS</td></tr><tr><td>/independent-escorts/delhi</td><td>Organization, WebSite, WebPage, BreadcrumbList</td><td class="pass">PASS</td></tr><tr><td>/independent-escorts/bangalore</td><td>Organization, WebSite, WebPage, BreadcrumbList</td><td class="pass">PASS</td></tr><tr><td>/independent-escorts/hyderabad</td><td>Organization, WebSite, WebPage, BreadcrumbList</td><td class="pass">PASS</td></tr>
+</table>
+<h2>JSON-LD example (WebPage)</h2>
+<pre>{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Independent Escorts in Ahmedabad - Find independent escorts Ahmedabad Listings | Secretza",
+  "description": "Discover the best independent escorts in Ahmedabad. Browse verified listings, photos, and reviews on Secretza. Updated daily.",
+  "url": "https://secretza.com/independent-escorts/ahmedabad",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "Secretza",
+    "url": "https://secretza.com"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Secretza",
+    "url": "https://secretza.com",
+    "logo": "https://secretza.com/logo.png"
+  }
+}</pre>
+</body></html>

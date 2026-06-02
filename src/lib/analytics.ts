@@ -1,5 +1,5 @@
 /**
- * Server-side analytics tracking module for Secretza.
+ * Server-side analytics tracking module for SecretZa.
  *
  * Supports two providers:
  *  - GA4 (Google Analytics 4) via Measurement Protocol
@@ -135,7 +135,7 @@ async function sendPlausibleEvent(
   try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "User-Agent": "Secretza/1.0 (server-side)",
+      "User-Agent": "SecretZa/1.0 (server-side)",
     };
     if (PLAUSIBLE_API_TOKEN) {
       headers["Authorization"] = `Bearer ${PLAUSIBLE_API_TOKEN}`;

@@ -1,8 +1,8 @@
 "use client";
 
 import * as Sentry from "@sentry/nextjs";
-import NextError from "next/error";
 import { useEffect } from "react";
+import { BRAND_ASSETS, BRAND_COLORS } from "@/lib/brand";
 
 export default function GlobalError({
   error,
@@ -23,22 +23,17 @@ export default function GlobalError({
           justifyContent: "center",
           minHeight: "100vh",
           fontFamily: "system-ui, sans-serif",
-          background: "#0B0B0F",
+          background: BRAND_COLORS.darkBg,
           color: "#F5F5F7",
           padding: "24px",
         }}>
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "48px",
-            height: "48px",
-            borderRadius: "12px",
-            background: "linear-gradient(135deg, #7C3AED, #8B5CF6)",
-            marginBottom: "16px",
-          }}>
-            <span style={{ color: "white", fontWeight: "bold", fontSize: "24px" }}>S</span>
-          </div>
+          <img
+            src={BRAND_ASSETS.logoIconDark}
+            alt="SecretZa"
+            width={48}
+            height={48}
+            style={{ borderRadius: "12px", marginBottom: "16px" }}
+          />
           <h1 style={{ fontSize: "24px", marginBottom: "8px" }}>Something went wrong</h1>
           <p style={{ color: "#A1A1AA", marginBottom: "24px" }}>
             An unexpected error occurred. Our team has been notified.
@@ -48,7 +43,7 @@ export default function GlobalError({
             style={{
               display: "inline-block",
               padding: "12px 32px",
-              background: "linear-gradient(135deg, #7C3AED, #8B5CF6)",
+              background: BRAND_COLORS.gradient,
               color: "white",
               textDecoration: "none",
               borderRadius: "8px",

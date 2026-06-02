@@ -24,14 +24,14 @@ import {
   buildSeoPlaceholderSvg,
   seoImageStorageKey,
 } from "@/lib/seo-images";
-import { createStorageService } from "@/lib/storage";
+import { createStorageService, getUploadsBasePath } from "@/lib/storage";
 import { logError } from "@/lib/monitoring";
 import { existsSync } from "fs";
 import { writeFile, mkdir, stat } from "fs/promises";
 import path from "path";
 
 const DEFAULT_BATCH = 100;
-const UPLOADS_BASE = path.resolve(process.cwd(), "uploads");
+const UPLOADS_BASE = getUploadsBasePath();
 
 /** True when the storage provider is local filesystem. */
 function isLocalStorage(): boolean {

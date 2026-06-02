@@ -10,7 +10,7 @@ const HTML_TEMPLATE = (title: string, body: string) => `
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${title} — Secretza</title>
+  <title>${title} — SecretZa</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -132,16 +132,16 @@ export async function GET(request: NextRequest) {
         <div class="container">
           <div class="logo">
             <div class="logo-icon"><span>S</span></div>
-            <h1>Secretza</h1>
+            <h1>SecretZa</h1>
           </div>
           <div class="card error-page">
             <div class="icon">&#x26A0;&#xFE0F;</div>
             <h2 class="error-text">Invalid Request</h2>
             <p>No reset token provided. Please request a new password reset link.</p>
-            <a href="/">Back to Secretza</a>
+            <a href="/">Back to SecretZa</a>
           </div>
         </div>`;
-      return new NextResponse(HTML_TEMPLATE("Invalid Request — Secretza", body), {
+      return new NextResponse(HTML_TEMPLATE("Invalid Request — SecretZa", body), {
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });
     }
@@ -156,16 +156,16 @@ export async function GET(request: NextRequest) {
         <div class="container">
           <div class="logo">
             <div class="logo-icon"><span>S</span></div>
-            <h1>Secretza</h1>
+            <h1>SecretZa</h1>
           </div>
           <div class="card error-page">
             <div class="icon">&#x1F512;</div>
             <h2 class="error-text">Link Expired or Invalid</h2>
             <p>This password reset link is invalid or has expired. Please request a new one.</p>
-            <a href="/">Back to Secretza</a>
+            <a href="/">Back to SecretZa</a>
           </div>
         </div>`;
-      return new NextResponse(HTML_TEMPLATE("Link Expired — Secretza", body), {
+      return new NextResponse(HTML_TEMPLATE("Link Expired — SecretZa", body), {
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });
     }
@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
       <div class="container">
         <div class="logo">
           <div class="logo-icon"><span>S</span></div>
-          <h1>Secretza</h1>
+          <h1>SecretZa</h1>
         </div>
         <div class="card">
           <h2>Reset Your Password</h2>
@@ -251,7 +251,7 @@ export async function GET(request: NextRequest) {
               msg.appendChild(sp);
               var link = document.createElement('a');
               link.href = '/';
-              link.textContent = 'Return to Secretza';
+              link.textContent = 'Return to SecretZa';
               link.style.marginTop = '8px';
               link.style.display = 'block';
               msg.appendChild(link);
@@ -273,7 +273,7 @@ export async function GET(request: NextRequest) {
         });
       </script>`;
 
-    return new NextResponse(HTML_TEMPLATE("Reset Password — Secretza", formBody), {
+    return new NextResponse(HTML_TEMPLATE("Reset Password — SecretZa", formBody), {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   } catch (error) {
@@ -282,16 +282,16 @@ export async function GET(request: NextRequest) {
       <div class="container">
         <div class="logo">
           <div class="logo-icon"><span>S</span></div>
-          <h1>Secretza</h1>
+          <h1>SecretZa</h1>
         </div>
         <div class="card error-page">
           <div class="icon">&#x26A0;&#xFE0F;</div>
           <h2 class="error-text">Error</h2>
           <p>An unexpected error occurred. Please try again later.</p>
-          <a href="/">Back to Secretza</a>
+          <a href="/">Back to SecretZa</a>
         </div>
       </div>`;
-    return new NextResponse(HTML_TEMPLATE("Error — Secretza", body), {
+    return new NextResponse(HTML_TEMPLATE("Error — SecretZa", body), {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   }

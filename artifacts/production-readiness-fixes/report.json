@@ -1,0 +1,80 @@
+{
+  "timestamp": "2026-05-30T20:32:29.284Z",
+  "checks": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37
+  },
+  "tscExitCode": 0,
+  "prevScore": 64,
+  "newScore": 95,
+  "verdict": "GO",
+  "fixedItems": [
+    {
+      "id": "P0-1",
+      "item": "metadataBase missing from root layout",
+      "status": "FIXED",
+      "fix": "Added metadataBase: new URL(NEXT_PUBLIC_SITE_URL || 'https://SecretZa.com') to src/app/layout.tsx",
+      "impact": "Blocker → Resolved"
+    },
+    {
+      "id": "P0-2a",
+      "item": "Homepage missing canonical",
+      "status": "FIXED",
+      "fix": "Added alternates.canonical: '/' to root layout metadata (homepage inherits it as a client component)",
+      "impact": "Warning → Resolved"
+    },
+    {
+      "id": "P0-2b",
+      "item": "CMS pages missing canonical and OG url",
+      "status": "FIXED",
+      "fix": "Added alternates.canonical and openGraph.url to CMS generateMetadata using resolved slug",
+      "impact": "Warning → Resolved"
+    },
+    {
+      "id": "P0-3",
+      "item": "Root layout OG image was manually absolute (redundant with metadataBase)",
+      "status": "FIXED",
+      "fix": "Changed OG image to root-relative BRAND_ASSETS.ogImage path — Next.js resolves via metadataBase. Added openGraph.url: '/'",
+      "impact": "Warning → Resolved"
+    },
+    {
+      "id": "P0-4",
+      "item": "Stale public/robots.txt conflicting with src/app/robots.ts",
+      "status": "FIXED",
+      "fix": "Deleted public/robots.txt. src/app/robots.ts is now the sole source of truth. It correctly disallows /api/, /admin/, includes sitemap URLs.",
+      "impact": "Warning → Resolved"
+    },
+    {
+      "id": "P0-5",
+      "item": "No production env variable documentation",
+      "status": "FIXED",
+      "fix": "Created docs/production-env-checklist.md covering all required, recommended, and optional env vars with verification commands",
+      "impact": "Warning → Addressed (operator action required)"
+    },
+    {
+      "id": "P0-6",
+      "item": "No cron deployment instructions",
+      "status": "FIXED",
+      "fix": "Created docs/cron-deployment-checklist.md with four deployment options (systemd, crontab, GitHub Actions, cron-job.org)",
+      "impact": "Warning → Addressed (operator action required)"
+    }
+  ],
+  "remainingWarnings": [
+    "CRON_SECRET not in .env — cron checklist provided; operator must set and schedule",
+    "NEXT_PUBLIC_SITE_URL not in .env — checklist provided; operator must set in deployment",
+    "NEXTAUTH_URL still points to localhost — must be updated to production URL",
+    "Google Search Console verification not configured (env or DB)",
+    "Analytics (GA4/Plausible/Sentry) not configured in .env",
+    "SSG: some geo pages exceed 60s generation budget (retries succeed; monitor in CI)"
+  ],
+  "operatorActionRequired": [
+    "Set NEXT_PUBLIC_SITE_URL=https://secretza.com in production env",
+    "Set NEXTAUTH_URL=https://secretza.com in production env",
+    "Set CRON_SECRET and configure a cron scheduler (see docs/cron-deployment-checklist.md)",
+    "Configure Google Search Console verification (env or Admin DB settings)",
+    "Set NEXT_PUBLIC_GA_ID or NEXT_PUBLIC_PLAUSIBLE_DOMAIN if analytics is required",
+    "Set NEXT_PUBLIC_SENTRY_DSN if error monitoring is required"
+  ],
+  "recommendation": "GO — All code-level blockers are resolved. Set the production environment variables listed in docs/production-env-checklist.md and deploy the cron scheduler before launch."
+}

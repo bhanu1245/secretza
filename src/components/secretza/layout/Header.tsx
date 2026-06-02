@@ -47,6 +47,7 @@ import { toast } from "sonner";
 import { useCategories } from "@/hooks/useApiData";
 import { usePublicNavigation } from "@/hooks/usePublicNavigation";
 import { ADMIN_HOME, isAdminRole } from "@/lib/admin-nav";
+import Logo from "@/components/brand/Logo";
 
 export default function Header() {
   const router = useRouter();
@@ -126,16 +127,10 @@ export default function Header() {
           {/* Logo */}
           <button
             onClick={goHome}
-            className="flex items-center gap-2.5 shrink-0 group"
+            className="flex items-center shrink-0 group"
+            aria-label="SecretZa home"
           >
-            <div className="relative flex items-center justify-center w-9 h-9 rounded-xl gradient-violet violet-glow">
-              <span className="text-white font-bold text-lg leading-none select-none">
-                S
-              </span>
-            </div>
-            <span className="text-xl font-bold text-foreground tracking-tight hidden sm:block">
-              Secretza
-            </span>
+            <Logo variant="full" theme="dark" />
           </button>
 
           {/* Desktop Navigation */}
@@ -368,14 +363,8 @@ export default function Header() {
                 <SheetHeader className="p-4 pb-2 border-b border-border">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-lg gradient-violet">
-                        <span className="text-white font-bold text-sm leading-none">
-                          S
-                        </span>
-                      </div>
-                      <SheetTitle className="text-foreground text-lg">
-                        Secretza
-                      </SheetTitle>
+                      <Logo variant="mobile" theme="dark" iconSize={32} />
+                      <SheetTitle className="sr-only">SecretZa Menu</SheetTitle>
                     </div>
                   </div>
                 </SheetHeader>

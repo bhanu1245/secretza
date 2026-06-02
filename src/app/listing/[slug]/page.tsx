@@ -11,6 +11,7 @@ import {
   buildBreadcrumbSchema,
   buildListingSchema,
 } from "@/lib/seo-ssr";
+import { BRAND_NAME, brandTitleSuffix, BRAND_ASSETS } from "@/lib/brand";
 import Breadcrumbs from "@/components/seo/Breadcrumbs";
 import JsonLd from "@/components/seo/JsonLd";
 import PublicSiteLayout from "@/components/secretza/layout/PublicSiteLayout";
@@ -59,7 +60,7 @@ export async function generateMetadata({
   });
 
   if (!listing) {
-    return { title: "Listing Not Found | Secretza" };
+    return { title: `Listing Not Found${brandTitleSuffix()}` };
   }
 
   const reviews = await db.review.aggregate({
@@ -70,9 +71,9 @@ export async function generateMetadata({
 
   const fullUrl = buildListingUrl(listing.slug);
   const primaryImage =
-    listing.listingImages[0]?.url || `${BASE_URL}/logo.svg`;
+    listing.listingImages[0]?.url || `${BASE_URL}${BRAND_ASSETS.logoLegacy}`;
 
-  const title = `${listing.title} - ${listing.category.name} in ${listing.city.name} | Secretza`;
+  const title = `${listing.title} - ${listing.category.name} in ${listing.city.name}${brandTitleSuffix()}`;
   const description = truncate(listing.description);
 
   return {
@@ -85,7 +86,7 @@ export async function generateMetadata({
       title,
       description,
       url: fullUrl,
-      siteName: "Secretza",
+      siteName: BRAND_NAME,
       type: "article",
       images: [{ url: primaryImage, width: 1200, height: 630, alt: listing.title }],
     },

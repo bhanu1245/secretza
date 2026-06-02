@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useAuthStore, useNavigationStore } from "@/store/useAppStore";
+import { ADMIN_HOME, isAdminRole } from "@/lib/admin-nav";
 
 /**
  * Bridges NextAuth session state to Zustand auth store.
@@ -17,13 +19,17 @@ import { useAuthStore, useNavigationStore } from "@/store/useAppStore";
  *     new login and trigger the role-based redirect.
  */
 export default function AuthSync() {
+  const router = useRouter();
   const { data: session, status } = useSession();
   const syncFromSession = useAuthStore((s) => s.syncFromSession);
   const setAuthModalOpen = useAuthStore((s) => s.setAuthModalOpen);
   const logout = useAuthStore((s) => s.logout);
   const setHydrated = useAuthStore((s) => s.setHydrated);
   const navigate = useNavigationStore((s) => s.navigate);
+  const navView = useNavigationStore((s) => s.nav.view);
+  const pathname = usePathname();
   const prevSessionRef = useRef<string | null>(null);
+  const prevStatusRef = useRef<typeof status | null>(null);
   // Tracks whether we have completed at least one hydration cycle.
   // Once hydrated, a subsequent null→authenticated transition is a real login.
   const hydratedRef = useRef(false);
@@ -34,15 +40,13 @@ export default function AuthSync() {
       setAuthModalOpen(false);
 
       // Redirect by role
-      if (role === "admin") {
-        navigate("admin");
-      } else if (role === "moderator") {
-        navigate("admin");
+      if (isAdminRole(role)) {
+        router.push(ADMIN_HOME);
       } else {
         navigate("dashboard");
       }
     },
-    [navigate, setAuthModalOpen],
+    [navigate, setAuthModalOpen, router],
   );
 
   useEffect(() => {
@@ -50,9 +54,15 @@ export default function AuthSync() {
 
     if (status === "authenticated" && session?.user) {
       const sessionKey = `${session.user.id}-${session.user.email}`;
+      const previousSessionKey = prevSessionRef.current;
+      const previousStatus = prevStatusRef.current;
+      const isNewLogin =
+        hydratedRef.current &&
+        previousStatus === "unauthenticated" &&
+        previousSessionKey === null;
 
       // Sync user data to Zustand store whenever session key changes
-      if (prevSessionRef.current !== sessionKey) {
+      if (previousSessionKey !== sessionKey) {
         prevSessionRef.current = sessionKey;
         syncFromSession({
           id: session.user.id,
@@ -73,28 +83,30 @@ export default function AuthSync() {
       if (!hydratedRef.current) {
         hydratedRef.current = true;
         setHydrated(true);
+        prevStatusRef.current = status;
         // No redirect — user was already logged in (page refresh / first visit)
         return;
       }
 
-      // At this point, hydratedRef is true and session changed.
-      // This means the user just logged in within this page lifecycle.
-      // Check if prevSessionRef was null (transition from unauthenticated to authenticated).
-      // Actually, prevSessionRef is already set above, so we need a different signal.
-      // The key insight: if hydratedRef was already true AND we just synced a new session,
-      // then the user logged in via the modal.
-      // We detect this because prevSessionRef.current was updated from null (cleared on logout)
-      // to a real value.
+      if (isNewLogin) {
+        const isCreatingListing =
+          navView === "post-ad" || pathname === "/create-listing";
 
-      // We already set prevSessionRef and synced above. Now trigger redirect.
-      // The fact that hydratedRef was true before this session change means it's a real login.
-      setTimeout(() => {
-        handleLoginRedirect(session.user.role);
-      }, 100);
+        if (!isCreatingListing) {
+          setTimeout(() => {
+            handleLoginRedirect(session.user.role);
+          }, 100);
+        } else {
+          setAuthModalOpen(false);
+        }
+      }
+
+      prevStatusRef.current = status;
     } else if (status === "unauthenticated") {
       // Clear session tracking — enables next login to be detected as "new"
       const hadSession = prevSessionRef.current !== null;
       prevSessionRef.current = null;
+      prevStatusRef.current = status;
 
       if (hadSession) {
         // User was logged in and is now logged out
@@ -106,7 +118,17 @@ export default function AuthSync() {
         setHydrated(true);
       }
     }
-  }, [session, status, syncFromSession, logout, setHydrated, handleLoginRedirect]);
+  }, [
+    session,
+    status,
+    syncFromSession,
+    logout,
+    setHydrated,
+    handleLoginRedirect,
+    navView,
+    pathname,
+    setAuthModalOpen,
+  ]);
 
   return null; // Renderless component
 }

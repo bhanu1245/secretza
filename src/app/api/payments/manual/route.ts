@@ -5,10 +5,8 @@ import { authOptions } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { logError } from "@/lib/monitoring";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { existsSync } from "fs";
 import { detectMimeType, ALLOWED_MIME_TYPES } from "@/lib/image-processing";
+import { createStorageService } from "@/lib/storage";
 import { getValidAmounts } from "@/lib/payment-settings";
 import { validateCouponForCheckout } from "@/lib/coupons";
 import {
@@ -249,11 +247,6 @@ export async function POST(request: Request) {
 
     let screenshotUrl: string | null = null;
     if (screenshotFile) {
-      const uploadDir = path.join(process.cwd(), "uploads", "screenshots");
-      if (!existsSync(uploadDir)) {
-        await mkdir(uploadDir, { recursive: true });
-      }
-
       const ext =
         screenshotFile.type === "image/png"
           ? "png"
@@ -261,12 +254,18 @@ export async function POST(request: Request) {
             ? "webp"
             : "jpg";
       const fileName = `${submission.id}-${Date.now()}.${ext}`;
-      const filePath = path.join(uploadDir, fileName);
-
+      const storageKey = `screenshots/${fileName}`;
       const bytes = await screenshotFile.arrayBuffer();
-      await writeFile(filePath, Buffer.from(bytes));
+      const storage = createStorageService();
+      const uploaded = await storage.upload(
+        storageKey,
+        Buffer.from(bytes),
+        screenshotFile.type || "image/jpeg",
+      );
 
-      screenshotUrl = `/api/upload/file?key=screenshots/${fileName}`;
+      screenshotUrl = uploaded.url.startsWith("/")
+        ? uploaded.url
+        : `/api/upload/file?key=${encodeURIComponent(storageKey)}`;
       await db.manualPaymentSubmission.update({
         where: { id: submission.id },
         data: { screenshotUrl },

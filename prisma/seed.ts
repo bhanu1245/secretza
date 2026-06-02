@@ -19,12 +19,6 @@ import { seedGeoData } from "../src/lib/seed-geo";
 
 const db = new PrismaClient();
 
-const DEFAULT_ADMIN = {
-  email: "admin@secretza.com",
-  password: "Admin@123",
-  name: "Secretza Admin",
-};
-
 const PRICING_PLANS = [
   {
     name: "Basic",
@@ -141,14 +135,31 @@ async function seedCategories() {
 }
 
 async function seedDefaultAdmin() {
-  console.log(`\n🔐 Seeding default admin user...`);
+  const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  const adminName = process.env.SEED_ADMIN_NAME?.trim() || "Secretza Admin";
 
-  const passwordHash = await bcrypt.hash(DEFAULT_ADMIN.password, 12);
+  if (!adminEmail && !adminPassword) {
+    console.log("\n🔐 Skipping admin seed: SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD are not set.");
+    return;
+  }
+
+  if (!adminEmail || !adminPassword) {
+    throw new Error("Both SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set to seed an admin user.");
+  }
+
+  if (adminPassword.length < 12) {
+    throw new Error("SEED_ADMIN_PASSWORD must be at least 12 characters.");
+  }
+
+  console.log(`\n🔐 Seeding configured admin user...`);
+
+  const passwordHash = await bcrypt.hash(adminPassword, 12);
 
   const admin = await db.user.upsert({
-    where: { email: DEFAULT_ADMIN.email },
+    where: { email: adminEmail },
     update: {
-      name: DEFAULT_ADMIN.name,
+      name: adminName,
       passwordHash,
       role: UserRole.ADMIN,
       isVerified: true,
@@ -158,8 +169,8 @@ async function seedDefaultAdmin() {
       sessionVersion: { increment: 1 },
     },
     create: {
-      name: DEFAULT_ADMIN.name,
-      email: DEFAULT_ADMIN.email,
+      name: adminName,
+      email: adminEmail,
       passwordHash,
       role: UserRole.ADMIN,
       isVerified: true,
@@ -274,7 +285,7 @@ async function seedSocialSettings() {
 async function main() {
   console.log("🌱 Secretza Master Seed\n");
 
-  // 0. Seed default admin login
+  // 0. Optionally seed an admin login from SEED_ADMIN_* env vars.
   await seedDefaultAdmin();
 
   // 1. Seed comprehensive geo data

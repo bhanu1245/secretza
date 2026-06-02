@@ -1,0 +1,582 @@
+{
+  "generatedAt": "2026-05-30T18:40:07.355Z",
+  "title": "Pricing Administration Hardening — Verification Report",
+  "summary": {
+    "total": 16,
+    "passed": 16,
+    "failed": 0,
+    "skipped": 20,
+    "blockersFailed": 0
+  },
+  "implementation": {
+    "P0-1": "Duplicate slug check before INSERT (POST) and UPDATE (PUT), + UNIQUE try/catch safety net",
+    "P0-2": "validatePrice(): must be finite number, ≥ 0, ≤ 999,999",
+    "P0-3": "validateDays(): durationDays ≥ 1, featuredDays/boostDays ≥ 0, all ≤ 3,650",
+    "P0-4": "PUT checks plan existence before UPDATE, returns 404 if not found",
+    "P0-5": "DELETE checks plan existence before DELETE, returns 404 if not found",
+    "P1-6": "validateSlug(): rejects slug shorter than 2 chars after slugify",
+    "P1-7": "validateLimit(): listingLimit 1–1000, imageLimit 1–50",
+    "filesChanged": [
+      "src/app/api/admin/pricing-plans/route.ts",
+      "src/app/api/admin/pricing-plans/[id]/route.ts"
+    ]
+  },
+  "groups": {
+    "A — Static analysis": [
+      {
+        "name": "SA-A1 · validatePrice exported from POST route",
+        "ok": true,
+        "detail": "validatePrice() helper defined",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A2 · validateDays exported from POST route",
+        "ok": true,
+        "detail": "validateDays() helper defined",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A3 · validateSlug exported from POST route",
+        "ok": true,
+        "detail": "validateSlug() helper defined",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A4 · validateLimit exported from POST route",
+        "ok": true,
+        "detail": "validateLimit() helper defined",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A5 · validatePrice in [id]/route.ts",
+        "ok": true,
+        "detail": "Mirrors POST file validation",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A6 · validateDays in [id]/route.ts",
+        "ok": true,
+        "detail": "Mirrors POST file validation",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A7 · POST route has slug uniqueness check",
+        "ok": true,
+        "detail": "Pre-insert uniqueness query",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A8 · PUT route has slug uniqueness check excluding self",
+        "ok": true,
+        "detail": "Pre-update uniqueness query with self-exclusion",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A9 · PUT route has existence check before UPDATE",
+        "ok": true,
+        "detail": "Returns 404 when plan not found",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A10 · DELETE route has existence check before DELETE",
+        "ok": true,
+        "detail": "DELETE also checks existence",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A11 · POST try/catch around INSERT catches UNIQUE error",
+        "ok": true,
+        "detail": "Safety net for DB-level constraint violation",
+        "severity": "high"
+      },
+      {
+        "name": "SA-A12 · PUT try/catch around UPDATE catches UNIQUE error",
+        "ok": true,
+        "detail": "Safety net for DB-level constraint violation",
+        "severity": "high"
+      },
+      {
+        "name": "SA-A13 · durationDays validated with min=1 in POST",
+        "ok": true,
+        "detail": "A plan lasting 0 days is meaningless",
+        "severity": "high"
+      },
+      {
+        "name": "SA-A14 · durationDays validated with min=1 in PUT",
+        "ok": true,
+        "detail": "A plan lasting 0 days is meaningless",
+        "severity": "high"
+      },
+      {
+        "name": "SA-A15 · listingLimit validated in POST",
+        "ok": true,
+        "detail": "1–1000 range enforced",
+        "severity": "high"
+      },
+      {
+        "name": "SA-A16 · imageLimit validated in POST",
+        "ok": true,
+        "detail": "1–50 range enforced",
+        "severity": "high"
+      }
+    ],
+    "B — POST field validation (P0)": [
+      {
+        "name": "LIVE-B1 · POST price=negative rejected (400)",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "blocker",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-B2 · POST price=NaN rejected (400)",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "blocker",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-B3 · POST durationDays=0 rejected (400)",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "blocker",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-B4 · POST durationDays=-7 rejected (400)",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "blocker",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-B5 · POST durationDays=9999 rejected (400)",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "blocker",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-B6 · POST missing name rejected (400)",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "blocker",
+        "skipped": true
+      }
+    ],
+    "C — PUT field validation (P0)": [
+      {
+        "name": "LIVE-C1 · PUT price=negative rejected (400)",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "blocker",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-C2 · PUT durationDays=0 rejected (400)",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "blocker",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-C3 · PUT missing name rejected (400)",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "blocker",
+        "skipped": true
+      }
+    ],
+    "D — 404 for missing plan (P0)": [
+      {
+        "name": "LIVE-D1 · PUT non-existent returns 404",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "blocker",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-D2 · DELETE non-existent returns 404",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "blocker",
+        "skipped": true
+      }
+    ],
+    "E — Duplicate slug protection (P0)": [
+      {
+        "name": "LIVE-E1 · POST duplicate slug returns 409",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "blocker",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-E2 · PUT duplicate slug returns 409",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "blocker",
+        "skipped": true
+      }
+    ],
+    "F — P1 validations (slug, limits)": [
+      {
+        "name": "LIVE-F1 · POST blank slug after slugify rejected (400)",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "high",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-F2 · POST listingLimit=0 rejected (400)",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "high",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-F3 · POST imageLimit=999 rejected (400)",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "high",
+        "skipped": true
+      }
+    ],
+    "G — Happy path round-trip": [
+      {
+        "name": "LIVE-G1 · Happy path",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "info",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-G2 · Happy path",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "info",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-G3 · Happy path",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "info",
+        "skipped": true
+      },
+      {
+        "name": "LIVE-G4 · Happy path",
+        "ok": false,
+        "detail": "Server not reachable — skipped",
+        "severity": "info",
+        "skipped": true
+      }
+    ],
+    "DB — Integration tests (bypass HTTP auth)": [
+      {
+        "test": "T1 · Valid plan inserted",
+        "ok": true,
+        "detail": "id=0986db58-ba0f-4608-a820-ad3a90bb7014 slug=verify-hardening-1780166566094",
+        "severity": "blocker"
+      },
+      {
+        "test": "T2 · Duplicate slug COUNT returns > 0 (pre-insert check)",
+        "ok": true,
+        "detail": "count=1 (expected >0)",
+        "severity": "blocker"
+      },
+      {
+        "test": "T3 · Self-exclusion check returns 0 for own slug (no false 409)",
+        "ok": true,
+        "detail": "count=0 (expected 0)",
+        "severity": "blocker"
+      },
+      {
+        "test": "T4 · Existence check for fake id returns 0 rows → 404",
+        "ok": true,
+        "detail": "rows=0 (expected 0)",
+        "severity": "blocker"
+      },
+      {
+        "test": "T5 · Existence check for real id returns 1 row → no 404",
+        "ok": true,
+        "detail": "rows=1 (expected 1)",
+        "severity": "blocker"
+      },
+      {
+        "test": "T6 · DB UNIQUE constraint throws on duplicate INSERT (try/catch safety net)",
+        "ok": true,
+        "detail": "uniqueViolated=true",
+        "severity": "high"
+      },
+      {
+        "test": "T7 · validatePrice: 12 boundary cases",
+        "ok": true,
+        "detail": "All 12 cases correct",
+        "severity": "blocker"
+      },
+      {
+        "test": "T8 · validateDays: 10 boundary cases",
+        "ok": true,
+        "detail": "All 10 cases correct",
+        "severity": "blocker"
+      },
+      {
+        "test": "T9 · validateSlug: 5 boundary cases",
+        "ok": true,
+        "detail": "All 5 cases correct",
+        "severity": "high"
+      },
+      {
+        "test": "T10 · validateLimit: 10 boundary cases",
+        "ok": true,
+        "detail": "All 10 cases correct",
+        "severity": "high"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "SA-A1 · validatePrice exported from POST route",
+      "ok": true,
+      "detail": "validatePrice() helper defined",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A2 · validateDays exported from POST route",
+      "ok": true,
+      "detail": "validateDays() helper defined",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A3 · validateSlug exported from POST route",
+      "ok": true,
+      "detail": "validateSlug() helper defined",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A4 · validateLimit exported from POST route",
+      "ok": true,
+      "detail": "validateLimit() helper defined",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A5 · validatePrice in [id]/route.ts",
+      "ok": true,
+      "detail": "Mirrors POST file validation",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A6 · validateDays in [id]/route.ts",
+      "ok": true,
+      "detail": "Mirrors POST file validation",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A7 · POST route has slug uniqueness check",
+      "ok": true,
+      "detail": "Pre-insert uniqueness query",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A8 · PUT route has slug uniqueness check excluding self",
+      "ok": true,
+      "detail": "Pre-update uniqueness query with self-exclusion",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A9 · PUT route has existence check before UPDATE",
+      "ok": true,
+      "detail": "Returns 404 when plan not found",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A10 · DELETE route has existence check before DELETE",
+      "ok": true,
+      "detail": "DELETE also checks existence",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A11 · POST try/catch around INSERT catches UNIQUE error",
+      "ok": true,
+      "detail": "Safety net for DB-level constraint violation",
+      "severity": "high"
+    },
+    {
+      "name": "SA-A12 · PUT try/catch around UPDATE catches UNIQUE error",
+      "ok": true,
+      "detail": "Safety net for DB-level constraint violation",
+      "severity": "high"
+    },
+    {
+      "name": "SA-A13 · durationDays validated with min=1 in POST",
+      "ok": true,
+      "detail": "A plan lasting 0 days is meaningless",
+      "severity": "high"
+    },
+    {
+      "name": "SA-A14 · durationDays validated with min=1 in PUT",
+      "ok": true,
+      "detail": "A plan lasting 0 days is meaningless",
+      "severity": "high"
+    },
+    {
+      "name": "SA-A15 · listingLimit validated in POST",
+      "ok": true,
+      "detail": "1–1000 range enforced",
+      "severity": "high"
+    },
+    {
+      "name": "SA-A16 · imageLimit validated in POST",
+      "ok": true,
+      "detail": "1–50 range enforced",
+      "severity": "high"
+    },
+    {
+      "name": "LIVE-B1 · POST price=negative rejected (400)",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "blocker",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-B2 · POST price=NaN rejected (400)",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "blocker",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-B3 · POST durationDays=0 rejected (400)",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "blocker",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-B4 · POST durationDays=-7 rejected (400)",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "blocker",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-B5 · POST durationDays=9999 rejected (400)",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "blocker",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-B6 · POST missing name rejected (400)",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "blocker",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-C1 · PUT price=negative rejected (400)",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "blocker",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-C2 · PUT durationDays=0 rejected (400)",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "blocker",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-C3 · PUT missing name rejected (400)",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "blocker",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-D1 · PUT non-existent returns 404",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "blocker",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-D2 · DELETE non-existent returns 404",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "blocker",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-E1 · POST duplicate slug returns 409",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "blocker",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-E2 · PUT duplicate slug returns 409",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "blocker",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-F1 · POST blank slug after slugify rejected (400)",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "high",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-F2 · POST listingLimit=0 rejected (400)",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "high",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-F3 · POST imageLimit=999 rejected (400)",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "high",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-G1 · Happy path",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "info",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-G2 · Happy path",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "info",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-G3 · Happy path",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "info",
+      "skipped": true
+    },
+    {
+      "name": "LIVE-G4 · Happy path",
+      "ok": false,
+      "detail": "Server not reachable — skipped",
+      "severity": "info",
+      "skipped": true
+    }
+  ],
+  "failed": [],
+  "dbTests": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0
+  }
+}

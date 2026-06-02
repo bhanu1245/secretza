@@ -1,0 +1,179 @@
+{
+  "timestamp": "2026-05-31T15:40:13.073Z",
+  "score": 100,
+  "passed": 28,
+  "total": 28,
+  "status": "PASS",
+  "filesChanged": [
+    {
+      "file": "src/lib/auth.ts",
+      "change": "signIn callback: set isVerified, emailVerified, provider, providerId for OAuth"
+    },
+    {
+      "file": "src/components/secretza/auth/AuthModal.tsx",
+      "change": "Gate GoogleButton on NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED; fix redirect: false → callbackUrl"
+    },
+    {
+      "file": "src/app/page.tsx",
+      "change": "Handle OAuthAccountNotLinked: toast + open auth modal + clear URL"
+    },
+    {
+      "file": "src/app/api/auth/register/route.ts",
+      "change": "provider: \"EMAIL\" → \"email\" (lowercase normalization)"
+    }
+  ],
+  "notImplemented": [
+    "Account linking",
+    "Set-password for OAuth-only users"
+  ],
+  "preserved": [
+    "Credentials login",
+    "Password reset",
+    "Email verification",
+    "Suspension check",
+    "JWT callbacks",
+    "Session callbacks"
+  ],
+  "checks": [
+    {
+      "id": "1a",
+      "description": ".env has GOOGLE_CLIENT_ID",
+      "pass": true
+    },
+    {
+      "id": "1b",
+      "description": ".env has GOOGLE_CLIENT_SECRET",
+      "pass": true
+    },
+    {
+      "id": "1c",
+      "description": ".env has NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED=true",
+      "pass": true
+    },
+    {
+      "id": "2a",
+      "description": "GoogleProvider imported from next-auth/providers/google",
+      "pass": true
+    },
+    {
+      "id": "2b",
+      "description": "GoogleProvider conditionally included in providers array",
+      "pass": true
+    },
+    {
+      "id": "2c",
+      "description": "allowDangerousEmailAccountLinking: false (safe default)",
+      "pass": true
+    },
+    {
+      "id": "3a",
+      "description": "signIn callback sets isVerified: true for OAuth",
+      "pass": true
+    },
+    {
+      "id": "3b",
+      "description": "signIn callback sets emailVerified for OAuth",
+      "pass": true
+    },
+    {
+      "id": "3c",
+      "description": "signIn callback sets provider from account.provider (lowercase)",
+      "pass": true
+    },
+    {
+      "id": "3d",
+      "description": "signIn callback stores providerId from account.providerAccountId",
+      "pass": true
+    },
+    {
+      "id": "3e",
+      "description": "signIn callback is inside OAuth-only branch (account.provider !== credentials)",
+      "pass": true
+    },
+    {
+      "id": "3f",
+      "description": "dbUser available before the OAuth update (suspension check runs first)",
+      "pass": true
+    },
+    {
+      "id": "4a",
+      "description": "GOOGLE_OAUTH_ENABLED constant defined from env",
+      "pass": true
+    },
+    {
+      "id": "4b",
+      "description": "GoogleButton gated on GOOGLE_OAUTH_ENABLED in LoginForm",
+      "pass": true
+    },
+    {
+      "id": "4c",
+      "description": "GoogleButton gated on GOOGLE_OAUTH_ENABLED in RegisterForm",
+      "pass": true
+    },
+    {
+      "id": "4d",
+      "description": "signIn uses callbackUrl (not redirect: false) for Google",
+      "pass": true
+    },
+    {
+      "id": "4e",
+      "description": "old redirect: false for Google is removed",
+      "pass": true
+    },
+    {
+      "id": "4f",
+      "description": "OAuthDivider still exists (not deleted)",
+      "pass": true
+    },
+    {
+      "id": "5a",
+      "description": "toast imported in page.tsx",
+      "pass": true
+    },
+    {
+      "id": "5b",
+      "description": "OAuthAccountNotLinked detected in page.tsx useEffect",
+      "pass": true
+    },
+    {
+      "id": "5c",
+      "description": "toast.error shown for OAuthAccountNotLinked",
+      "pass": true
+    },
+    {
+      "id": "5d",
+      "description": "auth modal opened to login tab on OAuthAccountNotLinked",
+      "pass": true
+    },
+    {
+      "id": "5e",
+      "description": "URL cleared after error handling (router.replace)",
+      "pass": true
+    },
+    {
+      "id": "5f",
+      "description": "setAuthModalOpen + setAuthModalTab destructured in HomeApp",
+      "pass": true
+    },
+    {
+      "id": "6a",
+      "description": "register route uses provider: \"email\" (lowercase)",
+      "pass": true
+    },
+    {
+      "id": "6b",
+      "description": "register route does NOT use provider: \"EMAIL\" (uppercase)",
+      "pass": true
+    },
+    {
+      "id": "7a",
+      "description": "No linkAccount API route exists (not implemented per spec)",
+      "pass": true
+    },
+    {
+      "id": "7b",
+      "description": "No set-password API route exists (not implemented per spec)",
+      "pass": true
+    }
+  ]
+}

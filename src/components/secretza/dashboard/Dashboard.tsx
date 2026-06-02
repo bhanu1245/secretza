@@ -46,6 +46,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuthStore, useNavigationStore } from "@/store/useAppStore";
+import Logo from "@/components/brand/Logo";
+import { BRAND_NAME } from "@/lib/brand";
 import type { ListingStatus, Listing } from "@/lib/types";
 
 // ==========================================
@@ -125,10 +127,7 @@ function SidebarNav({
       >
         {/* Logo & Close */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-[rgba(255,255,255,0.08)]">
-          <div>
-            <h1 className="text-lg font-bold text-[#F5F5F7]">Secretza</h1>
-            <p className="text-xs text-[#A1A1AA]">Dashboard</p>
-          </div>
+          <Logo variant="mobile" theme="dark" iconSize={32} />
           <button
             onClick={onClose}
             className="lg:hidden p-1 rounded-md text-[#A1A1AA] hover:text-[#F5F5F7] hover:bg-[rgba(255,255,255,0.05)]"
@@ -480,18 +479,32 @@ function OverviewPage({
 }
 
 // ==========================================
-// Ranking Badge Component
+// Ranking Badge Component (four-tier v2)
 // ==========================================
 function RankingBadge({ listing }: { listing: Listing }) {
   const now = Date.now();
-  const boostActive = listing.isBoosted && listing.boostUntil && new Date(listing.boostUntil).getTime() > now;
-  const featuredActive = listing.isFeatured && listing.featuredUntil && new Date(listing.featuredUntil).getTime() > now;
+  const boostActive =
+    listing.isBoosted &&
+    listing.boostUntil &&
+    new Date(listing.boostUntil).getTime() > now;
+  const featuredActive =
+    listing.isFeatured &&
+    listing.featuredUntil &&
+    new Date(listing.featuredUntil).getTime() > now;
 
   if (boostActive) {
     return (
       <Badge className="bg-violet-500/20 text-violet-400 border-violet-500/30 text-[10px] px-1.5 py-0 gap-1">
         <Rocket className="size-3" />
         Boosted
+      </Badge>
+    );
+  }
+  if (listing.isPremium) {
+    return (
+      <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-[10px] px-1.5 py-0 gap-1">
+        <Crown className="size-3" />
+        Premium
       </Badge>
     );
   }
@@ -507,19 +520,32 @@ function RankingBadge({ listing }: { listing: Listing }) {
 }
 
 // ==========================================
-// Priority Score Bar
+// Priority Score Bar (four-tier v2)
 // ==========================================
 function PriorityScoreBar({ score }: { score: number }) {
-  const maxScore = 1600; // Theoretical max
+  // Theoretical max: Boosted base (3 000) + max soft signals (148) ≈ 3 150
+  const maxScore = 3200;
   const percentage = Math.min(100, (score / maxScore) * 100);
-  const color = score >= 1000 ? "from-violet-500 to-fuchsia-500" : score >= 500 ? "from-amber-500 to-orange-500" : "from-zinc-500 to-zinc-400";
+  const color =
+    score >= 3000
+      ? "from-violet-500 to-fuchsia-500"   // Boosted
+      : score >= 2000
+      ? "from-blue-500 to-indigo-500"      // Premium
+      : score >= 1000
+      ? "from-amber-500 to-orange-500"     // Featured
+      : "from-zinc-500 to-zinc-400";       // Free
 
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-1 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
-        <div className={`h-full bg-gradient-to-r ${color} rounded-full transition-all duration-500`} style={{ width: `${percentage}%` }} />
+        <div
+          className={`h-full bg-gradient-to-r ${color} rounded-full transition-all duration-500`}
+          style={{ width: `${percentage}%` }}
+        />
       </div>
-      <span className="text-[10px] text-[#A1A1AA] font-mono w-10 text-right">{Math.round(score)}</span>
+      <span className="text-[10px] text-[#A1A1AA] font-mono w-10 text-right">
+        {Math.round(score)}
+      </span>
     </div>
   );
 }
@@ -1069,7 +1095,7 @@ function LoginPrompt() {
         </h2>
         <p className="text-[#A1A1AA] mb-8">
           Sign in to manage your listings, track performance, and grow your audience on
-          Secretza.
+          {BRAND_NAME}.
         </p>
         <Button
           onClick={() => {

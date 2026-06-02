@@ -1,0 +1,275 @@
+{
+  "generatedAt": "2026-05-30T18:12:25.634Z",
+  "title": "Search & Filters Fix — Verification Report",
+  "summary": {
+    "total": 19,
+    "passed": 19,
+    "failed": 0,
+    "skipped": 1,
+    "blockersFailed": 0
+  },
+  "implementation": {
+    "fix1": "AND-of-OR: keyword and category conditions pushed into andClauses[], merged via where.AND",
+    "fix2": "page:1 added to all 9 setFilters calls in SearchResults.tsx (5 filter + 4 badge dismiss)",
+    "fix3": "Sort label 'Relevance' → 'Best Match', value stays 'relevance' (now explicit case in API)",
+    "fix4": "case 'ranking' and case 'relevance' added explicitly in sort switch",
+    "fix5": "Post-pagination in-memory re-sort removed (operated on wrong slice)",
+    "filesChanged": [
+      "src/app/api/listings/route.ts",
+      "src/components/secretza/listing/SearchResults.tsx"
+    ]
+  },
+  "groups": {
+    "A — Static: API route (keyword+category fix, ranking case)": [
+      {
+        "name": "SA-A1 · where.AND used for compound filter logic",
+        "ok": true,
+        "detail": "andClauses merged via where.AND — no longer two separate where.OR assignments",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A2 · where.OR is never assigned directly (old overwrite removed)",
+        "ok": true,
+        "detail": "Removed the two sequential `where.OR =` assignments that caused the keyword overwrite bug",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A3 · keyword builds an OR clause pushed into andClauses",
+        "ok": true,
+        "detail": "andClauses.push({ OR: [keyword conditions] })",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A4 · category builds an OR clause pushed into andClauses",
+        "ok": true,
+        "detail": "andClauses.push({ OR: [category conditions] })",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA-A5 · case 'ranking' is explicit in sort switch",
+        "ok": true,
+        "detail": "No longer relies on default branch for the primary ranking case",
+        "severity": "medium"
+      },
+      {
+        "name": "SA-A6 · case 'relevance' maps to priorityScore sort",
+        "ok": true,
+        "detail": "Legacy 'relevance' value now explicitly handled alongside 'ranking'",
+        "severity": "medium"
+      },
+      {
+        "name": "SA-A7 · post-pagination in-memory re-sort removed",
+        "ok": true,
+        "detail": "DB-level priorityScore ordering is now the authority; in-memory resort removed",
+        "severity": "medium"
+      },
+      {
+        "name": "SA-A8 · city filter still uses separate where field (not OR — no regression)",
+        "ok": true,
+        "detail": "City filter uses dedicated where.cityId/citySlug — no conflict with andClauses",
+        "severity": "high"
+      }
+    ],
+    "B — Static: SearchResults.tsx (page:1 resets, Best Match label)": [
+      {
+        "name": "SA-B1 · category filter setFilters includes page:1",
+        "ok": true,
+        "detail": "setFilters({ categorySlug: ..., page: 1 }) in FilterContent checkbox",
+        "severity": "high"
+      },
+      {
+        "name": "SA-B2 · country filter setFilters includes page:1",
+        "ok": true,
+        "detail": "setFilters({ countrySlug: ..., stateSlug: undefined, citySlug: undefined, page: 1 })",
+        "severity": "high"
+      },
+      {
+        "name": "SA-B3 · state filter setFilters includes page:1",
+        "ok": true,
+        "detail": "setFilters({ stateSlug: ..., citySlug: undefined, page: 1 })",
+        "severity": "high"
+      },
+      {
+        "name": "SA-B4 · city filter setFilters includes page:1",
+        "ok": true,
+        "detail": "setFilters({ citySlug: ..., page: 1 })",
+        "severity": "high"
+      },
+      {
+        "name": "SA-B5 · featured toggle setFilters includes page:1",
+        "ok": true,
+        "detail": "setFilters({ featured: ..., page: 1 })",
+        "severity": "high"
+      },
+      {
+        "name": "SA-B6 · keyword badge dismiss includes page:1",
+        "ok": true,
+        "detail": "setFilters({ keyword: undefined, page: 1 })",
+        "severity": "high"
+      },
+      {
+        "name": "SA-B7 · category badge dismiss includes page:1",
+        "ok": true,
+        "detail": "setFilters({ categorySlug: undefined, page: 1 })",
+        "severity": "high"
+      },
+      {
+        "name": "SA-B8 · country badge dismiss includes page:1",
+        "ok": true,
+        "detail": "setFilters({ countrySlug: undefined, stateSlug: undefined, citySlug: undefined, page: 1 })",
+        "severity": "high"
+      },
+      {
+        "name": "SA-B9 · featured badge dismiss includes page:1",
+        "ok": true,
+        "detail": "setFilters({ featured: undefined, page: 1 })",
+        "severity": "high"
+      },
+      {
+        "name": "SA-B10 · 'Best Match' label present in sortOptions",
+        "ok": true,
+        "detail": "{ value: \"relevance\", label: \"Best Match\" } — 'Relevance' label removed",
+        "severity": "medium"
+      },
+      {
+        "name": "SA-B11 · 'Relevance' label removed from sortOptions",
+        "ok": true,
+        "detail": "Old label string 'Relevance' no longer appears in sortOptions array",
+        "severity": "medium"
+      }
+    ],
+    "Infrastructure": [
+      {
+        "name": "LIVE · Server reachability",
+        "ok": false,
+        "detail": "http://localhost:3000 not reachable — start dev server to run live tests",
+        "severity": "info",
+        "skipped": true
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "SA-A1 · where.AND used for compound filter logic",
+      "ok": true,
+      "detail": "andClauses merged via where.AND — no longer two separate where.OR assignments",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A2 · where.OR is never assigned directly (old overwrite removed)",
+      "ok": true,
+      "detail": "Removed the two sequential `where.OR =` assignments that caused the keyword overwrite bug",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A3 · keyword builds an OR clause pushed into andClauses",
+      "ok": true,
+      "detail": "andClauses.push({ OR: [keyword conditions] })",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A4 · category builds an OR clause pushed into andClauses",
+      "ok": true,
+      "detail": "andClauses.push({ OR: [category conditions] })",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA-A5 · case 'ranking' is explicit in sort switch",
+      "ok": true,
+      "detail": "No longer relies on default branch for the primary ranking case",
+      "severity": "medium"
+    },
+    {
+      "name": "SA-A6 · case 'relevance' maps to priorityScore sort",
+      "ok": true,
+      "detail": "Legacy 'relevance' value now explicitly handled alongside 'ranking'",
+      "severity": "medium"
+    },
+    {
+      "name": "SA-A7 · post-pagination in-memory re-sort removed",
+      "ok": true,
+      "detail": "DB-level priorityScore ordering is now the authority; in-memory resort removed",
+      "severity": "medium"
+    },
+    {
+      "name": "SA-A8 · city filter still uses separate where field (not OR — no regression)",
+      "ok": true,
+      "detail": "City filter uses dedicated where.cityId/citySlug — no conflict with andClauses",
+      "severity": "high"
+    },
+    {
+      "name": "SA-B1 · category filter setFilters includes page:1",
+      "ok": true,
+      "detail": "setFilters({ categorySlug: ..., page: 1 }) in FilterContent checkbox",
+      "severity": "high"
+    },
+    {
+      "name": "SA-B2 · country filter setFilters includes page:1",
+      "ok": true,
+      "detail": "setFilters({ countrySlug: ..., stateSlug: undefined, citySlug: undefined, page: 1 })",
+      "severity": "high"
+    },
+    {
+      "name": "SA-B3 · state filter setFilters includes page:1",
+      "ok": true,
+      "detail": "setFilters({ stateSlug: ..., citySlug: undefined, page: 1 })",
+      "severity": "high"
+    },
+    {
+      "name": "SA-B4 · city filter setFilters includes page:1",
+      "ok": true,
+      "detail": "setFilters({ citySlug: ..., page: 1 })",
+      "severity": "high"
+    },
+    {
+      "name": "SA-B5 · featured toggle setFilters includes page:1",
+      "ok": true,
+      "detail": "setFilters({ featured: ..., page: 1 })",
+      "severity": "high"
+    },
+    {
+      "name": "SA-B6 · keyword badge dismiss includes page:1",
+      "ok": true,
+      "detail": "setFilters({ keyword: undefined, page: 1 })",
+      "severity": "high"
+    },
+    {
+      "name": "SA-B7 · category badge dismiss includes page:1",
+      "ok": true,
+      "detail": "setFilters({ categorySlug: undefined, page: 1 })",
+      "severity": "high"
+    },
+    {
+      "name": "SA-B8 · country badge dismiss includes page:1",
+      "ok": true,
+      "detail": "setFilters({ countrySlug: undefined, stateSlug: undefined, citySlug: undefined, page: 1 })",
+      "severity": "high"
+    },
+    {
+      "name": "SA-B9 · featured badge dismiss includes page:1",
+      "ok": true,
+      "detail": "setFilters({ featured: undefined, page: 1 })",
+      "severity": "high"
+    },
+    {
+      "name": "SA-B10 · 'Best Match' label present in sortOptions",
+      "ok": true,
+      "detail": "{ value: \"relevance\", label: \"Best Match\" } — 'Relevance' label removed",
+      "severity": "medium"
+    },
+    {
+      "name": "SA-B11 · 'Relevance' label removed from sortOptions",
+      "ok": true,
+      "detail": "Old label string 'Relevance' no longer appears in sortOptions array",
+      "severity": "medium"
+    },
+    {
+      "name": "LIVE · Server reachability",
+      "ok": false,
+      "detail": "http://localhost:3000 not reachable — start dev server to run live tests",
+      "severity": "info",
+      "skipped": true
+    }
+  ],
+  "failed": []
+}

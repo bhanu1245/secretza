@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import type { MetadataRoute } from "next";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://secretza.com";
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://SecretZa.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Fetch all approved listings
@@ -92,6 +92,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
+  // Published SEO pages (includes canonical URLs from DB)
+  const seoPages = await db.seoPage.findMany({
+    where: { isPublished: true, noindex: false },
+    select: { canonicalUrl: true, updatedAt: true, pageType: true, pageSlug: true },
+    take: 50000,
+  });
+
+  const seoSitemapPages: MetadataRoute.Sitemap = seoPages
+    .filter((p) => p.canonicalUrl)
+    .map((p) => ({
+      url: p.canonicalUrl!.startsWith("http")
+        ? p.canonicalUrl!
+        : `${BASE_URL}${p.canonicalUrl}`,
+      lastModified: p.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.55,
+    }));
+
   return [
     ...staticPages,
     ...categoryPages,
@@ -99,5 +117,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...statePages,
     ...cityPages,
     ...listingPages,
+    ...seoSitemapPages,
   ];
 }

@@ -1,5 +1,5 @@
 /**
- * SEO Landing Page Generator for Secretza
+ * SEO Landing Page Generator for SecretZa
  * Programmatically generates high-priority landing pages for SEO.
  * Server-side only — no 'use client'.
  */

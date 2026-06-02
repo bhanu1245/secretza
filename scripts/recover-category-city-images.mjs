@@ -11,6 +11,13 @@
 
 const BASE = process.env.TEST_BASE_URL || 'http://localhost:3000';
 const BATCH = 100;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error('ADMIN_EMAIL and ADMIN_PASSWORD are required.');
+  process.exit(1);
+}
 
 function parseCookies(jar, header) {
   if (!header) return;
@@ -56,8 +63,8 @@ async function main() {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'x-csrf-token': csrfToken },
     body: new URLSearchParams({
       csrfToken: authCsrf,
-      email: 'admin@secretza.com',
-      password: 'Admin@123',
+      email: ADMIN_EMAIL,
+      password: ADMIN_PASSWORD,
       json: 'true',
     }).toString(),
     redirect: 'manual',

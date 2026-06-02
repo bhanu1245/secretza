@@ -10,7 +10,7 @@ import { toDataURL } from "qrcode";
 // ==========================================
 
 export interface UPIQRParams {
-  /** UPI ID (e.g. "secretza@ybl") */
+  /** UPI ID (e.g. "SecretZa@ybl") */
   upiId?: string;
   /** Payee name shown in UPI app */
   name?: string;
@@ -34,8 +34,8 @@ export interface UPIConfig {
 // ==========================================
 
 export const UPI_CONFIG: UPIConfig = {
-  upiId: "secretza@ybl",
-  name: "Secretza",
+  upiId: "SecretZa@ybl",
+  name: "SecretZa",
   phone: "+919876543210",
   paymentInstructions: [
     "Open any UPI app (Google Pay, PhonePe, Paytm, etc.)",

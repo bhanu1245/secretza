@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="SecretZa Concept A  SZ with feminine silhouette negative space">
+  <defs>
+    <linearGradient id="a-bg" x1="64" y1="64" x2="448" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6"/>
+      <stop offset="0.55" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="a-stroke" x1="140" y1="100" x2="380" y2="400" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#E0E7FF" stop-opacity="0.85"/>
+    </linearGradient>
+    <filter id="a-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="a-round">
+      <rect width="512" height="512" rx="112"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#a-round)">
+    <!-- Soft ambient glow -->
+    <ellipse cx="256" cy="280" rx="180" ry="160" fill="#6366F1" opacity="0.18" filter="url(#a-glow)"/>
+
+    <!-- App icon background -->
+    <rect width="512" height="512" rx="112" fill="url(#a-bg)"/>
+    <rect width="512" height="512" rx="112" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
+
+    <!-- Combined SZ letterform block (silhouette = negative space cutout) -->
+    <g filter="url(#a-glow)">
+      <!-- S curve (left) -->
+      <path
+        d="M108 168c0-36 32-58 78-58 38 0 68 18 68 48 0 28-22 46-62 56-34 10-52 22-52 42s26 44 66 44c36 0 62-16 62-44"
+        stroke="url(#a-stroke)"
+        stroke-width="28"
+        stroke-linecap="round"
+        fill="none"
+      />
+      <!-- Z structure (right) -->
+      <path
+        d="M268 128h148M268 256l148-128M268 256h148"
+        stroke="url(#a-stroke)"
+        stroke-width="28"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+
+      <!-- Feminine profile  negative space: carved from letter gap using dark fill matching bg illusion -->
+      <!-- Elegant side profile: forehead � nose � lips � chin (abstract, non-explicit) -->
+      <path
+        d="M218 148
+           C228 132 248 128 262 138
+           C272 146 278 162 274 178
+           C270 192 258 202 248 210
+           C238 218 228 232 232 248
+           C236 264 252 278 268 284
+           C284 290 296 302 298 318
+           C300 334 288 348 272 354
+           C256 360 240 352 232 338
+           C224 324 220 308 218 292
+           C216 276 214 260 210 244
+           C206 228 200 212 198 196
+           C196 180 204 162 218 148 Z"
+        fill="#07070B"
+        opacity="0.92"
+      />
+      <!-- Inner highlight on profile edge (luxury depth) -->
+      <path
+        d="M248 158 C256 150 268 152 272 164 C268 172 258 178 252 188
+           M252 218 C258 228 268 238 272 252 C266 262 254 268 246 258
+           M268 302 C274 312 282 322 278 334 C270 342 258 338 254 326"
+        stroke="rgba(255,255,255,0.22)"
+        stroke-width="3"
+        stroke-linecap="round"
+        fill="none"
+      />
+    </g>
+
+    <!-- Trust check  subtle -->
+    <path d="M352 368l14 14 32-38" stroke="#BFDBFE" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+  </g>
+</svg>

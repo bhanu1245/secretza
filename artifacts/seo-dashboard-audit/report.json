@@ -1,0 +1,255 @@
+{
+  "generatedAt": "2026-05-29T16:48:09.065Z",
+  "loadTimeMs": 61,
+  "loadTimePass": true,
+  "maxLoadMs": 2000,
+  "checks": [
+    {
+      "name": "Total SEO pages",
+      "expected": 346,
+      "actual": 346,
+      "pass": true
+    },
+    {
+      "name": "Published pages",
+      "expected": 346,
+      "actual": 346,
+      "pass": true
+    },
+    {
+      "name": "Draft pages",
+      "expected": 0,
+      "actual": 0,
+      "pass": true
+    },
+    {
+      "name": "Avg SEO score",
+      "expected": 97.3,
+      "actual": 97.3,
+      "pass": true
+    },
+    {
+      "name": "Avg uniqueness",
+      "expected": 88.3,
+      "actual": 88.3,
+      "pass": true
+    },
+    {
+      "name": "Low risk count",
+      "expected": 3,
+      "actual": 3,
+      "pass": true
+    },
+    {
+      "name": "Medium risk count",
+      "expected": 0,
+      "actual": 0,
+      "pass": true
+    },
+    {
+      "name": "High risk count",
+      "expected": 0,
+      "actual": 0,
+      "pass": true
+    },
+    {
+      "name": "Below 500 words",
+      "expected": 0,
+      "actual": 0,
+      "pass": true
+    },
+    {
+      "name": "Below min words",
+      "expected": 343,
+      "actual": 343,
+      "pass": true
+    },
+    {
+      "name": "Total regenerated",
+      "expected": 5,
+      "actual": 5,
+      "pass": true
+    },
+    {
+      "name": "Rollback count",
+      "expected": 5,
+      "actual": 5,
+      "pass": true
+    },
+    {
+      "name": "Quality chart sum",
+      "expected": 346,
+      "actual": 346,
+      "pass": true
+    },
+    {
+      "name": "Risk chart sum",
+      "expected": 346,
+      "actual": 346,
+      "pass": true
+    }
+  ],
+  "allChecksPass": true,
+  "widgetAudit": [
+    {
+      "widget": "Total SEO Pages",
+      "old": "API mixed/hardcoded",
+      "source": "SeoPage.count()",
+      "fixed": true
+    },
+    {
+      "widget": "Published Pages",
+      "old": "API count",
+      "source": "SeoPage isPublished=true",
+      "fixed": true
+    },
+    {
+      "widget": "Draft Pages",
+      "old": "API count",
+      "source": "SeoPage isPublished=false",
+      "fixed": true
+    },
+    {
+      "widget": "Average SEO Score",
+      "old": "Derived health formula",
+      "source": "SeoPage.aggregate seoQualityScore",
+      "fixed": true
+    },
+    {
+      "widget": "Average Uniqueness",
+      "old": "Partial/mock",
+      "source": "SeoPage.aggregate uniquenessScore",
+      "fixed": true
+    },
+    {
+      "widget": "Low/Medium/High Risk",
+      "old": "City slug collision estimate",
+      "source": "SeoPage.groupBy duplicateRisk",
+      "fixed": true
+    },
+    {
+      "widget": "Pages Below 500 Words",
+      "old": "Real but buried",
+      "source": "SeoPage.count wordCount<500",
+      "fixed": true
+    },
+    {
+      "widget": "Missing Meta/H1/Canonical/Image",
+      "old": "Partial",
+      "source": "SeoPage null/empty field counts",
+      "fixed": true
+    },
+    {
+      "widget": "Missing FAQ",
+      "old": "Partial",
+      "source": "SeoPage faqCount + SeoFaq relation",
+      "fixed": true
+    },
+    {
+      "widget": "Missing Structured Data",
+      "old": "ImageObject proxy (wrong)",
+      "source": "SeoPage customData contains @type",
+      "fixed": true
+    },
+    {
+      "widget": "Missing Internal Links",
+      "old": "Partial",
+      "source": "SeoPage internalLinksCount aggregate",
+      "fixed": true
+    },
+    {
+      "widget": "Duplicate Titles/Meta/H1",
+      "old": "City slug logic",
+      "source": "SQL duplicate field groups",
+      "fixed": true
+    },
+    {
+      "widget": "Duplicate Content",
+      "old": "Not shown / similarity on load",
+      "source": "SeoPage contentHash SQL groups",
+      "fixed": true
+    },
+    {
+      "widget": "Recently Updated Pages",
+      "old": "lastGenerated: new Date()",
+      "source": "SeoPage orderBy updatedAt",
+      "fixed": true
+    },
+    {
+      "widget": "Regeneration Statistics",
+      "old": "Partial",
+      "source": "SeoRegenerationRun/Item aggregates",
+      "fixed": true
+    },
+    {
+      "widget": "Audit Statistics",
+      "old": "Mixed",
+      "source": "SeoPage audit aggregates",
+      "fixed": true
+    },
+    {
+      "widget": "SEO Quality Chart",
+      "old": "Placeholder",
+      "source": "SeoPage score bucket counts",
+      "fixed": true
+    },
+    {
+      "widget": "Duplicate Risk Chart",
+      "old": "Placeholder",
+      "source": "SeoPage duplicateRisk groupBy",
+      "fixed": true
+    },
+    {
+      "widget": "Word Count Chart",
+      "old": "Placeholder",
+      "source": "SeoPage wordCount bucket counts",
+      "fixed": true
+    },
+    {
+      "widget": "Regeneration History Chart",
+      "old": "Placeholder",
+      "source": "SeoRegenerationRun completedCount",
+      "fixed": true
+    },
+    {
+      "widget": "Quick stat trends (+12%)",
+      "old": "Hardcoded strings",
+      "source": "Removed",
+      "fixed": true
+    },
+    {
+      "widget": "Verification status",
+      "old": "Hardcoded configured flags",
+      "source": "getAllVerificationConfigs()",
+      "fixed": true
+    },
+    {
+      "widget": "Indexation panel",
+      "old": "scoreAllPages() N+1 queries",
+      "source": "SeoPage published/noindex counts",
+      "fixed": true
+    },
+    {
+      "widget": "Crawl panel",
+      "old": "Heavy getCrawlStats()",
+      "source": "CrawlEvent count aggregates",
+      "fixed": true
+    }
+  ],
+  "screenshot": "artifacts\\seo-dashboard-audit\\seo-dashboard.png",
+  "filesChanged": [
+    "src/lib/seo-dashboard-metrics.ts",
+    "src/app/api/seo/dashboard/route.ts",
+    "src/components/secretza/admin/SeoDashboard.tsx",
+    "scripts/verify-seo-dashboard.ts"
+  ],
+  "queriesUsed": [
+    "SeoPage.count / aggregate / groupBy",
+    "SeoPage SQL duplicate title/meta/h1/contentHash groups",
+    "SeoRegenerationRun.findMany (history)",
+    "SeoRegenerationItem.groupBy status",
+    "SeoContentVersion.count rolledBackAt",
+    "CrawlEvent.count (summary)",
+    "generateSitemapStats() chunk counts"
+  ]
+}

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createStorageService } from "@/lib/storage";
-import { canAccessListingImageFile } from "@/lib/image-moderation";
+import { createStorageService, getUploadsBasePath } from "@/lib/storage";
+import { authorizeUploadedFileAccess } from "@/lib/image-moderation";
 
 export async function GET(request: Request) {
   try {
@@ -18,9 +18,15 @@ export async function GET(request: Request) {
       ? { id: session.user.id, role: session.user.role as string }
       : undefined;
 
-    const allowed = await canAccessListingImageFile(key, viewer);
+    const allowed = await authorizeUploadedFileAccess(key, viewer);
     if (!allowed) {
-      return NextResponse.json({ error: "Image not available" }, { status: 403 });
+      const prefix = key.split("/")[0] ?? "unknown";
+      console.warn("[UploadFile] denied access", {
+        prefix,
+        viewerId: viewer?.id ?? null,
+        role: viewer?.role ?? null,
+      });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const storage = createStorageService();
@@ -33,8 +39,8 @@ export async function GET(request: Request) {
 
     const { readFile } = await import("fs/promises");
     const path = await import("path");
-    const filePath = path.resolve(process.cwd(), "uploads", key);
-    const basePath = path.resolve(process.cwd(), "uploads");
+    const basePath = getUploadsBasePath();
+    const filePath = path.resolve(basePath, key);
 
     if (!filePath.startsWith(basePath + path.sep)) {
       console.warn("[UploadFile] invalid key", { key });
@@ -45,14 +51,28 @@ export async function GET(request: Request) {
     return new NextResponse(file, {
       headers: {
         "Content-Type": contentTypeFor(key),
-        "Cache-Control":
-          key.startsWith("listings/") ? "private, max-age=3600" : "public, max-age=31536000, immutable",
+        "Cache-Control": cacheControlFor(key),
       },
     });
   } catch (error) {
     console.warn("[UploadFile] failed to serve file", error);
     return NextResponse.json({ error: "File not found" }, { status: 404 });
   }
+}
+
+/** Cache policy by key prefix — sensitive screenshots are never cached by shared caches. */
+function cacheControlFor(key: string): string {
+  if (key.startsWith("screenshots/")) {
+    // Payment proofs: sensitive — no shared/CDN caching, no storage.
+    return "private, no-store, max-age=0";
+  }
+  if (key.startsWith("listings/")) {
+    return "private, max-age=3600";
+  }
+  if (key.startsWith("seo/")) {
+    return "public, max-age=31536000, immutable";
+  }
+  return "private, no-store, max-age=0";
 }
 
 function contentTypeFor(key: string) {

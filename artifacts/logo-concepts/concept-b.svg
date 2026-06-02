@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="SecretZa Concept B  Shield with SZ and silhouette">
+  <defs>
+    <linearGradient id="b-bg" x1="80" y1="40" x2="432" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6"/>
+      <stop offset="0.5" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="b-shield" x1="256" y1="48" x2="256" y2="464" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.04"/>
+    </linearGradient>
+    <filter id="b-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="b-round"><rect width="512" height="512" rx="112"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#b-round)">
+    <rect width="512" height="512" rx="112" fill="#0B0B0F"/>
+    <ellipse cx="256" cy="268" rx="200" ry="190" fill="#6366F1" opacity="0.15" filter="url(#b-glow)"/>
+
+    <!-- Shield outline -->
+    <path
+      d="M256 56
+         C256 56 400 96 400 200
+         C400 320 320 400 256 456
+         C192 400 112 320 112 200
+         C112 96 256 56 256 56 Z"
+      fill="url(#b-bg)"
+      stroke="rgba(255,255,255,0.2)"
+      stroke-width="3"
+      filter="url(#b-glow)"
+    />
+    <path
+      d="M256 72 C256 72 384 108 384 200 C384 308 312 380 256 428 C200 380 128 308 128 200 C128 108 256 72 256 72 Z"
+      fill="url(#b-shield)"
+    />
+
+    <!-- SZ inside shield -->
+    <g opacity="0.95">
+      <path
+        d="M156 196c0-28 24-48 58-48 30 0 52 16 52 40 0 22-16 36-46 44-26 8-40 16-40 32s18 34 48 34c28 0 48-14 48-36"
+        stroke="#FFFFFF"
+        stroke-width="20"
+        stroke-linecap="round"
+        fill="none"
+      />
+      <path
+        d="M278 168h108M278 248l108-80M278 248h108"
+        stroke="#FFFFFF"
+        stroke-width="20"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </g>
+
+    <!-- Profile negative space  centered in shield, between S and Z -->
+    <path
+      d="M238 168
+         C248 154 266 150 278 160
+         C288 168 292 182 288 196
+         C284 208 274 216 266 224
+         C258 232 252 246 256 260
+         C260 274 272 286 286 292
+         C300 298 308 310 306 324
+         C304 338 290 348 274 350
+         C258 352 246 342 242 328
+         C238 314 236 298 234 282
+         C232 266 228 250 224 234
+         C220 218 226 182 238 168 Z"
+      fill="#0B0B0F"
+    />
+    <path
+      d="M262 176 C270 168 280 172 282 182 M258 228 C264 238 274 246 278 258 M278 308 C284 318 292 326 286 336"
+      stroke="rgba(191,219,254,0.35)"
+      stroke-width="2.5"
+      stroke-linecap="round"
+      fill="none"
+    />
+
+    <!-- Verification badge at shield base -->
+    <circle cx="256" cy="388" r="28" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
+    <path d="M244 388l8 8 18-22" stroke="#93C5FD" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

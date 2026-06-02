@@ -1,0 +1,306 @@
+{
+  "timestamp": "2026-05-31T16:31:31.044Z",
+  "score": 100,
+  "passed": 49,
+  "total": 49,
+  "status": "PASS",
+  "filesChanged": [
+    {
+      "file": "src/lib/ranking-engine.ts",
+      "change": "Four-tier architecture (Boosted 3000 / Premium 2000 / Featured 1000 / Free 0), getActiveTier(), getNextBumpBatchForTier()"
+    },
+    {
+      "file": "src/lib/types.ts",
+      "change": "RankLabel includes \"premium\"; Listing adds isPremium; SearchFilters.sortBy adds \"ranking\""
+    },
+    {
+      "file": "src/app/api/cron/refresh-ranking/route.ts",
+      "change": "Syncs Listing.isPremium from user; per-tier bump loop (all 4 tiers)"
+    },
+    {
+      "file": "src/lib/seo-public-page.ts",
+      "change": "All 7 orderBy clauses changed to [{ priorityScore: desc }, { createdAt: desc }]"
+    },
+    {
+      "file": "src/app/api/listings/route.ts",
+      "change": "featured sort → priorityScore only; rankInput includes isPremium"
+    },
+    {
+      "file": "src/app/api/admin/payments/manual/[id]/review/route.ts",
+      "change": "Premium approval immediately syncs Listing.isPremium and recomputes scores"
+    },
+    {
+      "file": "src/store/useAppStore.ts",
+      "change": "Default sortBy: featured → relevance"
+    },
+    {
+      "file": "src/app/page.tsx",
+      "change": "LocationPage sortBy: newest → relevance"
+    },
+    {
+      "file": "src/components/secretza/dashboard/Dashboard.tsx",
+      "change": "Premium badge; score bar maxScore 1600→3200; 4-color tier gradient"
+    }
+  ],
+  "tierScoreRanges": {
+    "Boosted": "3000–3148",
+    "Premium": "2000–2148",
+    "Featured": "1000–1148",
+    "Free": "0–148"
+  },
+  "tierGapSafety": "1000 unit gap; max combined soft signals = 148 (rotation 99 + engagement 25 + recency 24)",
+  "rotationCycle": "30 minutes",
+  "tiersRotated": [
+    "boosted",
+    "premium",
+    "featured",
+    "free"
+  ],
+  "checks": [
+    {
+      "id": "1a",
+      "description": "TIER_BOOSTED = 3000 defined",
+      "pass": true
+    },
+    {
+      "id": "1b",
+      "description": "TIER_PREMIUM = 2000 defined",
+      "pass": true
+    },
+    {
+      "id": "1c",
+      "description": "TIER_FEATURED = 1000 defined",
+      "pass": true
+    },
+    {
+      "id": "1d",
+      "description": "TIER_FREE = 0 defined",
+      "pass": true
+    },
+    {
+      "id": "1e",
+      "description": "Tier gap (1000) exceeds max soft signals (99+25+24=148)",
+      "pass": true
+    },
+    {
+      "id": "2a",
+      "description": "getActiveTier exported from ranking-engine",
+      "pass": true
+    },
+    {
+      "id": "2b",
+      "description": "Boosted tier checked first (before premium/featured)",
+      "pass": true
+    },
+    {
+      "id": "2c",
+      "description": "isPremium checked for Premium tier (no expiry window on listing)",
+      "pass": true
+    },
+    {
+      "id": "2d",
+      "description": "Featured tier checks featuredUntil window (time-bounded)",
+      "pass": true
+    },
+    {
+      "id": "2e",
+      "description": "Free is the fallback (last return)",
+      "pass": true
+    },
+    {
+      "id": "3a",
+      "description": "computePriorityScore assigns tier base via getActiveTier",
+      "pass": true
+    },
+    {
+      "id": "3b",
+      "description": "Rotation bump applies to ALL tiers (no tier filter around bump)",
+      "pass": true
+    },
+    {
+      "id": "3c",
+      "description": "isPremium is optional in ListingRankInput (backward compat)",
+      "pass": true
+    },
+    {
+      "id": "4a",
+      "description": "getRankLabel returns \"premium\" for premium tier",
+      "pass": true
+    },
+    {
+      "id": "4b",
+      "description": "RankedListing rankLabel includes premium variant",
+      "pass": true
+    },
+    {
+      "id": "5a",
+      "description": "getNextBumpBatchForTier exported from ranking-engine",
+      "pass": true
+    },
+    {
+      "id": "5b",
+      "description": "getNextBumpBatchForTier filters by getActiveTier",
+      "pass": true
+    },
+    {
+      "id": "5c",
+      "description": "Legacy getNextBumpBatch still exported (backward compat)",
+      "pass": true
+    },
+    {
+      "id": "6a",
+      "description": "RankLabel type includes \"premium\"",
+      "pass": true
+    },
+    {
+      "id": "6b",
+      "description": "Listing interface has isPremium field",
+      "pass": true
+    },
+    {
+      "id": "6c",
+      "description": "SearchFilters.sortBy includes \"ranking\"",
+      "pass": true
+    },
+    {
+      "id": "7a",
+      "description": "Cron imports getNextBumpBatchForTier",
+      "pass": true
+    },
+    {
+      "id": "7b",
+      "description": "Cron syncs Listing.isPremium from user (activate step)",
+      "pass": true
+    },
+    {
+      "id": "7c",
+      "description": "Cron deactivates Listing.isPremium for non-premium users",
+      "pass": true
+    },
+    {
+      "id": "7d",
+      "description": "Cron fetches isPremium in allApproved select",
+      "pass": true
+    },
+    {
+      "id": "7e",
+      "description": "Cron bumps all four tiers (boosted, premium, featured, free)",
+      "pass": true
+    },
+    {
+      "id": "7f",
+      "description": "Cron uses TIERS array for per-tier loop",
+      "pass": true
+    },
+    {
+      "id": "7g",
+      "description": "Cron response includes rotationByTier breakdown",
+      "pass": true
+    },
+    {
+      "id": "8a",
+      "description": "seo-public-page.ts has no isFeatured-first sort key",
+      "pass": true
+    },
+    {
+      "id": "8b",
+      "description": "listings/route.ts 'featured' sort uses priorityScore only",
+      "pass": true
+    },
+    {
+      "id": "8c",
+      "description": "rankInput in listings API includes isPremium",
+      "pass": true
+    },
+    {
+      "id": "9a",
+      "description": "Review route updates Listing.isPremium=true on premium approval",
+      "pass": true
+    },
+    {
+      "id": "9b",
+      "description": "Review route recomputes listing score after premium sync",
+      "pass": true
+    },
+    {
+      "id": "9c",
+      "description": "Review route syncs all user's approved listings, not just one",
+      "pass": true
+    },
+    {
+      "id": "10a",
+      "description": "Default sortBy in useAppStore is 'relevance' (not 'featured')",
+      "pass": true
+    },
+    {
+      "id": "10b",
+      "description": "LocationPage in page.tsx uses 'relevance' sortBy (not 'newest')",
+      "pass": true
+    },
+    {
+      "id": "11a",
+      "description": "Dashboard RankingBadge shows Premium badge for isPremium",
+      "pass": true
+    },
+    {
+      "id": "11b",
+      "description": "Dashboard PriorityScoreBar has updated maxScore (3200)",
+      "pass": true
+    },
+    {
+      "id": "11c",
+      "description": "Dashboard score bar has four color tiers (3000, 2000, 1000)",
+      "pass": true
+    },
+    {
+      "id": "12a",
+      "description": "Boost+Premium+Featured => boosted pool",
+      "pass": true
+    },
+    {
+      "id": "12b",
+      "description": "Premium+Featured => premium pool (not featured)",
+      "pass": true
+    },
+    {
+      "id": "12c",
+      "description": "Featured only => featured pool",
+      "pass": true
+    },
+    {
+      "id": "12d",
+      "description": "No active tier => free pool",
+      "pass": true
+    },
+    {
+      "id": "12e",
+      "description": "Expired Boost + Premium => premium pool (not boosted)",
+      "pass": true
+    },
+    {
+      "id": "12f",
+      "description": "Expired Boost, no Premium, Featured => featured pool",
+      "pass": true
+    },
+    {
+      "id": "12g",
+      "description": "Expired everything => free pool",
+      "pass": true
+    },
+    {
+      "id": "12h",
+      "description": "Max Free score (148) < min Featured score (1000) — tiers never overlap",
+      "pass": true
+    },
+    {
+      "id": "12i",
+      "description": "Max Featured score (1148) < min Premium score (2000)",
+      "pass": true
+    },
+    {
+      "id": "12j",
+      "description": "Max Premium score (2148) < min Boosted score (3000)",
+      "pass": true
+    }
+  ]
+}

@@ -1,8 +1,9 @@
-export default function JsonLd({ data }: { data: Record<string, unknown> }) {
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
-    />
-  );
+import StructuredData from "./StructuredData";
+
+type JsonLdProps = {
+  data: unknown;
+};
+
+export default function JsonLd({ data }: JsonLdProps) {
+  return <StructuredData data={data} />;
 }

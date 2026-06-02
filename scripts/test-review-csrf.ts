@@ -68,11 +68,16 @@ async function main() {
   // 3. NextAuth CSRF + login
   const providersRes = await request("/api/auth/csrf", jar);
   const authCsrf = (await providersRes.json()) as { csrfToken: string };
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) {
+    throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD are required.");
+  }
 
   const loginBody = new URLSearchParams({
     csrfToken: authCsrf.csrfToken,
-    email: "admin@secretza.com",
-    password: "Admin@123",
+    email: adminEmail,
+    password: adminPassword,
     json: "true",
   });
 

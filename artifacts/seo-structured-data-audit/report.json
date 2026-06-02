@@ -1,0 +1,1425 @@
+{
+  "generatedAt": "2026-05-29T13:10:26.726Z",
+  "summary": {
+    "totalDbPages": 346,
+    "dbPagesPass": 346,
+    "dbPagesFail": 0,
+    "cityChecksPass": "5/5",
+    "samplePageTypesPass": 4,
+    "samplePageTypesTotal": 4
+  },
+  "schemaTypePassFail": {
+    "Organization": {
+      "pass": 346,
+      "fail": 0
+    },
+    "WebSite": {
+      "pass": 346,
+      "fail": 0
+    },
+    "WebPage": {
+      "pass": 346,
+      "fail": 0
+    },
+    "BreadcrumbList": {
+      "pass": 346,
+      "fail": 0
+    },
+    "FAQPage": {
+      "pass": 346,
+      "fail": 0
+    },
+    "ImageObject": {
+      "pass": 346,
+      "fail": 0
+    }
+  },
+  "cityAudits": [
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/ahmedabad",
+      "url": "/independent-escorts/ahmedabad",
+      "source": "published",
+      "pass": true,
+      "checks": {
+        "Organization": true,
+        "WebSite": true,
+        "WebPage": true,
+        "BreadcrumbList": true,
+        "FAQPage": true,
+        "ImageObject": true
+      },
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject"
+      ],
+      "issues": [],
+      "schemaCount": 6,
+      "exampleSchemas": {
+        "Organization": {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "logo": "https://secretza.com/logo.png",
+          "description": "India's Premium Adult Classifieds Platform",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "availableLanguage": [
+              "English",
+              "Hindi"
+            ]
+          },
+          "sameAs": []
+        },
+        "WebSite": {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "description": "India's Premium Adult Classifieds Platform",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://secretza.com/search?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        "WebPage": {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "Independent Escorts in Ahmedabad - Find independent escorts Ahmedabad Listings | Secretza",
+          "description": "Discover the best independent escorts in Ahmedabad. Browse verified listings, photos, and reviews on Secretza. Updated daily.",
+          "url": "https://secretza.com/independent-escorts/ahmedabad",
+          "isPartOf": {
+            "@type": "WebSite",
+            "name": "Secretza",
+            "url": "https://secretza.com"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Secretza",
+            "url": "https://secretza.com",
+            "logo": "https://secretza.com/logo.png"
+          }
+        },
+        "BreadcrumbList": {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://secretza.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "India",
+              "item": "https://secretza.com/india"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "Ahmedabad",
+              "item": "https://secretza.com/ahmedabad"
+            },
+            {
+              "@type": "ListItem",
+              "position": 4,
+              "name": "Independent Escorts",
+              "item": "https://secretza.com/independent-escorts/ahmedabad"
+            }
+          ]
+        },
+        "FAQPage": {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Where can I find independent escorts in Ahmedabad?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Secretza is the best platform to find independent escorts in Ahmedabad. Browse our verified listings with real photos, detailed descriptions, and user reviews. Use our filters to narrow results by area, price, and services. New independent escorts listings are added daily in Ahmedabad."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Are the independent escorts listings in Ahmedabad verified?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes, Secretza verifies independent escorts listings in Ahmedabad through a multi-step moderation process. We check profile details, verify photos, and monitor user feedback. Listings that don't meet our standards are removed. Always check for the verified badge and read reviews before connecting."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What are the rates for independent escorts in Ahmedabad?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "independent escorts rates in Ahmedabad vary depending on the provider, service type, duration, and experience level. Secretza allows you to filter listings by price range to find options that fit your budget. Premium providers typically charge more, while new listings may offer competitive introductory rates."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I find independent escorts near Surat as well?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes! Secretza covers independent escorts listings in Surat and surrounding areas near Ahmedabad. Simply switch the location filter or browse our nearby city listings to explore more options. We cover all major cities and towns across the region."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How do I stay safe when looking for independent escorts in Ahmedabad?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Always communicate through Secretza's platform initially, verify provider details and photos, read user reviews carefully, and meet in safe, public locations for first encounters. Report any suspicious activity to our moderation team — all reports are investigated within 24 hours."
+              }
+            }
+          ]
+        },
+        "ImageObject": {
+          "@context": "https://schema.org",
+          "@type": "ImageObject",
+          "url": "https://secretza.com/api/upload/file?key=seo%2Flongtail%2Findependent-escorts--ahmedabad.svg",
+          "contentUrl": "https://secretza.com/api/upload/file?key=seo%2Flongtail%2Findependent-escorts--ahmedabad.svg",
+          "name": "Independent Escorts in Ahmedabad — longtail featured image on Secretza",
+          "description": "Independent Escorts in Ahmedabad — longtail featured image on Secretza",
+          "mainEntityOfPage": "https://secretza.com/independent-escorts/ahmedabad"
+        }
+      }
+    },
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/mumbai",
+      "url": "/independent-escorts/mumbai",
+      "source": "fallback",
+      "pass": true,
+      "checks": {
+        "Organization": true,
+        "WebSite": true,
+        "WebPage": true,
+        "BreadcrumbList": true,
+        "FAQPage": true,
+        "ImageObject": false
+      },
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "issues": [],
+      "schemaCount": 4,
+      "exampleSchemas": {
+        "Organization": {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "logo": "https://secretza.com/logo.png",
+          "description": "India's Premium Adult Classifieds Platform",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "availableLanguage": [
+              "English",
+              "Hindi"
+            ]
+          },
+          "sameAs": []
+        },
+        "WebSite": {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "description": "India's Premium Adult Classifieds Platform",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://secretza.com/search?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        "WebPage": {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "Independent Escorts in Mumbai | Secretza",
+          "url": "https://secretza.com/independent-escorts/mumbai",
+          "isPartOf": {
+            "@type": "WebSite",
+            "name": "Secretza",
+            "url": "https://secretza.com"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Secretza",
+            "url": "https://secretza.com",
+            "logo": "https://secretza.com/logo.png"
+          }
+        },
+        "BreadcrumbList": {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://secretza.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "India",
+              "item": "https://secretza.com/country/india"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "Maharashtra",
+              "item": "https://secretza.com/india/maharashtra"
+            },
+            {
+              "@type": "ListItem",
+              "position": 4,
+              "name": "Mumbai",
+              "item": "https://secretza.com/india/maharashtra/mumbai"
+            },
+            {
+              "@type": "ListItem",
+              "position": 5,
+              "name": "Independent Escorts in Mumbai",
+              "item": "https://secretza.com/independent-escorts/mumbai"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/delhi",
+      "url": "/independent-escorts/delhi",
+      "source": "fallback",
+      "pass": true,
+      "checks": {
+        "Organization": true,
+        "WebSite": true,
+        "WebPage": true,
+        "BreadcrumbList": true,
+        "FAQPage": true,
+        "ImageObject": false
+      },
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "issues": [],
+      "schemaCount": 4,
+      "exampleSchemas": {
+        "Organization": {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "logo": "https://secretza.com/logo.png",
+          "description": "India's Premium Adult Classifieds Platform",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "availableLanguage": [
+              "English",
+              "Hindi"
+            ]
+          },
+          "sameAs": []
+        },
+        "WebSite": {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "description": "India's Premium Adult Classifieds Platform",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://secretza.com/search?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        "WebPage": {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "Independent Escorts in Delhi | Secretza",
+          "url": "https://secretza.com/independent-escorts/delhi",
+          "isPartOf": {
+            "@type": "WebSite",
+            "name": "Secretza",
+            "url": "https://secretza.com"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Secretza",
+            "url": "https://secretza.com",
+            "logo": "https://secretza.com/logo.png"
+          }
+        },
+        "BreadcrumbList": {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://secretza.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "India",
+              "item": "https://secretza.com/country/india"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "Delhi",
+              "item": "https://secretza.com/india/delhi"
+            },
+            {
+              "@type": "ListItem",
+              "position": 4,
+              "name": "Delhi",
+              "item": "https://secretza.com/india/delhi/delhi"
+            },
+            {
+              "@type": "ListItem",
+              "position": 5,
+              "name": "Independent Escorts in Delhi",
+              "item": "https://secretza.com/independent-escorts/delhi"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/bangalore",
+      "url": "/independent-escorts/bangalore",
+      "source": "fallback",
+      "pass": true,
+      "checks": {
+        "Organization": true,
+        "WebSite": true,
+        "WebPage": true,
+        "BreadcrumbList": true,
+        "FAQPage": true,
+        "ImageObject": false
+      },
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "issues": [],
+      "schemaCount": 4,
+      "exampleSchemas": {
+        "Organization": {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "logo": "https://secretza.com/logo.png",
+          "description": "India's Premium Adult Classifieds Platform",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "availableLanguage": [
+              "English",
+              "Hindi"
+            ]
+          },
+          "sameAs": []
+        },
+        "WebSite": {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "description": "India's Premium Adult Classifieds Platform",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://secretza.com/search?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        "WebPage": {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "Independent Escorts in Bangalore | Secretza",
+          "url": "https://secretza.com/independent-escorts/bangalore",
+          "isPartOf": {
+            "@type": "WebSite",
+            "name": "Secretza",
+            "url": "https://secretza.com"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Secretza",
+            "url": "https://secretza.com",
+            "logo": "https://secretza.com/logo.png"
+          }
+        },
+        "BreadcrumbList": {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://secretza.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "India",
+              "item": "https://secretza.com/country/india"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "Karnataka",
+              "item": "https://secretza.com/india/karnataka"
+            },
+            {
+              "@type": "ListItem",
+              "position": 4,
+              "name": "Bangalore",
+              "item": "https://secretza.com/india/karnataka/bangalore"
+            },
+            {
+              "@type": "ListItem",
+              "position": 5,
+              "name": "Independent Escorts in Bangalore",
+              "item": "https://secretza.com/independent-escorts/bangalore"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/hyderabad",
+      "url": "/independent-escorts/hyderabad",
+      "source": "fallback",
+      "pass": true,
+      "checks": {
+        "Organization": true,
+        "WebSite": true,
+        "WebPage": true,
+        "BreadcrumbList": true,
+        "FAQPage": true,
+        "ImageObject": false
+      },
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "issues": [],
+      "schemaCount": 4,
+      "exampleSchemas": {
+        "Organization": {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "logo": "https://secretza.com/logo.png",
+          "description": "India's Premium Adult Classifieds Platform",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "availableLanguage": [
+              "English",
+              "Hindi"
+            ]
+          },
+          "sameAs": []
+        },
+        "WebSite": {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "description": "India's Premium Adult Classifieds Platform",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://secretza.com/search?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        "WebPage": {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "Independent Escorts in Hyderabad | Secretza",
+          "url": "https://secretza.com/independent-escorts/hyderabad",
+          "isPartOf": {
+            "@type": "WebSite",
+            "name": "Secretza",
+            "url": "https://secretza.com"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Secretza",
+            "url": "https://secretza.com",
+            "logo": "https://secretza.com/logo.png"
+          }
+        },
+        "BreadcrumbList": {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://secretza.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "India",
+              "item": "https://secretza.com/country/india"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "Telangana",
+              "item": "https://secretza.com/india/telangana"
+            },
+            {
+              "@type": "ListItem",
+              "position": 4,
+              "name": "Hyderabad",
+              "item": "https://secretza.com/india/telangana/hyderabad"
+            },
+            {
+              "@type": "ListItem",
+              "position": 5,
+              "name": "Independent Escorts in Hyderabad",
+              "item": "https://secretza.com/independent-escorts/hyderabad"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "samplePageTypeAudits": [
+    {
+      "pageType": "city",
+      "pageSlug": "ahmedabad",
+      "url": "/india/gujarat/ahmedabad",
+      "source": "published",
+      "pass": true,
+      "checks": {
+        "Organization": true,
+        "WebSite": true,
+        "WebPage": true,
+        "BreadcrumbList": true,
+        "FAQPage": true,
+        "ImageObject": true
+      },
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject"
+      ],
+      "issues": [],
+      "schemaCount": 6
+    },
+    {
+      "pageType": "state",
+      "pageSlug": "maharashtra",
+      "url": "/india/maharashtra",
+      "source": "published",
+      "pass": true,
+      "checks": {
+        "Organization": true,
+        "WebSite": true,
+        "WebPage": true,
+        "BreadcrumbList": true,
+        "FAQPage": true,
+        "ImageObject": true
+      },
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject"
+      ],
+      "issues": [],
+      "schemaCount": 6
+    },
+    {
+      "pageType": "country",
+      "pageSlug": "india",
+      "url": "/india",
+      "source": "published",
+      "pass": true,
+      "checks": {
+        "Organization": true,
+        "WebSite": true,
+        "WebPage": true,
+        "BreadcrumbList": true,
+        "FAQPage": true,
+        "ImageObject": true
+      },
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject"
+      ],
+      "issues": [],
+      "schemaCount": 6
+    },
+    {
+      "pageType": "category",
+      "pageSlug": "escorts",
+      "url": "/category/escorts",
+      "source": "published",
+      "pass": true,
+      "checks": {
+        "Organization": true,
+        "WebSite": true,
+        "WebPage": true,
+        "BreadcrumbList": true,
+        "FAQPage": true,
+        "ImageObject": true
+      },
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject"
+      ],
+      "issues": [],
+      "schemaCount": 6
+    }
+  ],
+  "dbAuditSample": [
+    {
+      "pageType": "category",
+      "pageSlug": "adult-services",
+      "url": "/category/adult-services",
+      "source": "db",
+      "pass": true,
+      "checks": {
+        "Organization": true,
+        "WebSite": true,
+        "WebPage": true,
+        "BreadcrumbList": true,
+        "FAQPage": true,
+        "ImageObject": true
+      },
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject"
+      ],
+      "issues": [],
+      "schemaCount": 6,
+      "exampleSchemas": {
+        "Organization": {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "logo": "https://secretza.com/logo.png",
+          "description": "India's Premium Adult Classifieds Platform",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "availableLanguage": [
+              "English",
+              "Hindi"
+            ]
+          },
+          "sameAs": []
+        },
+        "WebSite": {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "description": "India's Premium Adult Classifieds Platform",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://secretza.com/search?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        "WebPage": {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "Adult Services in India - Verified adult services Listings Nationwide | Secretza",
+          "description": "Browse verified adult services listings across India on Secretza. Find trusted providers in Mumbai, Delhi, Bangalore & all cities.",
+          "url": "https://secretza.com/category/adult-services",
+          "isPartOf": {
+            "@type": "WebSite",
+            "name": "Secretza",
+            "url": "https://secretza.com"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Secretza",
+            "url": "https://secretza.com",
+            "logo": "https://secretza.com/logo.png"
+          }
+        },
+        "BreadcrumbList": {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://secretza.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "India",
+              "item": "https://secretza.com/india"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "Adult Services",
+              "item": "https://secretza.com/adult-services"
+            }
+          ]
+        },
+        "FAQPage": {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What types of adult services are listed on Secretza?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Secretza is the premier platform for finding verified adult services in India. All adult services listings go through a moderation process to ensure authenticity. Browse thousands of profiles across all major Indian cities, filter by location and preferences, and connect directly with adult services providers. New listings are added daily."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How are adult service providers verified on Secretza?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes, adult services profiles on Secretza are verified through a multi-step process. We check profile information, verify photos, and monitor user reviews. Our moderation team actively reviews new listings and investigates reports to maintain a trustworthy platform for adult services services in India."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I find specialized adult services in my city?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Safety is a top priority on Secretza. When engaging with adult services listings, always communicate through the platform first, read user reviews, verify profile information, and meet in safe, public locations initially. Secretza provides reporting tools for any suspicious adult services listings — our team investigates within 24 hours."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What makes Secretza the best platform for adult services?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "adult services pricing on Secretza varies by city, service type, and provider experience. Premium adult services providers in metro cities like Mumbai, Delhi, and Bangalore typically charge higher rates. Secretza allows you to filter adult services listings by price range to find options within your budget."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How do I contact adult service providers on Secretza?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Secretza offers adult services listings in all major Indian cities including Mumbai, Delhi, Bangalore, Hyderabad, Chennai, Kolkata, Pune, Jaipur, Kochi, Chandigarh, and over 100 more. Use our location filter to find adult services near you, or browse by state to discover options across India."
+              }
+            }
+          ]
+        },
+        "ImageObject": {
+          "@context": "https://schema.org",
+          "@type": "ImageObject",
+          "url": "https://secretza.com/api/upload/file?key=seo%2Fcategory%2Fadult-services.svg",
+          "contentUrl": "https://secretza.com/api/upload/file?key=seo%2Fcategory%2Fadult-services.svg",
+          "name": "Adult Services in India — category featured image on Secretza",
+          "description": "Adult Services in India — category featured image on Secretza",
+          "mainEntityOfPage": "https://secretza.com/category/adult-services"
+        }
+      }
+    },
+    {
+      "pageType": "category",
+      "pageSlug": "bdsm",
+      "url": "/category/bdsm",
+      "source": "db",
+      "pass": true,
+      "checks": {
+        "Organization": true,
+        "WebSite": true,
+        "WebPage": true,
+        "BreadcrumbList": true,
+        "FAQPage": true,
+        "ImageObject": true
+      },
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject"
+      ],
+      "issues": [],
+      "schemaCount": 6,
+      "exampleSchemas": {
+        "Organization": {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "logo": "https://secretza.com/logo.png",
+          "description": "India's Premium Adult Classifieds Platform",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "availableLanguage": [
+              "English",
+              "Hindi"
+            ]
+          },
+          "sameAs": []
+        },
+        "WebSite": {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "description": "India's Premium Adult Classifieds Platform",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://secretza.com/search?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        "WebPage": {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "BDSM in India - Verified bdsm Listings Nationwide | Secretza",
+          "description": "Browse verified bdsm listings across India on Secretza. Find trusted providers in Mumbai, Delhi, Bangalore & all cities.",
+          "url": "https://secretza.com/category/bdsm",
+          "isPartOf": {
+            "@type": "WebSite",
+            "name": "Secretza",
+            "url": "https://secretza.com"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Secretza",
+            "url": "https://secretza.com",
+            "logo": "https://secretza.com/logo.png"
+          }
+        },
+        "BreadcrumbList": {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://secretza.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "India",
+              "item": "https://secretza.com/india"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "BDSM",
+              "item": "https://secretza.com/bdsm"
+            }
+          ]
+        },
+        "FAQPage": {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "How do I find verified bdsm on Secretza?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Browse the BDSM section on Secretza to find verified listings across India. Use filters for location, price, and services to narrow your search. Every listing is reviewed by our moderation team to ensure quality and authenticity."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Are bdsm listings on Secretza safe?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Secretza implements profile verification, user reviews, and active moderation for all bdsm listings. We encourage users to communicate through the platform and read reviews before engaging with any provider."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What cities have bdsm listings on Secretza?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Secretza offers bdsm listings in all major Indian cities including Mumbai, Delhi, Bangalore, Hyderabad, Chennai, Kolkata, Pune, Jaipur, and many more. Use our location filter to find bdsm near you."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How is Secretza different from other bdsm platforms?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Secretza stands out with its rigorous multi-step verification, genuine user reviews, secure messaging, and comprehensive coverage across all Indian cities. Our moderation team reviews every listing, and suspicious accounts are removed promptly. We prioritise safety, transparency, and user experience."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I post a BDSM listing on Secretza?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes! Creating a listing is free. Register for an account, select the BDSM category, add your details and photos, and publish. Your listing will be reviewed by our moderation team and typically goes live within hours. Featured and premium options are available for enhanced visibility."
+              }
+            }
+          ]
+        },
+        "ImageObject": {
+          "@context": "https://schema.org",
+          "@type": "ImageObject",
+          "url": "https://secretza.com/api/upload/file?key=seo%2Fcategory%2Fbdsm.svg",
+          "contentUrl": "https://secretza.com/api/upload/file?key=seo%2Fcategory%2Fbdsm.svg",
+          "name": "BDSM in India — category featured image on Secretza",
+          "description": "BDSM in India — category featured image on Secretza",
+          "mainEntityOfPage": "https://secretza.com/category/bdsm"
+        }
+      }
+    },
+    {
+      "pageType": "category",
+      "pageSlug": "companionship",
+      "url": "/category/companionship",
+      "source": "db",
+      "pass": true,
+      "checks": {
+        "Organization": true,
+        "WebSite": true,
+        "WebPage": true,
+        "BreadcrumbList": true,
+        "FAQPage": true,
+        "ImageObject": true
+      },
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject"
+      ],
+      "issues": [],
+      "schemaCount": 6,
+      "exampleSchemas": {
+        "Organization": {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "logo": "https://secretza.com/logo.png",
+          "description": "India's Premium Adult Classifieds Platform",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "availableLanguage": [
+              "English",
+              "Hindi"
+            ]
+          },
+          "sameAs": []
+        },
+        "WebSite": {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Secretza",
+          "url": "https://secretza.com",
+          "description": "India's Premium Adult Classifieds Platform",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://secretza.com/search?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        "WebPage": {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "Companionship in India - Verified companionship Listings Nationwide | Secretza",
+          "description": "Browse verified companionship listings across India on Secretza. Find trusted providers in Mumbai, Delhi, Bangalore & all cities.",
+          "url": "https://secretza.com/category/companionship",
+          "isPartOf": {
+            "@type": "WebSite",
+            "name": "Secretza",
+            "url": "https://secretza.com"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Secretza",
+            "url": "https://secretza.com",
+            "logo": "https://secretza.com/logo.png"
+          }
+        },
+        "BreadcrumbList": {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://secretza.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "India",
+              "item": "https://secretza.com/india"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "Companionship",
+              "item": "https://secretza.com/companionship"
+            }
+          ]
+        },
+        "FAQPage": {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "How do I find verified companionship on Secretza?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Browse the Companionship section on Secretza to find verified listings across India. Use filters for location, price, and services to narrow your search. Every listing is reviewed by our moderation team to ensure quality and authenticity."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Are companionship listings on Secretza safe?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Secretza implements profile verification, user reviews, and active moderation for all companionship listings. We encourage users to communicate through the platform and read reviews before engaging with any provider."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What cities have companionship listings on Secretza?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Secretza offers companionship listings in all major Indian cities including Mumbai, Delhi, Bangalore, Hyderabad, Chennai, Kolkata, Pune, Jaipur, and many more. Use our location filter to find companionship near you."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How is Secretza different from other companionship platforms?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Secretza stands out with its rigorous multi-step verification, genuine user reviews, secure messaging, and comprehensive coverage across all Indian cities. Our moderation team reviews every listing, and suspicious accounts are removed promptly. We prioritise safety, transparency, and user experience."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I post a Companionship listing on Secretza?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes! Creating a listing is free. Register for an account, select the Companionship category, add your details and photos, and publish. Your listing will be reviewed by our moderation team and typically goes live within hours. Featured and premium options are available for enhanced visibility."
+              }
+            }
+          ]
+        },
+        "ImageObject": {
+          "@context": "https://schema.org",
+          "@type": "ImageObject",
+          "url": "https://secretza.com/api/upload/file?key=seo%2Fcategory%2Fcompanionship.svg",
+          "contentUrl": "https://secretza.com/api/upload/file?key=seo%2Fcategory%2Fcompanionship.svg",
+          "name": "Companionship in India — category featured image on Secretza",
+          "description": "Companionship in India — category featured image on Secretza",
+          "mainEntityOfPage": "https://secretza.com/category/companionship"
+        }
+      }
+    }
+  ],
+  "jsonLdExamples": {
+    "Organization": {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Secretza",
+      "url": "https://secretza.com",
+      "logo": "https://secretza.com/logo.png",
+      "description": "India's Premium Adult Classifieds Platform",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "availableLanguage": [
+          "English",
+          "Hindi"
+        ]
+      },
+      "sameAs": []
+    },
+    "WebSite": {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Secretza",
+      "url": "https://secretza.com",
+      "description": "India's Premium Adult Classifieds Platform",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://secretza.com/search?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    },
+    "WebPage": {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Independent Escorts in Ahmedabad - Find independent escorts Ahmedabad Listings | Secretza",
+      "description": "Discover the best independent escorts in Ahmedabad. Browse verified listings, photos, and reviews on Secretza. Updated daily.",
+      "url": "https://secretza.com/independent-escorts/ahmedabad",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "Secretza",
+        "url": "https://secretza.com"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Secretza",
+        "url": "https://secretza.com",
+        "logo": "https://secretza.com/logo.png"
+      }
+    },
+    "BreadcrumbList": {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://secretza.com/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "India",
+          "item": "https://secretza.com/india"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Ahmedabad",
+          "item": "https://secretza.com/ahmedabad"
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "Independent Escorts",
+          "item": "https://secretza.com/independent-escorts/ahmedabad"
+        }
+      ]
+    },
+    "FAQPage": {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Where can I find independent escorts in Ahmedabad?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Secretza is the best platform to find independent escorts in Ahmedabad. Browse our verified listings with real photos, detailed descriptions, and user reviews. Use our filters to narrow results by area, price, and services. New independent escorts listings are added daily in Ahmedabad."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Are the independent escorts listings in Ahmedabad verified?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, Secretza verifies independent escorts listings in Ahmedabad through a multi-step moderation process. We check profile details, verify photos, and monitor user feedback. Listings that don't meet our standards are removed. Always check for the verified badge and read reviews before connecting."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What are the rates for independent escorts in Ahmedabad?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "independent escorts rates in Ahmedabad vary depending on the provider, service type, duration, and experience level. Secretza allows you to filter listings by price range to find options that fit your budget. Premium providers typically charge more, while new listings may offer competitive introductory rates."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I find independent escorts near Surat as well?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes! Secretza covers independent escorts listings in Surat and surrounding areas near Ahmedabad. Simply switch the location filter or browse our nearby city listings to explore more options. We cover all major cities and towns across the region."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I stay safe when looking for independent escorts in Ahmedabad?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Always communicate through Secretza's platform initially, verify provider details and photos, read user reviews carefully, and meet in safe, public locations for first encounters. Report any suspicious activity to our moderation team — all reports are investigated within 24 hours."
+          }
+        }
+      ]
+    },
+    "ImageObject": {
+      "@context": "https://schema.org",
+      "@type": "ImageObject",
+      "url": "https://secretza.com/api/upload/file?key=seo%2Flongtail%2Findependent-escorts--ahmedabad.svg",
+      "contentUrl": "https://secretza.com/api/upload/file?key=seo%2Flongtail%2Findependent-escorts--ahmedabad.svg",
+      "name": "Independent Escorts in Ahmedabad — longtail featured image on Secretza",
+      "description": "Independent Escorts in Ahmedabad — longtail featured image on Secretza",
+      "mainEntityOfPage": "https://secretza.com/independent-escorts/ahmedabad"
+    }
+  },
+  "liveHtml": [
+    {
+      "slug": "ahmedabad",
+      "path": "/independent-escorts/ahmedabad",
+      "pass": true,
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject"
+      ],
+      "issues": [],
+      "screenshot": "artifacts\\seo-structured-data-audit\\ahmedabad-structured-data.png"
+    },
+    {
+      "slug": "mumbai",
+      "path": "/independent-escorts/mumbai",
+      "pass": true,
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "issues": [],
+      "screenshot": "artifacts\\seo-structured-data-audit\\mumbai-structured-data.png"
+    },
+    {
+      "slug": "delhi",
+      "path": "/independent-escorts/delhi",
+      "pass": true,
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "issues": [],
+      "screenshot": "artifacts\\seo-structured-data-audit\\delhi-structured-data.png"
+    },
+    {
+      "slug": "bangalore",
+      "path": "/independent-escorts/bangalore",
+      "pass": true,
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "issues": [],
+      "screenshot": "artifacts\\seo-structured-data-audit\\bangalore-structured-data.png"
+    },
+    {
+      "slug": "hyderabad",
+      "path": "/independent-escorts/hyderabad",
+      "pass": true,
+      "schemaTypes": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "issues": [],
+      "screenshot": "artifacts\\seo-structured-data-audit\\hyderabad-structured-data.png"
+    }
+  ],
+  "fixesApplied": [
+    "Added generateWebPageSchema to seo-content.ts",
+    "Created seo-schema.ts with full schema bundle (Organization, WebSite, WebPage, BreadcrumbList, FAQPage)",
+    "SeoPageView resolves runtime schemas for fallback pages missing customData",
+    "buildSchemaJson now persists full schema bundle on regeneration"
+  ]
+}

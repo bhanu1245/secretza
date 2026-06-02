@@ -1,0 +1,114 @@
+{
+  "generatedAt": "2026-05-29T18:13:46.503Z",
+  "allPass": true,
+  "checks": [
+    {
+      "name": "Moderate API route exists",
+      "pass": true,
+      "detail": "src/app/api/upload/moderate/route.ts"
+    },
+    {
+      "name": "No orphaned ListingImage records",
+      "pass": true,
+      "detail": "0 orphaned"
+    },
+    {
+      "name": "Anonymous cannot access moderation API",
+      "pass": true,
+      "detail": "status 401"
+    },
+    {
+      "name": "Admin can load moderation queue",
+      "pass": {
+        "pending": 5,
+        "approved": 0,
+        "rejected": 0,
+        "flagged": 0,
+        "total": 5
+      },
+      "detail": "5 images, pending=5"
+    },
+    {
+      "name": "Pending image blocked from public URL",
+      "pass": true,
+      "detail": "status 403 for listings/cmppmsauw00000slg9ls8r9ra/1780030543675-4182fe62-c8e6-4eb5-bb14-e83794ad3af3.png"
+    },
+    {
+      "name": "Admin can access pending image (file gate)",
+      "pass": true,
+      "detail": "true"
+    },
+    {
+      "name": "Approve action works",
+      "pass": true,
+      "detail": "approved"
+    },
+    {
+      "name": "DB status updated to approved",
+      "pass": true,
+      "detail": "approved"
+    },
+    {
+      "name": "Approved image publicly accessible",
+      "pass": true,
+      "detail": "status 200"
+    },
+    {
+      "name": "Reject action works",
+      "pass": true,
+      "detail": "rejected"
+    },
+    {
+      "name": "Rejected image hidden from public URL",
+      "pass": true,
+      "detail": "status 403"
+    },
+    {
+      "name": "Stats API matches DB counts",
+      "pass": true,
+      "detail": "{\"pending\":5,\"approved\":0,\"rejected\":0,\"flagged\":0,\"total\":5}"
+    }
+  ],
+  "stats": {
+    "before": {
+      "pending": 5,
+      "approved": 0,
+      "rejected": 0,
+      "flagged": 0,
+      "total": 5
+    },
+    "after": {
+      "pending": 5,
+      "approved": 0,
+      "rejected": 0,
+      "flagged": 0,
+      "total": 5
+    }
+  },
+  "orphans": 0,
+  "issuesFixed": [
+    "Implemented GET/POST /api/upload/moderate (queue, approve, reject, flag, bulk)",
+    "Secured /api/upload/file with moderationStatus gate",
+    "Public listings API returns approved images only",
+    "Listing detail page uses getPublicListingImages (no legacy bypass)",
+    "Moderators can access /api/admin/listings",
+    "ImageModerationPanel uses live stats from API + bulk actions",
+    "Dedupe storageKey on image persist to prevent duplicates"
+  ],
+  "filesChanged": [
+    "src/lib/image-moderation.ts",
+    "src/app/api/upload/moderate/route.ts",
+    "src/app/api/upload/file/route.ts",
+    "src/lib/listing-images.ts",
+    "src/lib/listing-image-persist.ts",
+    "src/app/api/listings/route.ts",
+    "src/app/api/listings/[id]/route.ts",
+    "src/app/api/admin/listings/route.ts",
+    "src/app/api/admin/listings/[id]/route.ts",
+    "src/proxy.ts",
+    "src/components/secretza/admin/pages/AdminContentPages.tsx",
+    "src/app/listing/[slug]/ListingPageContent.tsx",
+    "scripts/audit-image-moderation.ts"
+  ],
+  "screenshots": {}
+}

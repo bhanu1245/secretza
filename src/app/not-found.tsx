@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BRAND_ASSETS, BRAND_COLORS } from "@/lib/brand";
 
 export default function NotFound() {
   return (
@@ -9,22 +10,17 @@ export default function NotFound() {
       justifyContent: "center",
       minHeight: "100vh",
       fontFamily: "system-ui, sans-serif",
-      background: "#0B0B0F",
+      background: BRAND_COLORS.darkBg,
       color: "#F5F5F7",
       padding: "24px",
     }}>
-      <div style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "48px",
-        height: "48px",
-        borderRadius: "12px",
-        background: "linear-gradient(135deg, #7C3AED, #8B5CF6)",
-        marginBottom: "16px",
-      }}>
-        <span style={{ color: "white", fontWeight: "bold", fontSize: "24px" }}>S</span>
-      </div>
+      <img
+        src={BRAND_ASSETS.logoIconDark}
+        alt="SecretZa"
+        width={48}
+        height={48}
+        style={{ borderRadius: "12px", marginBottom: "24px" }}
+      />
       <h1 style={{ fontSize: "48px", fontWeight: 700, marginBottom: "8px" }}>404</h1>
       <h2 style={{ fontSize: "20px", color: "#A1A1AA", marginBottom: "24px" }}>Page Not Found</h2>
       <p style={{ color: "#71717A", marginBottom: "32px", textAlign: "center", maxWidth: "400px" }}>
@@ -35,7 +31,7 @@ export default function NotFound() {
         style={{
           display: "inline-block",
           padding: "12px 32px",
-          background: "linear-gradient(135deg, #7C3AED, #8B5CF6)",
+          background: BRAND_COLORS.gradient,
           color: "white",
           textDecoration: "none",
           borderRadius: "8px",

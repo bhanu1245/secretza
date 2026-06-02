@@ -42,8 +42,8 @@ export const SOCIAL_SETTING_KEYS = {
 } as const;
 
 export const DEFAULT_SOCIAL_URLS = {
-  twitter: "https://twitter.com/secretza",
-  instagram: "https://instagram.com/secretza",
-  youtube: "https://youtube.com/@secretza",
-  website: "https://secretza.com",
+  twitter: "https://twitter.com/SecretZa",
+  instagram: "https://instagram.com/SecretZa",
+  youtube: "https://youtube.com/@SecretZa",
+  website: "https://SecretZa.com",
 };

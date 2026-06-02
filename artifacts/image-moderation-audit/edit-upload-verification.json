@@ -1,0 +1,76 @@
+{
+  "generatedAt": "2026-05-29T19:51:33.961Z",
+  "allPass": true,
+  "checks": [
+    {
+      "name": "1. Create listing with image",
+      "pass": true,
+      "detail": "cmprc5o9100100s6cbtez4mkf"
+    },
+    {
+      "name": "1b. ListingImage row created on create",
+      "pass": true,
+      "detail": "1 rows, status=pending"
+    },
+    {
+      "name": "2. Approve listing and initial image",
+      "pass": true,
+      "detail": "cmprc5o9100100s6cbtez4mkf"
+    },
+    {
+      "name": "3. Edit listing with new upload",
+      "pass": true,
+      "detail": "updated"
+    },
+    {
+      "name": "4. ListingImage row for edit upload",
+      "pass": true,
+      "detail": "id=cmprc6hvv00120s6co642exim status=pending key=listings/cmppo907u00000se8q7xbg7h6/1780084192260-3b8ede64-1392-48d4-a477-3a32f255d95b.png"
+    },
+    {
+      "name": "5. Moderation queue count increased",
+      "pass": true,
+      "detail": "before=0 after=1"
+    },
+    {
+      "name": "5b. New image in GET /api/upload/moderate",
+      "pass": true,
+      "detail": "cmprc6hvv00120s6co642exim"
+    },
+    {
+      "name": "6. Pending edit image blocked publicly",
+      "pass": true,
+      "detail": "status 403"
+    },
+    {
+      "name": "7. Approve edit-upload image",
+      "pass": true,
+      "detail": "approved"
+    },
+    {
+      "name": "8. Approved image publicly accessible",
+      "pass": true,
+      "detail": "status 200"
+    },
+    {
+      "name": "9. Image on public listing API (approved only)",
+      "pass": true,
+      "detail": "2 approved images"
+    },
+    {
+      "name": "10. Image in owner dashboard API",
+      "pass": true,
+      "detail": "2 images visible to owner"
+    },
+    {
+      "name": "11. Gallery-only edit creates pending ListingImage",
+      "pass": true,
+      "detail": "status=pending"
+    },
+    {
+      "name": "12. Gallery-only edit increases moderation queue",
+      "pass": true,
+      "detail": "before=0 after=1"
+    }
+  ]
+}

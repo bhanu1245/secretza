@@ -1,0 +1,224 @@
+{
+  "generatedAt": "2026-05-30T11:54:45.555Z",
+  "brandName": "SecretZa",
+  "colors": {
+    "primary": "#3B82F6",
+    "secondary": "#6366F1",
+    "primaryLight": "#60A5FA",
+    "secondaryLight": "#818CF8",
+    "gradient": "linear-gradient(135deg, #3B82F6 0%, #6366F1 100%)",
+    "gradientExtended": "linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #818CF8 100%)",
+    "darkBg": "#0B0B0F",
+    "lightBg": "#FFFFFF"
+  },
+  "assets": {
+    "logoFullDark": "/brand/logo-full-dark.svg",
+    "logoFullLight": "/brand/logo-full-light.svg",
+    "logoIconDark": "/brand/logo-icon-dark.svg",
+    "logoIconLight": "/brand/logo-icon-light.svg",
+    "logoMobileDark": "/brand/logo-mobile-dark.svg",
+    "favicon": "/brand/favicon.svg",
+    "ogImage": "/brand/og-image.svg",
+    "icon192": "/brand/icon-192.svg",
+    "icon512": "/brand/icon-512.svg",
+    "logoLegacy": "/logo.svg"
+  },
+  "summary": {
+    "total": 34,
+    "passed": 34,
+    "failed": 0
+  },
+  "checks": [
+    {
+      "name": "BRAND_NAME is SecretZa",
+      "ok": true,
+      "detail": "SecretZa"
+    },
+    {
+      "name": "Primary color #3B82F6",
+      "ok": true,
+      "detail": "#3B82F6"
+    },
+    {
+      "name": "Secondary color #6366F1",
+      "ok": true,
+      "detail": "#6366F1"
+    },
+    {
+      "name": "Asset exists: logo-full-dark.svg",
+      "ok": true,
+      "detail": "D:\\projects\\Secretza-Fresh\\public\\brand\\logo-full-dark.svg"
+    },
+    {
+      "name": "logo-full-dark.svg contains brand gradient",
+      "ok": true,
+      "detail": "gradient colors present"
+    },
+    {
+      "name": "Asset exists: logo-full-light.svg",
+      "ok": true,
+      "detail": "D:\\projects\\Secretza-Fresh\\public\\brand\\logo-full-light.svg"
+    },
+    {
+      "name": "logo-full-light.svg contains brand gradient",
+      "ok": true,
+      "detail": "gradient colors present"
+    },
+    {
+      "name": "Asset exists: logo-icon-dark.svg",
+      "ok": true,
+      "detail": "D:\\projects\\Secretza-Fresh\\public\\brand\\logo-icon-dark.svg"
+    },
+    {
+      "name": "logo-icon-dark.svg contains brand gradient",
+      "ok": true,
+      "detail": "gradient colors present"
+    },
+    {
+      "name": "Asset exists: logo-icon-light.svg",
+      "ok": true,
+      "detail": "D:\\projects\\Secretza-Fresh\\public\\brand\\logo-icon-light.svg"
+    },
+    {
+      "name": "logo-icon-light.svg contains brand gradient",
+      "ok": true,
+      "detail": "gradient colors present"
+    },
+    {
+      "name": "Asset exists: logo-mobile-dark.svg",
+      "ok": true,
+      "detail": "D:\\projects\\Secretza-Fresh\\public\\brand\\logo-mobile-dark.svg"
+    },
+    {
+      "name": "logo-mobile-dark.svg contains brand gradient",
+      "ok": true,
+      "detail": "gradient colors present"
+    },
+    {
+      "name": "Asset exists: favicon.svg",
+      "ok": true,
+      "detail": "D:\\projects\\Secretza-Fresh\\public\\brand\\favicon.svg"
+    },
+    {
+      "name": "favicon.svg contains brand gradient",
+      "ok": true,
+      "detail": "gradient colors present"
+    },
+    {
+      "name": "Asset exists: og-image.svg",
+      "ok": true,
+      "detail": "D:\\projects\\Secretza-Fresh\\public\\brand\\og-image.svg"
+    },
+    {
+      "name": "og-image.svg contains brand gradient",
+      "ok": true,
+      "detail": "gradient colors present"
+    },
+    {
+      "name": "Asset exists: icon-192.svg",
+      "ok": true,
+      "detail": "D:\\projects\\Secretza-Fresh\\public\\brand\\icon-192.svg"
+    },
+    {
+      "name": "icon-192.svg contains brand gradient",
+      "ok": true,
+      "detail": "gradient colors present"
+    },
+    {
+      "name": "Asset exists: icon-512.svg",
+      "ok": true,
+      "detail": "D:\\projects\\Secretza-Fresh\\public\\brand\\icon-512.svg"
+    },
+    {
+      "name": "icon-512.svg contains brand gradient",
+      "ok": true,
+      "detail": "gradient colors present"
+    },
+    {
+      "name": "Next.js app icon.svg",
+      "ok": true,
+      "detail": "src/app/icon.svg"
+    },
+    {
+      "name": "Web manifest configured",
+      "ok": true,
+      "detail": "src/app/manifest.ts"
+    },
+    {
+      "name": "Logo component in Logo.tsx",
+      "ok": true,
+      "detail": "src/components/brand/Logo.tsx"
+    },
+    {
+      "name": "Logo component in LogoIcon.tsx",
+      "ok": true,
+      "detail": "src/components/brand/LogoIcon.tsx"
+    },
+    {
+      "name": "Logo component in BrandWordmark.tsx",
+      "ok": true,
+      "detail": "src/components/brand/BrandWordmark.tsx"
+    },
+    {
+      "name": "Logo component in Header.tsx",
+      "ok": true,
+      "detail": "src/components/secretza/layout/Header.tsx"
+    },
+    {
+      "name": "Logo component in Footer.tsx",
+      "ok": true,
+      "detail": "src/components/secretza/layout/Footer.tsx"
+    },
+    {
+      "name": "Logo component in AdminShell.tsx",
+      "ok": true,
+      "detail": "src/components/secretza/admin/routes/AdminShell.tsx"
+    },
+    {
+      "name": "Logo component in Dashboard.tsx",
+      "ok": true,
+      "detail": "src/components/secretza/dashboard/Dashboard.tsx"
+    },
+    {
+      "name": "Logo component in AuthModal.tsx",
+      "ok": true,
+      "detail": "src/components/secretza/auth/AuthModal.tsx"
+    },
+    {
+      "name": "No legacy 'Secretza' in src (display name)",
+      "ok": true,
+      "detail": "clean"
+    },
+    {
+      "name": "Email templates use SecretZa",
+      "ok": true,
+      "detail": "email.ts"
+    },
+    {
+      "name": "Favicon optimized viewBox 32x32",
+      "ok": true,
+      "detail": "32x32 vector — scales to 16/32/48"
+    }
+  ],
+  "failed": [],
+  "filesChanged": [
+    "src/lib/brand.ts",
+    "src/components/brand/Logo.tsx",
+    "src/components/brand/LogoIcon.tsx",
+    "src/components/brand/BrandWordmark.tsx",
+    "public/brand/*.svg",
+    "public/logo.svg",
+    "src/app/icon.svg",
+    "src/app/manifest.ts",
+    "src/app/layout.tsx",
+    "src/app/globals.css",
+    "src/components/secretza/layout/Header.tsx",
+    "src/components/secretza/layout/Footer.tsx",
+    "src/components/secretza/admin/routes/AdminShell.tsx",
+    "src/components/secretza/dashboard/Dashboard.tsx",
+    "src/components/secretza/auth/AuthModal.tsx",
+    "src/lib/email.ts",
+    "src/app/not-found.tsx",
+    "src/app/global-error.tsx"
+  ]
+}

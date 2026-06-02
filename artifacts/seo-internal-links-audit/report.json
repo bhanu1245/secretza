@@ -1,0 +1,331 @@
+{
+  "generatedAt": "2026-05-29T13:27:36.769Z",
+  "target": {
+    "minLinksPerPage": 15
+  },
+  "summary": {
+    "publishedPagesAudited": 346,
+    "publishedPass": 346,
+    "publishedFail": 0,
+    "fallbackCitiesPass": "4/4",
+    "globalMinLinks": 15,
+    "globalMaxLinks": 27,
+    "globalAvgLinks": 19.8,
+    "brokenLinkCount": 0,
+    "orphanPages": 160,
+    "poorConnectivityPages": 131
+  },
+  "linkStats": {
+    "min": 15,
+    "max": 27,
+    "average": 19.8
+  },
+  "passFailByPageType": {
+    "category": {
+      "pass": 13,
+      "total": 13,
+      "minLinks": 22,
+      "maxLinks": 23,
+      "avgLinks": 22.2,
+      "status": "PASS"
+    },
+    "category_city": {
+      "pass": 30,
+      "total": 30,
+      "minLinks": 16,
+      "maxLinks": 22,
+      "avgLinks": 21.2,
+      "status": "PASS"
+    },
+    "city": {
+      "pass": 154,
+      "total": 154,
+      "minLinks": 18,
+      "maxLinks": 22,
+      "avgLinks": 20.6,
+      "status": "PASS"
+    },
+    "country": {
+      "pass": 96,
+      "total": 96,
+      "minLinks": 15,
+      "maxLinks": 24,
+      "avgLinks": 18.6,
+      "status": "PASS"
+    },
+    "longtail": {
+      "pass": 21,
+      "total": 21,
+      "minLinks": 16,
+      "maxLinks": 27,
+      "avgLinks": 24.6,
+      "status": "PASS"
+    },
+    "state": {
+      "pass": 37,
+      "total": 37,
+      "minLinks": 15,
+      "maxLinks": 16,
+      "avgLinks": 15.1,
+      "status": "PASS"
+    }
+  },
+  "crawlAnalysis": {
+    "nodeCount": 347,
+    "edgeCount": 3353,
+    "maxDepth": 6,
+    "avgDepth": 3.2,
+    "orphanCount": 160,
+    "orphanSample": [
+      "category:events-parties:5",
+      "category:gigolo:7",
+      "category:phone-sexting:9",
+      "category:webcam:11",
+      "city:accra:48",
+      "city:addis-ababa:49",
+      "city:adelaide:50",
+      "city:ajman-city:57",
+      "city:al-rayyan:62",
+      "city:albuquerque:64"
+    ],
+    "poorConnectivityCount": 131,
+    "poorConnectivitySample": [
+      "category:events-parties:5",
+      "category:gigolo:7",
+      "category:phone-sexting:9",
+      "category:webcam:11",
+      "category_city:adult-services/amravati:27",
+      "category_city:adult-services/amravati-mah:28",
+      "category_city:adult-services/amritsar:29",
+      "category_city:adult-services/anand:30",
+      "category_city:adult-services/anantapur:31",
+      "city:accra:48"
+    ],
+    "circularLinkPairs": 592,
+    "circularSample": [
+      [
+        "home:/",
+        "country:india:229"
+      ],
+      [
+        "home:/",
+        "category:escorts:4"
+      ],
+      [
+        "category:adult-services:0",
+        "country:india:229"
+      ],
+      [
+        "category:adult-services:0",
+        "category_city:adult-services/adilabad:12"
+      ],
+      [
+        "category:adult-services:0",
+        "category_city:adult-services/adoni:13"
+      ],
+      [
+        "category:adult-services:0",
+        "category_city:adult-services/agartala:14"
+      ],
+      [
+        "category:adult-services:0",
+        "category_city:adult-services/agra:15"
+      ],
+      [
+        "category:adult-services:0",
+        "category_city:adult-services/ahmedabad:16"
+      ],
+      [
+        "category:adult-services:0",
+        "category_city:adult-services/aizawl:17"
+      ],
+      [
+        "category:adult-services:0",
+        "category_city:adult-services/ajmer:18"
+      ]
+    ]
+  },
+  "fallbackCityAudits": [
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/mumbai",
+      "publicPath": "/independent-escorts/mumbai",
+      "source": "fallback",
+      "pass": true,
+      "totalLinks": 24,
+      "breadcrumbLinks": 4,
+      "relatedLinks": 19,
+      "listingLinks": 1,
+      "nearbyCities": 7,
+      "relatedCategories": 6,
+      "relatedSearches": 6,
+      "brokenLinks": [],
+      "issues": []
+    },
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/delhi",
+      "publicPath": "/independent-escorts/delhi",
+      "source": "fallback",
+      "pass": true,
+      "totalLinks": 23,
+      "breadcrumbLinks": 4,
+      "relatedLinks": 19,
+      "listingLinks": 0,
+      "nearbyCities": 7,
+      "relatedCategories": 6,
+      "relatedSearches": 6,
+      "brokenLinks": [],
+      "issues": []
+    },
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/bangalore",
+      "publicPath": "/independent-escorts/bangalore",
+      "source": "fallback",
+      "pass": true,
+      "totalLinks": 23,
+      "breadcrumbLinks": 4,
+      "relatedLinks": 19,
+      "listingLinks": 0,
+      "nearbyCities": 7,
+      "relatedCategories": 6,
+      "relatedSearches": 6,
+      "brokenLinks": [],
+      "issues": []
+    },
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/hyderabad",
+      "publicPath": "/independent-escorts/hyderabad",
+      "source": "fallback",
+      "pass": true,
+      "totalLinks": 23,
+      "breadcrumbLinks": 4,
+      "relatedLinks": 19,
+      "listingLinks": 0,
+      "nearbyCities": 7,
+      "relatedCategories": 6,
+      "relatedSearches": 6,
+      "brokenLinks": [],
+      "issues": []
+    }
+  ],
+  "samplePageTypeAudits": [
+    {
+      "pageType": "city",
+      "pageSlug": "ahmedabad",
+      "publicPath": "/india/gujarat/ahmedabad",
+      "source": "sample-city",
+      "pass": true,
+      "totalLinks": 22,
+      "breadcrumbLinks": 3,
+      "relatedLinks": 19,
+      "listingLinks": 0,
+      "nearbyCities": 6,
+      "relatedCategories": 7,
+      "relatedSearches": 6,
+      "brokenLinks": [],
+      "issues": []
+    },
+    {
+      "pageType": "state",
+      "pageSlug": "maharashtra",
+      "publicPath": "/india/maharashtra",
+      "source": "sample-state",
+      "pass": true,
+      "totalLinks": 16,
+      "breadcrumbLinks": 2,
+      "relatedLinks": 13,
+      "listingLinks": 1,
+      "nearbyCities": 1,
+      "relatedCategories": 6,
+      "relatedSearches": 6,
+      "brokenLinks": [],
+      "issues": []
+    },
+    {
+      "pageType": "country",
+      "pageSlug": "india",
+      "publicPath": "/country/india",
+      "source": "sample-country",
+      "pass": true,
+      "totalLinks": 24,
+      "breadcrumbLinks": 1,
+      "relatedLinks": 22,
+      "listingLinks": 1,
+      "nearbyCities": 8,
+      "relatedCategories": 8,
+      "relatedSearches": 6,
+      "brokenLinks": [],
+      "issues": []
+    },
+    {
+      "pageType": "category",
+      "pageSlug": "escorts",
+      "publicPath": "/category/escorts",
+      "source": "sample-category",
+      "pass": true,
+      "totalLinks": 23,
+      "breadcrumbLinks": 2,
+      "relatedLinks": 20,
+      "listingLinks": 1,
+      "nearbyCities": 6,
+      "relatedCategories": 6,
+      "relatedSearches": 8,
+      "brokenLinks": [],
+      "issues": []
+    },
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/ahmedabad",
+      "publicPath": "/independent-escorts/ahmedabad",
+      "source": "sample-longtail",
+      "pass": true,
+      "totalLinks": 22,
+      "breadcrumbLinks": 3,
+      "relatedLinks": 19,
+      "listingLinks": 0,
+      "nearbyCities": 7,
+      "relatedCategories": 6,
+      "relatedSearches": 6,
+      "brokenLinks": [],
+      "issues": []
+    }
+  ],
+  "brokenLinks": [],
+  "failingPagesSample": [],
+  "liveScreenshots": [
+    {
+      "slug": "mumbai",
+      "path": "/independent-escorts/mumbai",
+      "linkCount": 35,
+      "screenshot": "artifacts\\seo-internal-links-audit\\mumbai-internal-links.png"
+    },
+    {
+      "slug": "delhi",
+      "path": "/independent-escorts/delhi",
+      "linkCount": 35,
+      "screenshot": "artifacts\\seo-internal-links-audit\\delhi-internal-links.png"
+    },
+    {
+      "slug": "bangalore",
+      "path": "/independent-escorts/bangalore",
+      "linkCount": 35,
+      "screenshot": "artifacts\\seo-internal-links-audit\\bangalore-internal-links.png"
+    },
+    {
+      "slug": "hyderabad",
+      "path": "/independent-escorts/hyderabad",
+      "linkCount": 35,
+      "screenshot": "artifacts\\seo-internal-links-audit\\hyderabad-internal-links.png"
+    }
+  ],
+  "fixesApplied": [
+    "Created seo-internal-links.ts with supplementation, validation, and graph analysis",
+    "fetchRelated* functions now call finalizeRelatedLinks() to guarantee 12+ related links",
+    "Fallback longtail pages get synthetic keyword/category/city links from DB geo data",
+    "normalizeBreadcrumbItems() fixes legacy paths (/india → /country/india)",
+    "finalizeSeoPageViewModel() applied in all SEO page loaders"
+  ]
+}

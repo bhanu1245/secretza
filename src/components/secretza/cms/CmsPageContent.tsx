@@ -1,4 +1,5 @@
 import PublicSiteLayout from "@/components/secretza/layout/PublicSiteLayout";
+import Logo from "@/components/brand/Logo";
 
 type CmsPageContentProps = {
   title: string;
@@ -10,7 +11,7 @@ export default function CmsPageContent({ title, excerpt, content }: CmsPageConte
   return (
     <PublicSiteLayout>
       <article className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
-        <p className="text-sm text-[#8B5CF6] mb-3">Secretza</p>
+        <Logo variant="mobile" theme="dark" iconSize={28} className="mb-3" />
         <h1 className="text-3xl sm:text-4xl font-bold text-[#F5F5F7]">{title}</h1>
         {excerpt && <p className="mt-4 text-[#A1A1AA]">{excerpt}</p>}
         <div

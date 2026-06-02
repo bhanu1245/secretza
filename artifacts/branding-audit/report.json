@@ -1,0 +1,530 @@
+{
+  "generatedAt": "2026-05-30T12:28:19.302Z",
+  "brandName": "SecretZa",
+  "colors": {
+    "primary": "#3B82F6",
+    "secondary": "#6366F1",
+    "primaryLight": "#60A5FA",
+    "secondaryLight": "#818CF8",
+    "gradient": "linear-gradient(135deg, #3B82F6 0%, #6366F1 100%)",
+    "gradientExtended": "linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #818CF8 100%)",
+    "darkBg": "#0B0B0F",
+    "lightBg": "#FFFFFF"
+  },
+  "assets": {
+    "logoFullDark": "/brand/logo-full-dark.svg",
+    "logoFullLight": "/brand/logo-full-light.svg",
+    "logoIconDark": "/brand/logo-icon-dark.svg",
+    "logoIconLight": "/brand/logo-icon-light.svg",
+    "logoMobileDark": "/brand/logo-mobile-dark.svg",
+    "favicon": "/brand/favicon.svg",
+    "ogImage": "/brand/og-image.svg",
+    "icon192": "/brand/icon-192.svg",
+    "icon512": "/brand/icon-512.svg",
+    "logoLegacy": "/logo.svg"
+  },
+  "summary": {
+    "total": 60,
+    "passed": 59,
+    "failed": 1
+  },
+  "build": {
+    "ok": false,
+    "output": "⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache\nAttention: Next.js now collects completely anonymous telemetry regarding usage.\nThis information is used to shape Next.js' roadmap and prioritize features.\nYou can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:\nhttps://nextjs.org/telemetry\n\n▲ Next.js 16.2.6 (Turbopack)\n- Environments: .env\n- Experiments (use with caution):\n  · clientTraceMetadata\n\n  Creating an optimized production build ...\n✓ Compiled successfully in 106s\n  Running next.config.js provided runAfterProductionCompile ...\n✓ Completed runAfterProductionCompile in 6.5s\n  Running TypeScript ...\n\n$ next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/\nFailed to type check.\n\n./scripts/audit-footer-cms.ts:108:42\nType error: Property 'name' does not exist on type '{ label: \"About\"; href: \"/about\"; section: string; } | { label: \"Terms\"; href: \"/terms\"; section: string; } | { label: \"Privacy Policy\"; href: \"/privacy-policy\"; section: string; } | { label: \"Contact\"; href: \"/contact\"; section: string; } | ... 10 more ... | { ...; }'.\n  Property 'name' does not exist on type '{ label: \"About\"; href: \"/about\"; section: string; }'.\n\n  \u001b[90m106 |\u001b[0m         \u001b[36mconst\u001b[0m pass = res.status === \u001b[35m200\u001b[0m && html.length > \u001b[35m500\u001b[0m;\n  \u001b[90m107 |\u001b[0m         checks.push({\n\u001b[31m\u001b[1m>\u001b[0m \u001b[90m108 |\u001b[0m           name: \u001b[32m`\u001b[0m${link.section\u001b[32m}: \u001b[0m${link.name\u001b[32m}`\u001b[0m,\n  \u001b[90m    |\u001b[0m                                          \u001b[31m\u001b[1m^\u001b[0m\n  \u001b[90m109 |\u001b[0m           href: link.href,\n  \u001b[90m110 |\u001b[0m           pass,\n  \u001b[90m111 |\u001b[0m           status: res.status,\nNext.js build worker exited with code: 1 and signal: null\nerror: script \"build\" exited with code 1\n\nCommand failed: bun run build\n$ next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/\nFailed to type check.\n\n./scripts/audit-footer-cms.ts:108:42\nType error: Property 'name' does not exist on type '{ label: \"About\"; href: \"/about\"; section: string; } | { label: \"Terms\"; href: \"/terms\"; section: string; } | { label: \"Privacy Policy\"; href: \"/privacy-policy\"; section: string; } | { label: \"Contact\"; href: \"/contact\"; section: string; } | ... 10 more ... | { ...; }'.\n  Property 'name' does not exist on type '{ label: \"About\"; href: \"/about\"; section: string; }'.\n\n  \u001b[90m106 |\u001b[0m         \u001b[36mconst\u001b[0m pass = res.status === \u001b[35m200\u001b[0m && html.length > \u001b[35m500\u001b[0m;\n  \u001b[90m107 |\u001b[0m         checks.push({\n\u001b[31m\u001b[1m>\u001b[0m \u001b[90m108 |\u001b[0m           name: \u001b[32m`\u001b[0m${link.section\u001b[32m}: \u001b[0m${link.name\u001b[32m}`\u001b[0m,\n  \u001b[90m    |\u001b[0m                                          \u001b[31m\u001b[1m^\u001b[0m\n  \u001b[90m109 |\u001b[0m           href: link.href,\n  \u001b[90m110 |\u001b[0m           pass,\n  \u001b[90m111 |\u001b[0m           status: res.status,\nNext.js build worker exited with code: 1 and signal: null\nerror: script \"build\" exited with code 1\n"
+  },
+  "areas": [
+    {
+      "area": "Admin panel",
+      "files": [
+        "src/components/secretza/admin/routes/AdminShell.tsx",
+        "src/components/secretza/admin/pages/AdminContentPages.tsx",
+        "src/app/admin/layout.tsx"
+      ]
+    },
+    {
+      "area": "Dashboard",
+      "files": [
+        "src/components/secretza/dashboard/Dashboard.tsx"
+      ]
+    },
+    {
+      "area": "Header",
+      "files": [
+        "src/components/secretza/layout/Header.tsx"
+      ]
+    },
+    {
+      "area": "Footer",
+      "files": [
+        "src/components/secretza/layout/Footer.tsx"
+      ]
+    },
+    {
+      "area": "CMS pages",
+      "files": [
+        "src/app/cms/[slug]/page.tsx",
+        "src/components/secretza/cms/CmsPageContent.tsx"
+      ]
+    },
+    {
+      "area": "Email templates",
+      "files": [
+        "src/lib/email.ts"
+      ]
+    },
+    {
+      "area": "Auth pages",
+      "files": [
+        "src/components/secretza/auth/AuthModal.tsx",
+        "src/app/api/auth/reset-password/route.ts"
+      ]
+    },
+    {
+      "area": "SEO metadata",
+      "files": [
+        "src/app/layout.tsx",
+        "src/app/manifest.ts",
+        "src/lib/seo-public-page.ts",
+        "src/lib/seo-metadata.ts",
+        "src/app/listing/[slug]/page.tsx",
+        "src/components/seo/SeoPageView.tsx"
+      ]
+    },
+    {
+      "area": "Error pages",
+      "files": [
+        "src/app/not-found.tsx",
+        "src/app/global-error.tsx"
+      ]
+    },
+    {
+      "area": "Brand components",
+      "files": [
+        "src/lib/brand.ts",
+        "src/components/brand/Logo.tsx",
+        "src/components/brand/LogoIcon.tsx",
+        "src/components/brand/BrandWordmark.tsx"
+      ]
+    }
+  ],
+  "brandExportUsage": [
+    "BRAND_NAME",
+    "BRAND_COLORS",
+    "BRAND_ASSETS",
+    "brandTitleSuffix",
+    "emailBrandHeader",
+    "EMAIL_BUTTON_STYLE",
+    "LogoTheme",
+    "LogoVariant"
+  ],
+  "checks": [
+    {
+      "category": "Constants",
+      "name": "BRAND_NAME defined and SecretZa",
+      "ok": true,
+      "detail": "SecretZa"
+    },
+    {
+      "category": "Constants",
+      "name": "BRAND_COLORS.primary",
+      "ok": true,
+      "detail": "#3B82F6"
+    },
+    {
+      "category": "Constants",
+      "name": "BRAND_COLORS.secondary",
+      "ok": true,
+      "detail": "#6366F1"
+    },
+    {
+      "category": "Constants",
+      "name": "BRAND_COLORS.darkBg",
+      "ok": true,
+      "detail": "#0B0B0F"
+    },
+    {
+      "category": "Constants",
+      "name": "brandTitleSuffix() returns suffix",
+      "ok": true,
+      "detail": " | SecretZa"
+    },
+    {
+      "category": "Constants",
+      "name": "emailBrandHeader() includes logo path",
+      "ok": true,
+      "detail": "email header template OK"
+    },
+    {
+      "category": "Constants",
+      "name": "EMAIL_BUTTON_STYLE defined",
+      "ok": true,
+      "detail": "display: inline-block; padding: 12px 32px; background: linea..."
+    },
+    {
+      "category": "Assets",
+      "name": "BRAND_ASSETS.logoFullDark",
+      "ok": true,
+      "detail": "/brand/logo-full-dark.svg"
+    },
+    {
+      "category": "Assets",
+      "name": "BRAND_ASSETS.logoFullLight",
+      "ok": true,
+      "detail": "/brand/logo-full-light.svg"
+    },
+    {
+      "category": "Assets",
+      "name": "BRAND_ASSETS.logoIconDark",
+      "ok": true,
+      "detail": "/brand/logo-icon-dark.svg"
+    },
+    {
+      "category": "Assets",
+      "name": "BRAND_ASSETS.logoIconLight",
+      "ok": true,
+      "detail": "/brand/logo-icon-light.svg"
+    },
+    {
+      "category": "Assets",
+      "name": "BRAND_ASSETS.logoMobileDark",
+      "ok": true,
+      "detail": "/brand/logo-mobile-dark.svg"
+    },
+    {
+      "category": "Assets",
+      "name": "BRAND_ASSETS.favicon",
+      "ok": true,
+      "detail": "/brand/favicon.svg"
+    },
+    {
+      "category": "Assets",
+      "name": "BRAND_ASSETS.ogImage",
+      "ok": true,
+      "detail": "/brand/og-image.svg"
+    },
+    {
+      "category": "Assets",
+      "name": "BRAND_ASSETS.icon192",
+      "ok": true,
+      "detail": "/brand/icon-192.svg"
+    },
+    {
+      "category": "Assets",
+      "name": "BRAND_ASSETS.icon512",
+      "ok": true,
+      "detail": "/brand/icon-512.svg"
+    },
+    {
+      "category": "Assets",
+      "name": "BRAND_ASSETS.logoLegacy",
+      "ok": true,
+      "detail": "/logo.svg"
+    },
+    {
+      "category": "Assets",
+      "name": "src/app/icon.svg",
+      "ok": true,
+      "detail": "Next.js app icon"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/app/cms/[slug]/page.tsx",
+      "ok": true,
+      "detail": "Uses: BRAND_NAME, brandTitleSuffix",
+      "file": "src/app/cms/[slug]/page.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/app/global-error.tsx",
+      "ok": true,
+      "detail": "Uses: BRAND_COLORS, BRAND_ASSETS",
+      "file": "src/app/global-error.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/app/layout.tsx",
+      "ok": true,
+      "detail": "Uses: BRAND_NAME, BRAND_ASSETS",
+      "file": "src/app/layout.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/app/listing/[slug]/page.tsx",
+      "ok": true,
+      "detail": "Uses: BRAND_NAME, BRAND_ASSETS, brandTitleSuffix",
+      "file": "src/app/listing/[slug]/page.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/app/manifest.ts",
+      "ok": true,
+      "detail": "Uses: BRAND_NAME, BRAND_COLORS, BRAND_ASSETS",
+      "file": "src/app/manifest.ts"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/app/not-found.tsx",
+      "ok": true,
+      "detail": "Uses: BRAND_COLORS, BRAND_ASSETS",
+      "file": "src/app/not-found.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/components/brand/BrandWordmark.tsx",
+      "ok": true,
+      "detail": "Uses: BRAND_NAME, LogoTheme",
+      "file": "src/components/brand/BrandWordmark.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/components/brand/Logo.tsx",
+      "ok": true,
+      "detail": "Uses: LogoTheme, LogoVariant",
+      "file": "src/components/brand/Logo.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/components/brand/LogoIcon.tsx",
+      "ok": true,
+      "detail": "Uses: BRAND_COLORS, LogoTheme",
+      "file": "src/components/brand/LogoIcon.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/components/secretza/admin/pages/AdminContentPages.tsx",
+      "ok": true,
+      "detail": "Uses: BRAND_NAME",
+      "file": "src/components/secretza/admin/pages/AdminContentPages.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/components/secretza/admin/routes/AdminShell.tsx",
+      "ok": true,
+      "detail": "Uses: BRAND_NAME",
+      "file": "src/components/secretza/admin/routes/AdminShell.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/components/secretza/auth/AuthModal.tsx",
+      "ok": true,
+      "detail": "Uses: BRAND_NAME",
+      "file": "src/components/secretza/auth/AuthModal.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/components/secretza/dashboard/Dashboard.tsx",
+      "ok": true,
+      "detail": "Uses: BRAND_NAME",
+      "file": "src/components/secretza/dashboard/Dashboard.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/components/secretza/layout/Footer.tsx",
+      "ok": true,
+      "detail": "Uses: BRAND_NAME",
+      "file": "src/components/secretza/layout/Footer.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/components/seo/SeoPageView.tsx",
+      "ok": true,
+      "detail": "Uses: BRAND_NAME",
+      "file": "src/components/seo/SeoPageView.tsx"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/lib/email.ts",
+      "ok": true,
+      "detail": "Uses: BRAND_NAME, emailBrandHeader, EMAIL_BUTTON_STYLE",
+      "file": "src/lib/email.ts"
+    },
+    {
+      "category": "Import resolution",
+      "name": "All brand imports OK: src/lib/seo-public-page.ts",
+      "ok": true,
+      "detail": "Uses: brandTitleSuffix",
+      "file": "src/lib/seo-public-page.ts"
+    },
+    {
+      "category": "Admin panel",
+      "name": "Branding integrated: AdminShell.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/components/secretza/admin/routes/AdminShell.tsx"
+    },
+    {
+      "category": "Admin panel",
+      "name": "Branding integrated: AdminContentPages.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/components/secretza/admin/pages/AdminContentPages.tsx"
+    },
+    {
+      "category": "Admin panel",
+      "name": "Branding integrated: layout.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/app/admin/layout.tsx"
+    },
+    {
+      "category": "Dashboard",
+      "name": "Branding integrated: Dashboard.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/components/secretza/dashboard/Dashboard.tsx"
+    },
+    {
+      "category": "Header",
+      "name": "Branding integrated: Header.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/components/secretza/layout/Header.tsx"
+    },
+    {
+      "category": "Footer",
+      "name": "Branding integrated: Footer.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/components/secretza/layout/Footer.tsx"
+    },
+    {
+      "category": "CMS pages",
+      "name": "Branding integrated: page.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/app/cms/[slug]/page.tsx"
+    },
+    {
+      "category": "CMS pages",
+      "name": "Branding integrated: CmsPageContent.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/components/secretza/cms/CmsPageContent.tsx"
+    },
+    {
+      "category": "Email templates",
+      "name": "Branding integrated: email.ts",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/lib/email.ts"
+    },
+    {
+      "category": "Auth pages",
+      "name": "Branding integrated: AuthModal.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/components/secretza/auth/AuthModal.tsx"
+    },
+    {
+      "category": "Auth pages",
+      "name": "Branding integrated: route.ts",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/app/api/auth/reset-password/route.ts"
+    },
+    {
+      "category": "SEO metadata",
+      "name": "Branding integrated: layout.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/app/layout.tsx"
+    },
+    {
+      "category": "SEO metadata",
+      "name": "Branding integrated: manifest.ts",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/app/manifest.ts"
+    },
+    {
+      "category": "SEO metadata",
+      "name": "Branding integrated: seo-public-page.ts",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/lib/seo-public-page.ts"
+    },
+    {
+      "category": "SEO metadata",
+      "name": "Branding integrated: seo-metadata.ts",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/lib/seo-metadata.ts"
+    },
+    {
+      "category": "SEO metadata",
+      "name": "Branding integrated: page.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/app/listing/[slug]/page.tsx"
+    },
+    {
+      "category": "SEO metadata",
+      "name": "Branding integrated: SeoPageView.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/components/seo/SeoPageView.tsx"
+    },
+    {
+      "category": "Error pages",
+      "name": "Branding integrated: not-found.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/app/not-found.tsx"
+    },
+    {
+      "category": "Error pages",
+      "name": "Branding integrated: global-error.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/app/global-error.tsx"
+    },
+    {
+      "category": "Brand components",
+      "name": "Branding integrated: brand.ts",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/lib/brand.ts"
+    },
+    {
+      "category": "Brand components",
+      "name": "Branding integrated: Logo.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/components/brand/Logo.tsx"
+    },
+    {
+      "category": "Brand components",
+      "name": "Branding integrated: LogoIcon.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/components/brand/LogoIcon.tsx"
+    },
+    {
+      "category": "Brand components",
+      "name": "Branding integrated: BrandWordmark.tsx",
+      "ok": true,
+      "detail": "uses brand module, components, or SecretZa",
+      "file": "src/components/brand/BrandWordmark.tsx"
+    },
+    {
+      "category": "Naming",
+      "name": "No legacy 'Secretza' display casing in src",
+      "ok": true,
+      "detail": "clean"
+    },
+    {
+      "category": "Build",
+      "name": "bun run build",
+      "ok": false,
+      "detail": "⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache\nAttention: Next.js now collects completely anonymous telemetry regarding usage.\nThis information is used to shape Next.js' roadmap and prioritize features.\nYou can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:\nhttps://nextjs.org/telemetry\n\n▲ Next.js 16.2.6 (Turbopack)\n- Environments: .env (may be non-branding failure)"
+    }
+  ],
+  "failed": [
+    {
+      "category": "Build",
+      "name": "bun run build",
+      "ok": false,
+      "detail": "⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache\nAttention: Next.js now collects completely anonymous telemetry regarding usage.\nThis information is used to shape Next.js' roadmap and prioritize features.\nYou can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:\nhttps://nextjs.org/telemetry\n\n▲ Next.js 16.2.6 (Turbopack)\n- Environments: .env (may be non-branding failure)"
+    }
+  ]
+}

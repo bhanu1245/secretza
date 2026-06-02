@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
 import { logAdminAction, extractIpAddress } from "@/lib/audit-logger";
 import { logError } from "@/lib/monitoring";
+import { autoGenerateCategorySeoPage } from "@/lib/seo-page-service";
 
 // GET /api/admin/categories — list all categories (tree structure)
 export async function GET() {
@@ -111,6 +112,10 @@ export async function POST(request: Request) {
         seoDescription: seoDescription || null,
       },
     });
+
+    if (category.isActive && !parentId) {
+      autoGenerateCategorySeoPage(category.id).catch(() => {});
+    }
 
     // Audit log category creation
     logAdminAction(

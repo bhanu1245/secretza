@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Payments & Subscription Fixes — Verification Report</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 24px; }
+  h1 { color: #f8fafc; }
+  h2 { color: #94a3b8; margin-top: 32px; }
+  .badge { display:inline-block; padding: 4px 12px; border-radius: 999px; font-weight:700; font-size:14px; }
+  .pass { background:#16a34a; color:#fff; }
+  .fail { background:#dc2626; color:#fff; }
+  table { border-collapse: collapse; width: 100%; margin-top:12px; }
+  th { background:#1e293b; padding:8px 12px; text-align:left; font-size:13px; color:#94a3b8; }
+  td { padding:8px 12px; font-size:13px; border-bottom:1px solid #1e293b; }
+  .ok { color:#4ade80; font-weight:700; }
+  .fail-cell { color:#f87171; font-weight:700; }
+  .section { background:#1e293b; border-radius:12px; padding:20px 24px; margin-bottom:24px; }
+  code { background:#0f172a; padding:2px 6px; border-radius:4px; font-size:12px; }
+</style>
+</head>
+<body>
+<h1>Payments &amp; Subscription Fixes — Verification Report</h1>
+<p>Generated: 2026-05-30T19:27:58.357Z</p>
+<p>Overall: <span class="badge pass">PASS 36/36</span></p>
+
+<div class="section">
+<h2>Fix Summary</h2>
+<p><strong>P0-1: Require listingId for boost/feature payments</strong><br/>
+    <code>src/lib/manual-payment-validation.ts</code><br/>Added .superRefine() to manualPaymentFormSchema that adds a ZodIssueCode.custom issue when paymentType is 'boost' or 'feature' and listingId is absent. Premium remains account-level and is not affected.</p><p><strong>P0-2: Preserve coupon validity at submission time</strong><br/>
+    <code>src/lib/coupons.ts</code><br/>Replaced all throws in redeemCouponOnApproval for post-submission coupon state changes (deleted, inactive, expired, limits reached) with console.warn + return null. The approval transaction proceeds regardless — the user already paid the discounted amount. Happy-path still increments usedCount and creates CouponRedemption. Idempotency guard is preserved.</p><p><strong>P1-3: Add notification for duplicate payment status</strong><br/>
+    <code>src/app/api/admin/payments/manual/[id]/review/route.ts</code><br/>Added an else-if branch for reviewAction === 'duplicate' that calls createNotification with type 'payment_duplicate', explaining the flag and directing the user to contact support.</p><p><strong>P1-4: Move payment status re-check inside the approval transaction</strong><br/>
+    <code>src/app/api/admin/payments/manual/[id]/review/route.ts</code><br/>Defined SubmissionAlreadyProcessedError sentinel class. Inside the $transaction callback, re-reads the submission status from the DB. If already terminal or duplicate, throws SubmissionAlreadyProcessedError which rolls back the transaction. The outer catch intercepts it and returns 409 — preventing duplicate approval side-effects.</p><p><strong>P1-5: Prevent duplicate-status submissions from being approved</strong><br/>
+    <code>src/app/api/admin/payments/manual/[id]/review/route.ts</code><br/>Added a pre-transaction guard: if reviewAction === 'approve' and submission.status === 'duplicate', returns 409 with DUPLICATE_STATUS code. Admin can still reject or request proof on duplicate submissions. The in-transaction re-check also covers this case to handle concurrent race conditions.</p>
+</div>
+
+<div class="section">
+<h2>Checks</h2>
+<table>
+<thead><tr><th>ID</th><th>Description</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td><code>P0-1a</code></td><td>superRefine exists in the schema</td><td class="ok">PASS</td></tr><tr><td><code>P0-1b</code></td><td>boost listingId requirement present</td><td class="ok">PASS</td></tr><tr><td><code>P0-1c</code></td><td>feature listingId requirement present</td><td class="ok">PASS</td></tr><tr><td><code>P0-1d</code></td><td>premium is NOT blocked by listingId check</td><td class="ok">PASS</td></tr><tr><td><code>P0-1e</code></td><td>ZodIssueCode.custom used for the listingId error</td><td class="ok">PASS</td></tr><tr><td><code>P0-1f</code></td><td>Error message references paymentType</td><td class="ok">PASS</td></tr><tr><td><code>P0-2a</code></td><td>redeemCouponOnApproval exists</td><td class="ok">PASS</td></tr><tr><td><code>P0-2b</code></td><td>Coupon-not-found no longer throws (skips gracefully)</td><td class="ok">PASS</td></tr><tr><td><code>P0-2c</code></td><td>Inactive coupon no longer throws (skips gracefully)</td><td class="ok">PASS</td></tr><tr><td><code>P0-2d</code></td><td>Expired coupon no longer throws (skips gracefully)</td><td class="ok">PASS</td></tr><tr><td><code>P0-2e</code></td><td>Idempotency guard still present (existing redemption check)</td><td class="ok">PASS</td></tr><tr><td><code>P0-2f</code></td><td>Warn log for deleted coupon present</td><td class="ok">PASS</td></tr><tr><td><code>P0-2g</code></td><td>Warn log for deactivated coupon present</td><td class="ok">PASS</td></tr><tr><td><code>P0-2h</code></td><td>Warn log for expired coupon present</td><td class="ok">PASS</td></tr><tr><td><code>P0-2i</code></td><td>User-limit reached logs and returns null (no throw)</td><td class="ok">PASS</td></tr><tr><td><code>P0-2j</code></td><td>Global-limit reached logs and returns null (no throw)</td><td class="ok">PASS</td></tr><tr><td><code>P0-2k</code></td><td>Happy-path still increments usedCount</td><td class="ok">PASS</td></tr><tr><td><code>P0-2l</code></td><td>Happy-path still creates CouponRedemption record</td><td class="ok">PASS</td></tr><tr><td><code>P1-3a</code></td><td>Duplicate notification block present</td><td class="ok">PASS</td></tr><tr><td><code>P1-3b</code></td><td>notification type 'payment_duplicate' used</td><td class="ok">PASS</td></tr><tr><td><code>P1-3c</code></td><td>Duplicate notification message references the payment</td><td class="ok">PASS</td></tr><tr><td><code>P1-4a</code></td><td>SubmissionAlreadyProcessedError class defined</td><td class="ok">PASS</td></tr><tr><td><code>P1-4b</code></td><td>Status re-read inside transaction (findUnique inside tx callback)</td><td class="ok">PASS</td></tr><tr><td><code>P1-4c</code></td><td>SubmissionAlreadyProcessedError thrown inside transaction</td><td class="ok">PASS</td></tr><tr><td><code>P1-4d</code></td><td>SubmissionAlreadyProcessedError caught in outer catch and returned as 409</td><td class="ok">PASS</td></tr><tr><td><code>P1-5a</code></td><td>Guard blocks approve when status is 'duplicate'</td><td class="ok">PASS</td></tr><tr><td><code>P1-5b</code></td><td>DUPLICATE_STATUS error code present</td><td class="ok">PASS</td></tr><tr><td><code>P1-5c</code></td><td>409 returned for duplicate → approve attempt</td><td class="ok">PASS</td></tr><tr><td><code>PRES-1</code></td><td>Premium activation (account-level) preserved</td><td class="ok">PASS</td></tr><tr><td><code>PRES-2</code></td><td>Boost activation still uses getDurationForTier</td><td class="ok">PASS</td></tr><tr><td><code>PRES-3</code></td><td>Feature activation still uses getDurationForTier</td><td class="ok">PASS</td></tr><tr><td><code>PRES-4</code></td><td>Approval notification still sent</td><td class="ok">PASS</td></tr><tr><td><code>PRES-5</code></td><td>Rejection notification still sent</td><td class="ok">PASS</td></tr><tr><td><code>PRES-6</code></td><td>Proof-requested notification still sent</td><td class="ok">PASS</td></tr><tr><td><code>PRES-7</code></td><td>AuditLog still created</td><td class="ok">PASS</td></tr><tr><td><code>PRES-8</code></td><td>Payment record still created on approval</td><td class="ok">PASS</td></tr>
+</tbody>
+</table>
+</div>
+</body>
+</html>

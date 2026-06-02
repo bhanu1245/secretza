@@ -78,7 +78,12 @@ async function loginAs(email: string, password: string) {
 }
 
 async function getAdminCookies() {
-  return loginAs(process.env.ADMIN_EMAIL || "admin@secretza.com", process.env.ADMIN_PASSWORD || "Admin@123");
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password) {
+    throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD are required.");
+  }
+  return loginAs(email, password);
 }
 
 async function captureScreenshots(pendingKey?: string, approvedKey?: string) {

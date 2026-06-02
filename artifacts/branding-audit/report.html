@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SecretZa Branding Audit</title>
+<style>
+:root{--bg:#0B0B0F;--surface:#15151D;--border:rgba(255,255,255,.08);--text:#F5F5F7;--muted:#94a3b8;--blue:#3B82F6;--violet:#6366F1}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;padding:2rem 1.5rem 4rem;max-width:1200px;margin:0 auto}
+h1{font-size:2rem;background:linear-gradient(135deg,var(--blue),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.5rem}
+.summary{display:flex;gap:1rem;flex-wrap:wrap;margin:1.5rem 0}
+.chip{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:.35rem 1rem;font-size:.85rem}
+.chip.pass{border-color:rgba(52,211,153,.4);color:#34d399}
+.chip.fail{border-color:rgba(248,113,113,.4);color:#f87171}
+section{margin:2rem 0}
+h2{font-size:1.1rem;margin-bottom:.75rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{border:1px solid var(--border);padding:.5rem .65rem;text-align:left;vertical-align:top}
+th{background:var(--surface)}
+.pass{color:#34d399;font-weight:600}.fail{color:#f87171;font-weight:600}
+code{font-size:.78rem;color:var(--muted);word-break:break-word}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;overflow:auto;font-size:.75rem;margin-top:1rem;max-height:320px}
+</style></head><body>
+<h1>SecretZa Branding Refactor Audit</h1>
+<p style="color:var(--muted)">Generated: 2026-05-30T12:28:19.302Z</p>
+<div class="summary">
+  <span class="chip fail">59/60 checks passed</span>
+  <span class="chip fail">Build: FAIL</span>
+  <span class="chip">Brand: SecretZa</span>
+</div>
+<section><h2>Constants (7/7)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>BRAND_NAME defined and SecretZa</td><td class="pass">PASS</td><td><code>SecretZa</code></td><td>—</td></tr><tr><td>BRAND_COLORS.primary</td><td class="pass">PASS</td><td><code>#3B82F6</code></td><td>—</td></tr><tr><td>BRAND_COLORS.secondary</td><td class="pass">PASS</td><td><code>#6366F1</code></td><td>—</td></tr><tr><td>BRAND_COLORS.darkBg</td><td class="pass">PASS</td><td><code>#0B0B0F</code></td><td>—</td></tr><tr><td>brandTitleSuffix() returns suffix</td><td class="pass">PASS</td><td><code> | SecretZa</code></td><td>—</td></tr><tr><td>emailBrandHeader() includes logo path</td><td class="pass">PASS</td><td><code>email header template OK</code></td><td>—</td></tr><tr><td>EMAIL_BUTTON_STYLE defined</td><td class="pass">PASS</td><td><code>display: inline-block; padding: 12px 32px; background: linea...</code></td><td>—</td></tr></table></section><section><h2>Assets (11/11)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>BRAND_ASSETS.logoFullDark</td><td class="pass">PASS</td><td><code>/brand/logo-full-dark.svg</code></td><td>—</td></tr><tr><td>BRAND_ASSETS.logoFullLight</td><td class="pass">PASS</td><td><code>/brand/logo-full-light.svg</code></td><td>—</td></tr><tr><td>BRAND_ASSETS.logoIconDark</td><td class="pass">PASS</td><td><code>/brand/logo-icon-dark.svg</code></td><td>—</td></tr><tr><td>BRAND_ASSETS.logoIconLight</td><td class="pass">PASS</td><td><code>/brand/logo-icon-light.svg</code></td><td>—</td></tr><tr><td>BRAND_ASSETS.logoMobileDark</td><td class="pass">PASS</td><td><code>/brand/logo-mobile-dark.svg</code></td><td>—</td></tr><tr><td>BRAND_ASSETS.favicon</td><td class="pass">PASS</td><td><code>/brand/favicon.svg</code></td><td>—</td></tr><tr><td>BRAND_ASSETS.ogImage</td><td class="pass">PASS</td><td><code>/brand/og-image.svg</code></td><td>—</td></tr><tr><td>BRAND_ASSETS.icon192</td><td class="pass">PASS</td><td><code>/brand/icon-192.svg</code></td><td>—</td></tr><tr><td>BRAND_ASSETS.icon512</td><td class="pass">PASS</td><td><code>/brand/icon-512.svg</code></td><td>—</td></tr><tr><td>BRAND_ASSETS.logoLegacy</td><td class="pass">PASS</td><td><code>/logo.svg</code></td><td>—</td></tr><tr><td>src/app/icon.svg</td><td class="pass">PASS</td><td><code>Next.js app icon</code></td><td>—</td></tr></table></section><section><h2>Import resolution (17/17)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>All brand imports OK: src/app/cms/[slug]/page.tsx</td><td class="pass">PASS</td><td><code>Uses: BRAND_NAME, brandTitleSuffix</code></td><td>src/app/cms/[slug]/page.tsx</td></tr><tr><td>All brand imports OK: src/app/global-error.tsx</td><td class="pass">PASS</td><td><code>Uses: BRAND_COLORS, BRAND_ASSETS</code></td><td>src/app/global-error.tsx</td></tr><tr><td>All brand imports OK: src/app/layout.tsx</td><td class="pass">PASS</td><td><code>Uses: BRAND_NAME, BRAND_ASSETS</code></td><td>src/app/layout.tsx</td></tr><tr><td>All brand imports OK: src/app/listing/[slug]/page.tsx</td><td class="pass">PASS</td><td><code>Uses: BRAND_NAME, BRAND_ASSETS, brandTitleSuffix</code></td><td>src/app/listing/[slug]/page.tsx</td></tr><tr><td>All brand imports OK: src/app/manifest.ts</td><td class="pass">PASS</td><td><code>Uses: BRAND_NAME, BRAND_COLORS, BRAND_ASSETS</code></td><td>src/app/manifest.ts</td></tr><tr><td>All brand imports OK: src/app/not-found.tsx</td><td class="pass">PASS</td><td><code>Uses: BRAND_COLORS, BRAND_ASSETS</code></td><td>src/app/not-found.tsx</td></tr><tr><td>All brand imports OK: src/components/brand/BrandWordmark.tsx</td><td class="pass">PASS</td><td><code>Uses: BRAND_NAME, LogoTheme</code></td><td>src/components/brand/BrandWordmark.tsx</td></tr><tr><td>All brand imports OK: src/components/brand/Logo.tsx</td><td class="pass">PASS</td><td><code>Uses: LogoTheme, LogoVariant</code></td><td>src/components/brand/Logo.tsx</td></tr><tr><td>All brand imports OK: src/components/brand/LogoIcon.tsx</td><td class="pass">PASS</td><td><code>Uses: BRAND_COLORS, LogoTheme</code></td><td>src/components/brand/LogoIcon.tsx</td></tr><tr><td>All brand imports OK: src/components/secretza/admin/pages/AdminContentPages.tsx</td><td class="pass">PASS</td><td><code>Uses: BRAND_NAME</code></td><td>src/components/secretza/admin/pages/AdminContentPages.tsx</td></tr><tr><td>All brand imports OK: src/components/secretza/admin/routes/AdminShell.tsx</td><td class="pass">PASS</td><td><code>Uses: BRAND_NAME</code></td><td>src/components/secretza/admin/routes/AdminShell.tsx</td></tr><tr><td>All brand imports OK: src/components/secretza/auth/AuthModal.tsx</td><td class="pass">PASS</td><td><code>Uses: BRAND_NAME</code></td><td>src/components/secretza/auth/AuthModal.tsx</td></tr><tr><td>All brand imports OK: src/components/secretza/dashboard/Dashboard.tsx</td><td class="pass">PASS</td><td><code>Uses: BRAND_NAME</code></td><td>src/components/secretza/dashboard/Dashboard.tsx</td></tr><tr><td>All brand imports OK: src/components/secretza/layout/Footer.tsx</td><td class="pass">PASS</td><td><code>Uses: BRAND_NAME</code></td><td>src/components/secretza/layout/Footer.tsx</td></tr><tr><td>All brand imports OK: src/components/seo/SeoPageView.tsx</td><td class="pass">PASS</td><td><code>Uses: BRAND_NAME</code></td><td>src/components/seo/SeoPageView.tsx</td></tr><tr><td>All brand imports OK: src/lib/email.ts</td><td class="pass">PASS</td><td><code>Uses: BRAND_NAME, emailBrandHeader, EMAIL_BUTTON_STYLE</code></td><td>src/lib/email.ts</td></tr><tr><td>All brand imports OK: src/lib/seo-public-page.ts</td><td class="pass">PASS</td><td><code>Uses: brandTitleSuffix</code></td><td>src/lib/seo-public-page.ts</td></tr></table></section><section><h2>Admin panel (3/3)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>Branding integrated: AdminShell.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/components/secretza/admin/routes/AdminShell.tsx</td></tr><tr><td>Branding integrated: AdminContentPages.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/components/secretza/admin/pages/AdminContentPages.tsx</td></tr><tr><td>Branding integrated: layout.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/app/admin/layout.tsx</td></tr></table></section><section><h2>Dashboard (1/1)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>Branding integrated: Dashboard.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/components/secretza/dashboard/Dashboard.tsx</td></tr></table></section><section><h2>Header (1/1)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>Branding integrated: Header.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/components/secretza/layout/Header.tsx</td></tr></table></section><section><h2>Footer (1/1)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>Branding integrated: Footer.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/components/secretza/layout/Footer.tsx</td></tr></table></section><section><h2>CMS pages (2/2)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>Branding integrated: page.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/app/cms/[slug]/page.tsx</td></tr><tr><td>Branding integrated: CmsPageContent.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/components/secretza/cms/CmsPageContent.tsx</td></tr></table></section><section><h2>Email templates (1/1)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>Branding integrated: email.ts</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/lib/email.ts</td></tr></table></section><section><h2>Auth pages (2/2)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>Branding integrated: AuthModal.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/components/secretza/auth/AuthModal.tsx</td></tr><tr><td>Branding integrated: route.ts</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/app/api/auth/reset-password/route.ts</td></tr></table></section><section><h2>SEO metadata (6/6)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>Branding integrated: layout.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/app/layout.tsx</td></tr><tr><td>Branding integrated: manifest.ts</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/app/manifest.ts</td></tr><tr><td>Branding integrated: seo-public-page.ts</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/lib/seo-public-page.ts</td></tr><tr><td>Branding integrated: seo-metadata.ts</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/lib/seo-metadata.ts</td></tr><tr><td>Branding integrated: page.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/app/listing/[slug]/page.tsx</td></tr><tr><td>Branding integrated: SeoPageView.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/components/seo/SeoPageView.tsx</td></tr></table></section><section><h2>Error pages (2/2)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>Branding integrated: not-found.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/app/not-found.tsx</td></tr><tr><td>Branding integrated: global-error.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/app/global-error.tsx</td></tr></table></section><section><h2>Brand components (4/4)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>Branding integrated: brand.ts</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/lib/brand.ts</td></tr><tr><td>Branding integrated: Logo.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/components/brand/Logo.tsx</td></tr><tr><td>Branding integrated: LogoIcon.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/components/brand/LogoIcon.tsx</td></tr><tr><td>Branding integrated: BrandWordmark.tsx</td><td class="pass">PASS</td><td><code>uses brand module, components, or SecretZa</code></td><td>src/components/brand/BrandWordmark.tsx</td></tr></table></section><section><h2>Naming (1/1)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>No legacy 'Secretza' display casing in src</td><td class="pass">PASS</td><td><code>clean</code></td><td>—</td></tr></table></section><section><h2>Build (0/1)</h2><table><tr><th>Check</th><th>Status</th><th>Detail</th><th>File</th></tr><tr><td>bun run build</td><td class="fail">FAIL</td><td><code>⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+▲ Next.js 16.2.6 (Turbopack)
+- Environments: .env (may be non-branding failure)</code></td><td>—</td></tr></table></section>
+<section><h2>Build Output</h2><pre>⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+▲ Next.js 16.2.6 (Turbopack)
+- Environments: .env
+- Experiments (use with caution):
+  · clientTraceMetadata
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 106s
+  Running next.config.js provided runAfterProductionCompile ...
+✓ Completed runAfterProductionCompile in 6.5s
+  Running TypeScript ...
+
+$ next build &amp;&amp; cp -r .next/static .next/standalone/.next/ &amp;&amp; cp -r public .next/standalone/
+Failed to type check.
+
+./scripts/audit-footer-cms.ts:108:42
+Type error: Property 'name' does not exist on type '{ label: &quot;About&quot;; href: &quot;/about&quot;; section: string; } | { label: &quot;Terms&quot;; href: &quot;/terms&quot;; section: string; } | { label: &quot;Privacy Policy&quot;; href: &quot;/privacy-policy&quot;; section: string; } | { label: &quot;Contact&quot;; href: &quot;/contact&quot;; section: string; } | ... 10 more ... | { ...; }'.
+  Property 'name' does not exist on type '{ label: &quot;About&quot;; href: &quot;/about&quot;; section: string; }'.
+
+  [90m106 |[0m         [36mconst[0m pass = res.status === [35m200[0m &amp;&amp; html.length &gt; [35m500[0m;
+  [90m107 |[0m         checks.push({
+[31m[1m&gt;[0m [90m108 |[0m           name: [32m`[0m${link.section[32m}: [0m${link.name[32m}`[0m,
+  [90m    |[0m                                          [31m[1m^[0m
+  [90m109 |[0m           href: link.href,
+  [90m110 |[0m           pass,
+  [90m111 |[0m           status: res.status,
+Next.js build worker exited with code: 1 and signal: null
+error: script &quot;build&quot; exited with code 1
+
+Command failed: bun run build
+$ next build &amp;&amp; cp -r .next/static .next/standalone/.next/ &amp;&amp; cp -r public .next/standalone/
+Failed to type check.
+
+./scripts/audit-footer-cms.ts:108:42
+Type error: Property 'name' does not exist on type '{ label: &quot;About&quot;; href: &quot;/about&quot;; section: string; } | { label: &quot;Terms&quot;; href: &quot;/terms&quot;; section: string; } | { label: &quot;Privacy Policy&quot;; href: &quot;/privacy-policy&quot;; section: string; } | { label: &quot;Contact&quot;; href: &quot;/contact&quot;; section: string; } | ... 10 more ... | { ...; }'.
+  Property 'name' does not exist on type '{ label: &quot;About&quot;; href: &quot;/about&quot;; section: string; }'.
+
+  [90m106 |[0m         [36mconst[0m pass = res.status === [35m200[0m &amp;&amp; html.length &gt; [35m500[0m;
+  [90m107 |[0m         checks.push({
+[31m[1m&gt;[0m [90m108 |[0m           name: [32m`[0m${link.section[32m}: [0m${link.name[32m}`[0m,
+  [90m    |[0m                                          [31m[1m^[0m
+  [90m109 |[0m           href: link.href,
+  [90m110 |[0m           pass,
+  [90m111 |[0m           status: res.status,
+Next.js build worker exited with code: 1 and signal: null
+error: script &quot;build&quot; exited with code 1
+</pre></section>
+</body></html>

@@ -1,0 +1,98 @@
+﻿[
+    {
+        "label":  "keyword only",
+        "status":  200,
+        "total":  7,
+        "count":  5,
+        "totalPages":  2,
+        "error":  ""
+    },
+    {
+        "label":  "category only",
+        "status":  200,
+        "total":  7,
+        "count":  5,
+        "totalPages":  2,
+        "error":  ""
+    },
+    {
+        "label":  "keyword + category",
+        "status":  200,
+        "total":  7,
+        "count":  5,
+        "totalPages":  2,
+        "error":  ""
+    },
+    {
+        "label":  "keyword+category+city",
+        "status":  200,
+        "total":  2,
+        "count":  2,
+        "totalPages":  1,
+        "error":  ""
+    },
+    {
+        "label":  "page=9999 (empty)",
+        "status":  200,
+        "total":  7,
+        "count":  0,
+        "totalPages":  3,
+        "error":  ""
+    },
+    {
+        "label":  "page=1 (total check)",
+        "status":  200,
+        "total":  7,
+        "count":  3,
+        "totalPages":  3,
+        "error":  ""
+    },
+    {
+        "label":  "sortBy=ranking",
+        "status":  200,
+        "total":  7,
+        "count":  3,
+        "totalPages":  3,
+        "error":  ""
+    },
+    {
+        "label":  "sortBy=relevance",
+        "status":  200,
+        "total":  7,
+        "count":  3,
+        "totalPages":  3,
+        "error":  ""
+    },
+    {
+        "label":  "sortBy=newest",
+        "status":  200,
+        "total":  7,
+        "count":  3,
+        "totalPages":  3,
+        "error":  ""
+    },
+    {
+        "label":  "sortBy=featured",
+        "status":  200,
+        "total":  7,
+        "count":  3,
+        "totalPages":  3,
+        "error":  ""
+    },
+    {
+        "label":  "sortBy=price_low",
+        "status":  200,
+        "total":  7,
+        "count":  3,
+        "totalPages":  3,
+        "error":  ""
+    },
+    {
+        "label":  "sortBy=price_high",
+        "status":  200,
+        "total":  7,
+        "count":  3,
+        "totalPages":  3,
+        "error":  ""
+    }
+]

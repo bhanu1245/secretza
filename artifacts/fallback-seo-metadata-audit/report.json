@@ -1,0 +1,115 @@
+{
+  "generatedAt": "2026-05-29T12:22:34.299Z",
+  "baseUrl": "http://localhost:3000",
+  "metadataChain": [
+    "generateMetadata ([country]/[state]/page.tsx)",
+    "resolveLongtailCityFallbackMetadata (seo-fallback-metadata.ts)",
+    "buildLongtailCityFallbackFields (seo-fallback.ts)",
+    "buildSeoPageMetadata (seo-metadata.ts → og:image, twitter:image)"
+  ],
+  "routesFixed": [
+    "/independent-escorts/mumbai",
+    "/independent-escorts/delhi",
+    "/independent-escorts/bangalore",
+    "/independent-escorts/hyderabad"
+  ],
+  "results": [
+    {
+      "url": "http://localhost:3000/independent-escorts/mumbai",
+      "slug": "mumbai",
+      "title": "Independent Escorts in Mumbai | Secretza",
+      "metaDescription": "Discover independent escorts in Mumbai. Browse verified listings, photos, and reviews on Secretza. Updated daily.",
+      "canonical": "https://secretza.com/independent-escorts/mumbai",
+      "ogImage": "https://secretza.com/logo.svg",
+      "twitterImage": "https://secretza.com/logo.svg",
+      "h1": "Independent Escorts in Mumbai",
+      "checks": {
+        "titleNotFound": true,
+        "titleFormat": true,
+        "metaDescriptionPresent": true,
+        "canonicalPresent": true,
+        "canonicalMatchesRoute": false,
+        "ogImagePresent": true,
+        "twitterImagePresent": true,
+        "h1Format": true,
+        "headerPresent": true,
+        "exploreMorePresent": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\fallback-seo-metadata-audit\\mumbai-desktop.png",
+      "sourceFile": "D:\\projects\\Secretza-Fresh\\artifacts\\fallback-seo-metadata-audit\\mumbai-source.html"
+    },
+    {
+      "url": "http://localhost:3000/independent-escorts/delhi",
+      "slug": "delhi",
+      "title": "Independent Escorts in Delhi | Secretza",
+      "metaDescription": "Discover independent escorts in Delhi. Browse verified listings, photos, and reviews on Secretza. Updated daily.",
+      "canonical": "https://secretza.com/independent-escorts/delhi",
+      "ogImage": "https://secretza.com/logo.svg",
+      "twitterImage": "https://secretza.com/logo.svg",
+      "h1": "Independent Escorts in Delhi",
+      "checks": {
+        "titleNotFound": true,
+        "titleFormat": true,
+        "metaDescriptionPresent": true,
+        "canonicalPresent": true,
+        "canonicalMatchesRoute": false,
+        "ogImagePresent": true,
+        "twitterImagePresent": true,
+        "h1Format": true,
+        "headerPresent": true,
+        "exploreMorePresent": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\fallback-seo-metadata-audit\\delhi-desktop.png",
+      "sourceFile": "D:\\projects\\Secretza-Fresh\\artifacts\\fallback-seo-metadata-audit\\delhi-source.html"
+    },
+    {
+      "url": "http://localhost:3000/independent-escorts/bangalore",
+      "slug": "bangalore",
+      "title": "Independent Escorts in Bangalore | Secretza",
+      "metaDescription": "Discover independent escorts in Bangalore. Browse verified listings, photos, and reviews on Secretza. Updated daily.",
+      "canonical": "https://secretza.com/independent-escorts/bangalore",
+      "ogImage": "https://secretza.com/logo.svg",
+      "twitterImage": "https://secretza.com/logo.svg",
+      "h1": "Independent Escorts in Bangalore",
+      "checks": {
+        "titleNotFound": true,
+        "titleFormat": true,
+        "metaDescriptionPresent": true,
+        "canonicalPresent": true,
+        "canonicalMatchesRoute": false,
+        "ogImagePresent": true,
+        "twitterImagePresent": true,
+        "h1Format": true,
+        "headerPresent": true,
+        "exploreMorePresent": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\fallback-seo-metadata-audit\\bangalore-desktop.png",
+      "sourceFile": "D:\\projects\\Secretza-Fresh\\artifacts\\fallback-seo-metadata-audit\\bangalore-source.html"
+    },
+    {
+      "url": "http://localhost:3000/independent-escorts/hyderabad",
+      "slug": "hyderabad",
+      "title": "Independent Escorts in Hyderabad | Secretza",
+      "metaDescription": "Discover independent escorts in Hyderabad. Browse verified listings, photos, and reviews on Secretza. Updated daily.",
+      "canonical": "https://secretza.com/independent-escorts/hyderabad",
+      "ogImage": "https://secretza.com/logo.svg",
+      "twitterImage": "https://secretza.com/logo.svg",
+      "h1": "Independent Escorts in Hyderabad",
+      "checks": {
+        "titleNotFound": true,
+        "titleFormat": true,
+        "metaDescriptionPresent": true,
+        "canonicalPresent": true,
+        "canonicalMatchesRoute": false,
+        "ogImagePresent": true,
+        "twitterImagePresent": true,
+        "h1Format": true,
+        "headerPresent": true,
+        "exploreMorePresent": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\fallback-seo-metadata-audit\\hyderabad-desktop.png",
+      "sourceFile": "D:\\projects\\Secretza-Fresh\\artifacts\\fallback-seo-metadata-audit\\hyderabad-source.html"
+    }
+  ],
+  "allPassed": false
+}

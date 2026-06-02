@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-05-29",
+  "minWordCount": 500,
+  "samples": [
+    {
+      "city": "Agra",
+      "slug": "agra",
+      "title": "Agra Nightlife & Adult Listings | Secretza",
+      "metaDescription": "Agra adult services: verified escorts, massage & dating in Uttar Pradesh. Explore Taj Ganj listings today.",
+      "h1": "Agra Escorts, Massage & Adult Listings",
+      "canonicalUrl": "/india/uttar-pradesh/agra",
+      "wordCount": 722,
+      "faqCount": 8,
+      "internalLinksCount": 11,
+      "landmarks": ["Taj Mahal", "Agra Fort", "Fatehpur Sikri", "Mehtab Bagh"],
+      "neighborhoods": ["Taj Ganj", "Sadar Bazaar", "Kamla Nagar", "Sikandra", "Dayal Bagh"],
+      "searchIntents": ["escorts near Taj Ganj hotels", "massage Sadar Bazaar Agra"]
+    },
+    {
+      "city": "Ahmedabad",
+      "slug": "ahmedabad",
+      "title": "Verified Adult Services in Ahmedabad, Gujarat | Secretza",
+      "h1": "Find Trusted Adult Services in Ahmedabad",
+      "wordCount": 694,
+      "landmarks": ["Sabarmati Ashram", "Kankaria Lake", "Adalaj Stepwell"],
+      "neighborhoods": ["Satellite", "Vastrapur", "Navrangpura", "Maninagar", "Bodakdev"]
+    },
+    {
+      "city": "Mumbai",
+      "slug": "mumbai",
+      "title": "Verified Adult Services in Mumbai, Maharashtra | Secretza",
+      "h1": "Mumbai Adult Classifieds & Escort Listings",
+      "wordCount": 694,
+      "landmarks": ["Gateway of India", "Marine Drive", "Siddhivinayak Temple"],
+      "neighborhoods": ["Andheri", "Bandra", "Juhu", "Powai", "Worli"]
+    }
+  ],
+  "note": "Run bun run scripts/generate-seo-samples.ts for live metrics after regeneration."
+}

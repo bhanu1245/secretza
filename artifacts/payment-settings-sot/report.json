@@ -1,0 +1,387 @@
+{
+  "generatedAt": "2026-05-30T17:48:37.518Z",
+  "title": "PaymentSettings Single Source of Truth — Verification Report",
+  "summary": {
+    "total": 29,
+    "passed": 29,
+    "failed": 0,
+    "blockersFailed": 0
+  },
+  "implementation": {
+    "newFunction": "getDurationForTier(type, amount) in src/lib/payment-settings.ts",
+    "removedConstants": [
+      "BOOST_DURATIONS",
+      "FEATURE_DURATIONS",
+      "PREMIUM_DURATION_DAYS"
+    ],
+    "fromFile": "src/app/api/admin/payments/manual/[id]/review/route.ts",
+    "correctedDurations": {
+      "₹199 boost": "180 min (old hardcoded) → 360 min (PaymentSettings default)",
+      "₹499 boost": "720 min (old hardcoded) → 1440 min (PaymentSettings default)",
+      "₹799 featured": "30 days (old hardcoded) → 14 days (PaymentSettings default)"
+    }
+  },
+  "groups": {
+    "A — Static analysis": [
+      {
+        "name": "SA · BOOST_DURATIONS constant removed from review route",
+        "ok": true,
+        "detail": "Hardcoded amount→minutes map must not exist in this file",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA · FEATURE_DURATIONS constant removed from review route",
+        "ok": true,
+        "detail": "Hardcoded amount→days map must not exist in this file",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA · PREMIUM_DURATION_DAYS constant removed from review route",
+        "ok": true,
+        "detail": "Hardcoded scalar must not exist in this file",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA · getDurationForTier imported in review route",
+        "ok": true,
+        "detail": "import { getDurationForTier } from \"@/lib/payment-settings\"",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA · getDurationForTier called for boost activation",
+        "ok": true,
+        "detail": "getDurationForTier(\"boost\", tierAmount) replaces BOOST_DURATIONS[tierAmount]",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA · getDurationForTier called for feature activation",
+        "ok": true,
+        "detail": "getDurationForTier(\"feature\", tierAmount) replaces FEATURE_DURATIONS[tierAmount]",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA · getDurationForTier called for premium activation",
+        "ok": true,
+        "detail": "getDurationForTier(\"premium\", tierAmount) replaces PREMIUM_DURATION_DAYS",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA · getDurationForTier exported from payment-settings.ts",
+        "ok": true,
+        "detail": "Single callable for all (type, amount) → duration lookups",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA · TierDuration interface exported",
+        "ok": true,
+        "detail": "Typed return value for getDurationForTier",
+        "severity": "info"
+      },
+      {
+        "name": "SA · matched flag present in TierDuration",
+        "ok": true,
+        "detail": "Callers can detect when the safe-default fallback was applied",
+        "severity": "high"
+      },
+      {
+        "name": "SA · review route uses durationMinutes from getDurationForTier (not hardcoded)",
+        "ok": true,
+        "detail": "const { durationMinutes } = await getDurationForTier(\"boost\", tierAmount)",
+        "severity": "blocker"
+      },
+      {
+        "name": "SA · review route uses durationDays from getDurationForTier (not hardcoded)",
+        "ok": true,
+        "detail": "const { durationDays } = await getDurationForTier(\"feature\"/\"premium\", tierAmount)",
+        "severity": "blocker"
+      }
+    ],
+    "B — Unit tests (default tiers)": [
+      {
+        "name": "B · ₹99 boost  → 60 min  (1 hr)",
+        "ok": true,
+        "detail": "getDurationForTier(\"boost\", 99) → 60 min, matched=true (expected 60 min, matched=true)",
+        "severity": "blocker"
+      },
+      {
+        "name": "B · ₹199 boost → 360 min (6 hr)",
+        "ok": true,
+        "detail": "getDurationForTier(\"boost\", 199) → 360 min, matched=true (expected 360 min, matched=true)",
+        "severity": "blocker"
+      },
+      {
+        "name": "B · ₹499 boost → 1440 min (24 hr)",
+        "ok": true,
+        "detail": "getDurationForTier(\"boost\", 499) → 1440 min, matched=true (expected 1440 min, matched=true)",
+        "severity": "blocker"
+      },
+      {
+        "name": "B · ₹149 featured →  3 days",
+        "ok": true,
+        "detail": "getDurationForTier(\"feature\", 149) → 3 days, matched=true (expected 3 days, matched=true)",
+        "severity": "blocker"
+      },
+      {
+        "name": "B · ₹399 featured →  7 days",
+        "ok": true,
+        "detail": "getDurationForTier(\"feature\", 399) → 7 days, matched=true (expected 7 days, matched=true)",
+        "severity": "blocker"
+      },
+      {
+        "name": "B · ₹799 featured → 14 days",
+        "ok": true,
+        "detail": "getDurationForTier(\"feature\", 799) → 14 days, matched=true (expected 14 days, matched=true)",
+        "severity": "blocker"
+      },
+      {
+        "name": "B · ₹999 premium → 30 days",
+        "ok": true,
+        "detail": "getDurationForTier(\"premium\", 999) → 30 days, matched=true (expected 30, matched=true)",
+        "severity": "blocker"
+      }
+    ],
+    "C — Mutation tests (changing PaymentSettings)": [
+      {
+        "name": "C · After changing ₹199 boost to 480 min — getDurationForTier returns 480",
+        "ok": true,
+        "detail": "After DB update: getDurationForTier(\"boost\", 199) → 480 min (expected 480)",
+        "severity": "blocker"
+      },
+      {
+        "name": "C · After changing ₹799 featured to 21 days — getDurationForTier returns 21",
+        "ok": true,
+        "detail": "After DB update: getDurationForTier(\"feature\", 799) → 21 days (expected 21)",
+        "severity": "blocker"
+      },
+      {
+        "name": "C · After changing premium to ₹1499/60 days — getDurationForTier returns 60",
+        "ok": true,
+        "detail": "After DB update: getDurationForTier(\"premium\", 1499) → 60 days (expected 60)",
+        "severity": "blocker"
+      },
+      {
+        "name": "C · Old premium amount (₹999) no longer matches — safe fallback applied, matched=false",
+        "ok": true,
+        "detail": "getDurationForTier(\"premium\", 999) with new tiers: matched=false (expected false — amount no longer in PaymentSettings)",
+        "severity": "blocker"
+      }
+    ],
+    "D — Fallback / unknown amount": [
+      {
+        "name": "D · Unknown boost amount → fallback 60 min, matched=false (no hardcoded wrong value)",
+        "ok": true,
+        "detail": "getDurationForTier(\"boost\", 9999) → 60 min, matched=false",
+        "severity": "high"
+      },
+      {
+        "name": "D · Unknown feature amount → fallback 3 days, matched=false",
+        "ok": true,
+        "detail": "getDurationForTier(\"feature\", 9999) → 3 days, matched=false",
+        "severity": "high"
+      },
+      {
+        "name": "D · Unknown premium amount → fallback 30 days, matched=false",
+        "ok": true,
+        "detail": "getDurationForTier(\"premium\", 9999) → 30 days, matched=false",
+        "severity": "high"
+      }
+    ],
+    "E — Restore & verify": [
+      {
+        "name": "E · After restore: ₹199 boost back to 360 min",
+        "ok": true,
+        "detail": "getDurationForTier(\"boost\", 199) after restore → 360 min",
+        "severity": "info"
+      },
+      {
+        "name": "E · After restore: ₹799 featured back to 14 days",
+        "ok": true,
+        "detail": "getDurationForTier(\"feature\", 799) after restore → 14 days",
+        "severity": "info"
+      },
+      {
+        "name": "E · After restore: ₹999 premium back to 30 days",
+        "ok": true,
+        "detail": "getDurationForTier(\"premium\", 999) after restore → 30 days",
+        "severity": "info"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "SA · BOOST_DURATIONS constant removed from review route",
+      "ok": true,
+      "detail": "Hardcoded amount→minutes map must not exist in this file",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA · FEATURE_DURATIONS constant removed from review route",
+      "ok": true,
+      "detail": "Hardcoded amount→days map must not exist in this file",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA · PREMIUM_DURATION_DAYS constant removed from review route",
+      "ok": true,
+      "detail": "Hardcoded scalar must not exist in this file",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA · getDurationForTier imported in review route",
+      "ok": true,
+      "detail": "import { getDurationForTier } from \"@/lib/payment-settings\"",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA · getDurationForTier called for boost activation",
+      "ok": true,
+      "detail": "getDurationForTier(\"boost\", tierAmount) replaces BOOST_DURATIONS[tierAmount]",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA · getDurationForTier called for feature activation",
+      "ok": true,
+      "detail": "getDurationForTier(\"feature\", tierAmount) replaces FEATURE_DURATIONS[tierAmount]",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA · getDurationForTier called for premium activation",
+      "ok": true,
+      "detail": "getDurationForTier(\"premium\", tierAmount) replaces PREMIUM_DURATION_DAYS",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA · getDurationForTier exported from payment-settings.ts",
+      "ok": true,
+      "detail": "Single callable for all (type, amount) → duration lookups",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA · TierDuration interface exported",
+      "ok": true,
+      "detail": "Typed return value for getDurationForTier",
+      "severity": "info"
+    },
+    {
+      "name": "SA · matched flag present in TierDuration",
+      "ok": true,
+      "detail": "Callers can detect when the safe-default fallback was applied",
+      "severity": "high"
+    },
+    {
+      "name": "SA · review route uses durationMinutes from getDurationForTier (not hardcoded)",
+      "ok": true,
+      "detail": "const { durationMinutes } = await getDurationForTier(\"boost\", tierAmount)",
+      "severity": "blocker"
+    },
+    {
+      "name": "SA · review route uses durationDays from getDurationForTier (not hardcoded)",
+      "ok": true,
+      "detail": "const { durationDays } = await getDurationForTier(\"feature\"/\"premium\", tierAmount)",
+      "severity": "blocker"
+    },
+    {
+      "name": "B · ₹99 boost  → 60 min  (1 hr)",
+      "ok": true,
+      "detail": "getDurationForTier(\"boost\", 99) → 60 min, matched=true (expected 60 min, matched=true)",
+      "severity": "blocker"
+    },
+    {
+      "name": "B · ₹199 boost → 360 min (6 hr)",
+      "ok": true,
+      "detail": "getDurationForTier(\"boost\", 199) → 360 min, matched=true (expected 360 min, matched=true)",
+      "severity": "blocker"
+    },
+    {
+      "name": "B · ₹499 boost → 1440 min (24 hr)",
+      "ok": true,
+      "detail": "getDurationForTier(\"boost\", 499) → 1440 min, matched=true (expected 1440 min, matched=true)",
+      "severity": "blocker"
+    },
+    {
+      "name": "B · ₹149 featured →  3 days",
+      "ok": true,
+      "detail": "getDurationForTier(\"feature\", 149) → 3 days, matched=true (expected 3 days, matched=true)",
+      "severity": "blocker"
+    },
+    {
+      "name": "B · ₹399 featured →  7 days",
+      "ok": true,
+      "detail": "getDurationForTier(\"feature\", 399) → 7 days, matched=true (expected 7 days, matched=true)",
+      "severity": "blocker"
+    },
+    {
+      "name": "B · ₹799 featured → 14 days",
+      "ok": true,
+      "detail": "getDurationForTier(\"feature\", 799) → 14 days, matched=true (expected 14 days, matched=true)",
+      "severity": "blocker"
+    },
+    {
+      "name": "B · ₹999 premium → 30 days",
+      "ok": true,
+      "detail": "getDurationForTier(\"premium\", 999) → 30 days, matched=true (expected 30, matched=true)",
+      "severity": "blocker"
+    },
+    {
+      "name": "C · After changing ₹199 boost to 480 min — getDurationForTier returns 480",
+      "ok": true,
+      "detail": "After DB update: getDurationForTier(\"boost\", 199) → 480 min (expected 480)",
+      "severity": "blocker"
+    },
+    {
+      "name": "C · After changing ₹799 featured to 21 days — getDurationForTier returns 21",
+      "ok": true,
+      "detail": "After DB update: getDurationForTier(\"feature\", 799) → 21 days (expected 21)",
+      "severity": "blocker"
+    },
+    {
+      "name": "C · After changing premium to ₹1499/60 days — getDurationForTier returns 60",
+      "ok": true,
+      "detail": "After DB update: getDurationForTier(\"premium\", 1499) → 60 days (expected 60)",
+      "severity": "blocker"
+    },
+    {
+      "name": "C · Old premium amount (₹999) no longer matches — safe fallback applied, matched=false",
+      "ok": true,
+      "detail": "getDurationForTier(\"premium\", 999) with new tiers: matched=false (expected false — amount no longer in PaymentSettings)",
+      "severity": "blocker"
+    },
+    {
+      "name": "D · Unknown boost amount → fallback 60 min, matched=false (no hardcoded wrong value)",
+      "ok": true,
+      "detail": "getDurationForTier(\"boost\", 9999) → 60 min, matched=false",
+      "severity": "high"
+    },
+    {
+      "name": "D · Unknown feature amount → fallback 3 days, matched=false",
+      "ok": true,
+      "detail": "getDurationForTier(\"feature\", 9999) → 3 days, matched=false",
+      "severity": "high"
+    },
+    {
+      "name": "D · Unknown premium amount → fallback 30 days, matched=false",
+      "ok": true,
+      "detail": "getDurationForTier(\"premium\", 9999) → 30 days, matched=false",
+      "severity": "high"
+    },
+    {
+      "name": "E · After restore: ₹199 boost back to 360 min",
+      "ok": true,
+      "detail": "getDurationForTier(\"boost\", 199) after restore → 360 min",
+      "severity": "info"
+    },
+    {
+      "name": "E · After restore: ₹799 featured back to 14 days",
+      "ok": true,
+      "detail": "getDurationForTier(\"feature\", 799) after restore → 14 days",
+      "severity": "info"
+    },
+    {
+      "name": "E · After restore: ₹999 premium back to 30 days",
+      "ok": true,
+      "detail": "getDurationForTier(\"premium\", 999) after restore → 30 days",
+      "severity": "info"
+    }
+  ],
+  "failed": []
+}

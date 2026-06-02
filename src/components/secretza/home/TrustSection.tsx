@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Shield, Lock, Eye, Star, type LucideIcon } from "lucide-react";
+import BrandWordmark from "@/components/brand/BrandWordmark";
 
 interface TrustItem {
   icon: LucideIcon;
@@ -64,7 +65,7 @@ export default function TrustSection() {
         transition={{ duration: 0.5 }}
       >
         <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-          Why Choose <span className="text-violet">Secretza</span>?
+          Why Choose <BrandWordmark theme="dark" className="inline" />?
         </h2>
         <p className="text-muted-foreground mt-2 text-sm sm:text-base max-w-xl mx-auto">
           We&apos;re committed to providing a safe, private, and premium experience

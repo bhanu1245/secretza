@@ -309,6 +309,23 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
+      // -----------------------------------------------------------------------
+      // Request-time premium expiry enforcement (hybrid layer 1).
+      //
+      // The cron job keeps User.isPremium accurate in the DB, but there is always
+      // a window between expiry and the next cron run. This check closes that gap
+      // with zero DB writes: if the JWT already carries a stale isPremium=true and
+      // the stored expiry has passed, we silently downgrade the token in-memory.
+      // The next cron run will update the DB record; subsequent logins or cache
+      // misses will read the corrected value from the DB.
+      // -----------------------------------------------------------------------
+      if (token.isPremium && token.premiumExpiry) {
+        const expiry = new Date(token.premiumExpiry);
+        if (!isNaN(expiry.getTime()) && expiry < new Date()) {
+          token.isPremium = false;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -334,11 +351,21 @@ export const authOptions: NextAuthOptions = {
           throw new Error("This account has been suspended");
         }
 
-        // Update lastLoginAt for OAuth sign-ins
+        // Update lastLoginAt and normalize profile fields for OAuth sign-ins.
+        // Google guarantees email ownership, so we mark the account as verified.
         if (account?.provider && account.provider !== "credentials") {
           await db.user.update({
             where: { id: user.id },
-            data: { lastLoginAt: new Date() },
+            data: {
+              lastLoginAt: new Date(),
+              // Google has already verified the user's email address.
+              isVerified: true,
+              // Only set emailVerified if not already stamped (preserve existing value).
+              ...(dbUser?.emailVerified ? {} : { emailVerified: new Date() }),
+              // Record the canonical provider name in lowercase ("google", "github", …).
+              provider: account.provider.toLowerCase(),
+              providerId: account.providerAccountId,
+            },
           }).catch(() => {});
         }
       }

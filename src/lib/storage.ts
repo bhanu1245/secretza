@@ -1,5 +1,5 @@
 // ==========================================
-// Secretza Storage Abstraction Layer
+// SecretZa Storage Abstraction Layer
 // ==========================================
 // Supports Cloudflare R2 (preferred), AWS S3 (fallback), and local filesystem (development).
 // Environment variables are read once via createStorageService() to produce a singleton.
@@ -15,6 +15,18 @@ import path from "path";
 // ==========================================
 
 export type StorageProvider = "r2" | "s3" | "local";
+
+/**
+ * Root directory for local file uploads.
+ * Uses UPLOADS_DIR when set (production VPS: /data/uploads), otherwise cwd/uploads.
+ */
+export function getUploadsBasePath(): string {
+  const configured = process.env.UPLOADS_DIR?.trim();
+  if (configured) {
+    return path.resolve(configured);
+  }
+  return path.resolve(process.cwd(), "uploads");
+}
 
 export interface StorageConfig {
   provider: StorageProvider;
@@ -49,7 +61,7 @@ export class StorageService {
 
   constructor(config: StorageConfig) {
     this.config = config;
-    this.localBasePath = path.resolve(process.cwd(), "uploads");
+    this.localBasePath = getUploadsBasePath();
 
     // Initialise the S3-compatible client for R2 or S3 providers
     if (config.provider === "r2" || config.provider === "s3") {
@@ -302,6 +314,7 @@ export class StorageService {
  * Supported env vars (prefix depends on provider):
  *
  *   STORAGE_PROVIDER    — "r2" | "s3" | "local" (default: "local")
+ *   UPLOADS_DIR         — absolute path for local uploads (default: cwd/uploads)
  *
  *   R2_ACCOUNT_ID       — Cloudflare account ID
  *   R2_BUCKET           — R2 bucket name

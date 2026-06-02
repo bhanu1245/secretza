@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>SecretZa — Launch Readiness Report</title>
+<style>
+:root{--bg:#0B0B0F;--surface:#15151D;--surface2:#1b1b25;--border:rgba(255,255,255,.08);--text:#F5F5F7;--muted:#94a3b8;--blue:#3B82F6;--violet:#6366F1;--green:#34d399;--amber:#fbbf24;--red:#f87171}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;padding:2.5rem 1.5rem 5rem;max-width:1100px;margin:0 auto}
+h1{font-size:2rem;background:linear-gradient(135deg,var(--blue),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.25rem}
+.sub{color:var(--muted);margin-bottom:2rem}
+.score-wrap{display:flex;gap:2rem;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.75rem 2rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.gauge{--p:76;width:128px;height:128px;border-radius:50%;background:conic-gradient(var(--amber) calc(var(--p)*1%),rgba(255,255,255,.06) 0);display:grid;place-items:center;flex-shrink:0}
+.gauge .inner{width:100px;height:100px;border-radius:50%;background:var(--bg);display:grid;place-items:center;flex-direction:column}
+.gauge .pct{font-size:1.9rem;font-weight:800}
+.gauge .lbl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.verdict h2{font-size:1.05rem;margin-bottom:.4rem}
+.verdict p{color:var(--muted);font-size:.92rem;max-width:640px}
+.badge{display:inline-block;font-size:.7rem;font-weight:700;padding:.2rem .6rem;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
+.b-pass{background:rgba(52,211,153,.15);color:var(--green)}
+.b-partial{background:rgba(251,191,36,.15);color:var(--amber)}
+.b-fail{background:rgba(248,113,113,.15);color:var(--red)}
+.bars{display:grid;gap:.6rem;margin:1.5rem 0 2.5rem}
+.bar-row{display:grid;grid-template-columns:180px 1fr 48px;gap:1rem;align-items:center;font-size:.85rem}
+.track{height:10px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden}
+.fill{height:100%;border-radius:999px}
+.f-green{background:var(--green)}.f-amber{background:var(--amber)}.f-red{background:var(--red)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+.card h3{display:flex;align-items:center;gap:.6rem;font-size:1.1rem;margin-bottom:.25rem}
+.card .num{font-size:.8rem;color:var(--muted);margin-left:auto;font-weight:700}
+.card h4{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:.9rem 0 .35rem}
+.card ul{margin:0 0 0 1.1rem;font-size:.86rem;color:#cbd5e1}
+.card li{margin-bottom:.25rem}
+.card li.blk{color:var(--red);font-weight:600}
+.section-title{font-size:1.3rem;margin:2.5rem 0 1rem;border-bottom:1px solid var(--border);padding-bottom:.5rem}
+.blockers{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+.blockers h3{color:var(--red)}
+.hp{background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+.hp h3{color:var(--amber)}
+code{background:var(--surface2);padding:.1rem .35rem;border-radius:5px;font-size:.8rem;color:#e2e8f0}
+</style>
+</head>
+<body>
+<h1>SecretZa — Launch Readiness Report</h1>
+<p class="sub">Read-only audit · no code modified · generated 2026-05-30</p>
+
+<div class="score-wrap">
+  <div class="gauge"><div class="inner"><span class="pct">76%</span><span class="lbl">Ready</span></div></div>
+  <div class="verdict">
+    <h2>Verdict: Conditional Go</h2>
+    <p>The functional core is solid and the production build is green. Two issues must be fixed before a public launch: a <strong>broken access-control on payment-proof screenshots</strong> and the <strong>missing premium-expiry job</strong>. Everything else is ship-ready or low-risk polish.</p>
+  </div>
+</div>
+
+<div class="bars">
+  <div class="bar-row"><span>Coupons</span><div class="track"><div class="fill f-green" style="width:95%"></div></div><span>95</span></div>
+  <div class="bar-row"><span>Production Build</span><div class="track"><div class="fill f-green" style="width:95%"></div></div><span>95</span></div>
+  <div class="bar-row"><span>Reports</span><div class="track"><div class="fill f-green" style="width:92%"></div></div><span>92</span></div>
+  <div class="bar-row"><span>Search &amp; Filters</span><div class="track"><div class="fill f-amber" style="width:82%"></div></div><span>82</span></div>
+  <div class="bar-row"><span>Pricing</span><div class="track"><div class="fill f-amber" style="width:75%"></div></div><span>75</span></div>
+  <div class="bar-row"><span>Payments</span><div class="track"><div class="fill f-amber" style="width:60%"></div></div><span>60</span></div>
+  <div class="bar-row"><span>Subscriptions</span><div class="track"><div class="fill f-red" style="width:45%"></div></div><span>45</span></div>
+</div>
+
+<div class="blockers">
+  <h3>🚫 Launch Blockers</h3>
+  <ul>
+    <li class="blk">Payment-proof screenshots are publicly downloadable — <code>/api/upload/file</code> requires no auth and <code>canAccessListingImageFile()</code> returns <code>true</code> for any non-<code>listings/</code> key (includes <code>screenshots/</code>). UTR/transaction proofs leak via guessable key.</li>
+    <li class="blk">Premium subscriptions never expire — <code>premiumExpiry</code> is set but no job/read-check ever resets <code>isPremium=false</code>. Users keep premium forever after one payment (revenue leakage).</li>
+  </ul>
+</div>
+
+<div class="hp">
+  <h3>⚠ High Priority (pre/just-post launch)</h3>
+  <ul>
+    <li>No real payment gateway or webhook signature verification — manual UPI is the only working path (<code>/api/payments</code> is a stub).</li>
+    <li>Search ignores the keyword filter when a category is also selected (<code>where.OR</code> overwrite).</li>
+    <li>Screenshots stored on local disk (<code>uploads/</code>) — ephemeral for standalone/serverless deploys.</li>
+  </ul>
+</div>
+
+<h2 class="section-title">Module Detail</h2>
+
+<div class="card">
+  <h3>Coupons <span class="badge b-pass">Pass</span><span class="num">95 / 100</span></h3>
+  <h4>Strengths</h4>
+  <ul><li>Per-user + global usage limits with pending-use accounting to prevent over-redemption</li><li>Expiry, percentage/fixed validation, zero-final-amount guard</li><li>Atomic, idempotent redemption inside the approval transaction; full audit logging</li><li>Soft-delete when redemption history exists; duplicate code → 409</li></ul>
+  <h4>Gaps</h4>
+  <ul><li>No minimum-order or plan/category scoping</li><li>usedCount check+increment not row-locked (low risk on SQLite)</li></ul>
+  <h4>Production Ready</h4><ul><li>Yes</li></ul>
+</div>
+
+<div class="card">
+  <h3>Pricing <span class="badge b-partial">Partial</span><span class="num">75 / 100</span></h3>
+  <h4>Broken</h4>
+  <ul><li>Duplicate slug on create throws a raw UNIQUE constraint → 500 instead of 409 (no pre-check, no try/catch)</li></ul>
+  <h4>Missing</h4>
+  <ul><li>No range validation (price bounds, non-positive durationDays)</li><li>No audit logging on plan changes (inconsistent with Coupons)</li></ul>
+  <h4>Database / Security</h4>
+  <ul><li>Raw SQL is parameterized (injection-safe); admin-gated; hard delete (no historical retention, but no FK orphans)</li></ul>
+  <h4>Production Ready</h4><ul><li>Mostly — harden validation + error handling first</li></ul>
+</div>
+
+<div class="card">
+  <h3>Payments <span class="badge b-partial">Partial</span><span class="num">60 / 100</span></h3>
+  <h4>Security</h4>
+  <ul><li class="blk">Public screenshot exposure (see blockers)</li><li>Manual submit well-guarded: auth + verified + rate limit + MIME sniffing; admin approve atomic + audit + notification</li></ul>
+  <h4>Missing / Broken</h4>
+  <ul><li>No real gateway integration / webhook verification</li><li>VirusScanResult model not wired to screenshot uploads</li></ul>
+  <h4>Database / UI</h4>
+  <ul><li>Unique <code>utrNumber</code> blocks duplicate proofs; Payment + audit log indexed; Float money (migrate to Decimal on Postgres)</li><li>Local-disk screenshot storage (ephemeral); amount-match logic duplicated across 3 routes</li></ul>
+  <h4>Production Ready</h4><ul><li>No — fix screenshot access control first; gateway needed for card/online payments</li></ul>
+</div>
+
+<div class="card">
+  <h3>Subscriptions (Premium) <span class="badge b-partial">Partial</span><span class="num">45 / 100</span></h3>
+  <h4>Broken</h4>
+  <ul><li class="blk">Premium never expires — no downgrade job or read-time expiry check</li></ul>
+  <h4>Missing</h4>
+  <ul><li>No recurring/auto-renew billing, renewal reminders, or grace period</li><li>No dedicated Subscription model (premium = <code>isPremium</code> + <code>premiumExpiry</code> one-time flag)</li></ul>
+  <h4>Database / Security</h4>
+  <ul><li><code>(isPremium, premiumExpiry)</code> index exists but is never used to expire; status flows via JWT with sessionVersion invalidation</li></ul>
+  <h4>Production Ready</h4><ul><li>No — works only as a permanent one-time perk</li></ul>
+</div>
+
+<div class="card">
+  <h3>Reports <span class="badge b-pass">Pass</span><span class="num">92 / 100</span></h3>
+  <h4>Strengths</h4>
+  <ul><li>Duplicate-report prevention via unique constraint (P2002 → 409); self-report blocked</li><li>Atomic resolve with actions (resolve / dismiss / suspend listing / suspend user) + audit + session invalidation</li><li>Auto risk-score bump at 3+ reports; owner notifications</li></ul>
+  <h4>Gaps</h4>
+  <ul><li>Legacy <code>Report</code> model still in schema (dead weight)</li><li><code>moderatorNotes</code> handled via raw SQL — hints at minor prisma-client/schema drift</li></ul>
+  <h4>Production Ready</h4><ul><li>Yes</li></ul>
+</div>
+
+<div class="card">
+  <h3>Search &amp; Filters <span class="badge b-partial">Partial</span><span class="num">82 / 100</span></h3>
+  <h4>Broken</h4>
+  <ul><li>Keyword filter is dropped when combined with a category (category branch overwrites <code>where.OR</code>)</li></ul>
+  <h4>Missing</h4>
+  <ul><li>No full-text index (SQLite LIKE) — slow at scale; no fuzzy matching</li></ul>
+  <h4>Security / DB</h4>
+  <ul><li>Public GET rate-limited per IP; userId queries require matching session; rich composite indexes on Listing</li><li>'ranking' sort re-sorts in-memory per page (minor pagination inconsistency)</li></ul>
+  <h4>Production Ready</h4><ul><li>Yes — fix the keyword+category overwrite</li></ul>
+</div>
+
+<div class="card">
+  <h3>Production Build <span class="badge b-pass">Pass</span><span class="num">95 / 100</span></h3>
+  <h4>Result</h4>
+  <ul><li><code>tsc --noEmit</code>: 0 errors</li><li><code>next build</code>: exit 0, 1554 static pages generated; standalone asset copy is cross-platform</li></ul>
+  <h4>Gaps</h4>
+  <ul><li><code>metadataBase</code> not set → OG/Twitter images resolve to <code>http://localhost:3000</code> (cosmetic SEO)</li></ul>
+  <h4>Production Ready</h4><ul><li>Yes</li></ul>
+</div>
+
+</body>
+</html>

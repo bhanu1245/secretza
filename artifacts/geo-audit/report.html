@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"/><title>Geo Audit Report</title>
+<style>
+body{font-family:system-ui;background:#0f0f14;color:#eee;padding:24px;max-width:1200px;margin:0 auto}
+table{border-collapse:collapse;width:100%;margin:16px 0}td,th{border:1px solid #333;padding:8px;text-align:left;vertical-align:top}
+th{background:#1a1a24}.pass{color:#10b981}.fail{color:#ef4444}pre{background:#1a1a24;padding:12px;border-radius:8px;overflow:auto}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.card{background:#1a1a24;padding:16px;border-radius:8px;border:1px solid #333}
+.card h3{margin:0 0 8px;font-size:14px;color:#aaa}.card p{margin:0;font-size:24px;font-weight:700}
+</style></head><body>
+<h1>Geo Management Audit</h1>
+<p>Generated: 2026-05-30T07:16:28.609Z</p>
+<p>Overall: <strong class="pass">PASS</strong></p>
+<h2>Before / After</h2><pre>{
+  "countries": {
+    "before": 95,
+    "after": 95
+  },
+  "states": {
+    "before": 449,
+    "after": 449
+  },
+  "cities": {
+    "before": 840,
+    "after": 847
+  },
+  "areas": {
+    "before": 32,
+    "after": 360
+  }
+}</pre>
+<h2>Counts</h2>
+<div class="grid">
+  <div class="card"><h3>Countries</h3><p>95</p></div>
+  <div class="card"><h3>States</h3><p>449</p></div>
+  <div class="card"><h3>Cities</h3><p>847</p></div>
+  <div class="card"><h3>Areas</h3><p>360</p></div>
+</div>
+<h2>Checks</h2>
+<table><thead><tr><th>Status</th><th>Check</th><th>Detail</th></tr></thead><tbody><tr><td>✓</td><td>Countries: total in database</td><td><pre style="margin:0;white-space:pre-wrap">95 countries</pre></td></tr><tr><td>✓</td><td>Countries: world seed coverage</td><td><pre style="margin:0;white-space:pre-wrap">All world-geo-data countries present</pre></td></tr><tr><td>✓</td><td>Countries: no duplicate slugs</td><td><pre style="margin:0;white-space:pre-wrap">none</pre></td></tr><tr><td>✓</td><td>Countries: no duplicate names</td><td><pre style="margin:0;white-space:pre-wrap">none</pre></td></tr><tr><td>✓</td><td>Countries: inactive count (informational)</td><td><pre style="margin:0;white-space:pre-wrap">0 inactive</pre></td></tr><tr><td>✓</td><td>India: country exists and active</td><td><pre style="margin:0;white-space:pre-wrap">{
+  "slug": "india",
+  "code": "IN"
+}</pre></td></tr><tr><td>✓</td><td>India: all 36 states/UTs present</td><td><pre style="margin:0;white-space:pre-wrap">36/36 present</pre></td></tr><tr><td>✓</td><td>India: state slugs match canonical</td><td><pre style="margin:0;white-space:pre-wrap">all match</pre></td></tr><tr><td>✓</td><td>India: all states active</td><td><pre style="margin:0;white-space:pre-wrap">all active</pre></td></tr><tr><td>✓</td><td>India: states linked to IN country</td><td><pre style="margin:0;white-space:pre-wrap">36 states under India</pre></td></tr><tr><td>✓</td><td>Cities: no states with zero cities (India)</td><td><pre style="margin:0;white-space:pre-wrap">{
+  "indiaZeroCityStates": [],
+  "totalZeroCityStates": 67
+}</pre></td></tr><tr><td>✓</td><td>Cities: no duplicate slug per state</td><td><pre style="margin:0;white-space:pre-wrap">none</pre></td></tr><tr><td>✓</td><td>Cities: valid state relationships</td><td><pre style="margin:0;white-space:pre-wrap">0 orphaned cities</pre></td></tr><tr><td>✓</td><td>India cities: seed coverage</td><td><pre style="margin:0;white-space:pre-wrap">321 canonical cities present</pre></td></tr><tr><td>✓</td><td>Areas: major Indian cities have areas</td><td><pre style="margin:0;white-space:pre-wrap">all tier-1/metro cities have areas</pre></td></tr><tr><td>✓</td><td>Areas: no duplicate slug per city</td><td><pre style="margin:0;white-space:pre-wrap">none</pre></td></tr><tr><td>✓</td><td>Areas: valid city relationships</td><td><pre style="margin:0;white-space:pre-wrap">360 areas total, 0 orphaned</pre></td></tr><tr><td>✓</td><td>Districts/localities seeded</td><td><pre style="margin:0;white-space:pre-wrap">{
+  "districts": 349,
+  "localities": 177
+}</pre></td></tr><tr><td>✓</td><td>SEO: city pages match geo cities</td><td><pre style="margin:0;white-space:pre-wrap">153 city SEO pages OK</pre></td></tr><tr><td>✓</td><td>SEO: state pages match geo states</td><td><pre style="margin:0;white-space:pre-wrap">OK</pre></td></tr><tr><td>✓</td><td>SEO: country pages match geo countries</td><td><pre style="margin:0;white-space:pre-wrap">OK</pre></td></tr><tr><td>✓</td><td>SEO: no broken slugs</td><td><pre style="margin:0;white-space:pre-wrap">none</pre></td></tr><tr><td>✓</td><td>Listings: no missing country FK</td><td><pre style="margin:0;white-space:pre-wrap">0 broken</pre></td></tr><tr><td>✓</td><td>Listings: no missing state FK</td><td><pre style="margin:0;white-space:pre-wrap">0 broken</pre></td></tr><tr><td>✓</td><td>Listings: no missing city FK</td><td><pre style="margin:0;white-space:pre-wrap">0 broken</pre></td></tr><tr><td>✓</td><td>Listings: no missing area FK</td><td><pre style="margin:0;white-space:pre-wrap">0 broken</pre></td></tr><tr><td>✓</td><td>Data quality: no null names/slugs</td><td><pre style="margin:0;white-space:pre-wrap">{
+  "countries": 0,
+  "states": 0,
+  "cities": 0,
+  "areas": 0
+}</pre></td></tr><tr><td>✓</td><td>Data quality: inactive records not referenced by listings</td><td><pre style="margin:0;white-space:pre-wrap">{
+  "countries": [],
+  "states": [],
+  "cities": [],
+  "areas": []
+}</pre></td></tr><tr><td>✓</td><td>India completeness: states/UTs</td><td><pre style="margin:0;white-space:pre-wrap">36/36 states</pre></td></tr><tr><td>✓</td><td>India completeness: cities from seed</td><td><pre style="margin:0;white-space:pre-wrap">322 India cities, 0 missing from seed</pre></td></tr><tr><td>✓</td><td>India completeness: areas structure for metros</td><td><pre style="margin:0;white-space:pre-wrap">360 India areas</pre></td></tr></tbody></table>
+<h2>Summary</h2><pre>{
+  "countries": {
+    "total": 95,
+    "inactive": 0,
+    "missingFromWorldSeed": 0,
+    "missingFromIso": 154,
+    "duplicateSlugs": 0
+  },
+  "india": {
+    "states": 36,
+    "missingStates": [],
+    "missingCities": 0,
+    "indiaAreas": 360
+  },
+  "cities": {
+    "total": 847,
+    "statesWithZeroCities": 67,
+    "inactive": 0,
+    "duplicates": 0
+  },
+  "areas": {
+    "total": 360,
+    "districts": 349,
+    "localities": 177,
+    "majorCitiesWithoutAreas": 0
+  },
+  "seo": {
+    "total": 346,
+    "cityPagesOrphaned": 0,
+    "statePagesOrphaned": 0,
+    "activeCitiesWithoutSeo": 3
+  },
+  "listings": {
+    "missingCountry": 0,
+    "missingState": 0,
+    "missingCity": 0,
+    "missingArea": 0
+  }
+}</pre>
+</body></html>

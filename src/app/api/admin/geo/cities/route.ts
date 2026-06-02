@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getListParams, paginatedResponse, requireAdminResponse, slugify } from "../_utils";
+import { autoGenerateCitySeoPage } from "@/lib/seo-page-service";
 
 export async function GET(request: Request) {
   const unauthorized = await requireAdminResponse();
@@ -50,6 +51,8 @@ export async function POST(request: Request) {
       isFeatured: body.isFeatured ?? false,
     },
   });
+
+  autoGenerateCitySeoPage(item.id).catch(() => {});
 
   return NextResponse.json({ item }, { status: 201 });
 }

@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-05-30T12:00:00.000Z",
+  "brandName": "SecretZa",
+  "capitalization": "S and Z only",
+  "palette": {
+    "blue": "#3B82F6",
+    "violet": "#6366F1",
+    "violetDeep": "#7C3AED",
+    "violetLight": "#8B5CF6",
+    "accent": "#A78BFA"
+  },
+  "concepts": [
+    {
+      "id": "A",
+      "name": "SZ Fusion",
+      "file": "concept-a.svg",
+      "description": "Bold S and Z strokes with feminine side profile in negative space between letters. Soft glow and verification check.",
+      "strengths": ["Silhouette most visible at large sizes", "Clear SZ letterforms", "Marketing-friendly"],
+      "weaknesses": ["Profile less readable at 16px", "Less trust signaling than shield"]
+    },
+    {
+      "id": "B",
+      "name": "Shield Trust",
+      "file": "concept-b.svg",
+      "description": "Shield frame with SZ monogram and centered profile negative space. Verification badge at base.",
+      "strengths": ["Trust/verification signal", "Best favicon legibility", "Platform-appropriate", "Ownable mark"],
+      "weaknesses": ["Slightly more complex than pure monogram"],
+      "recommended": true
+    },
+    {
+      "id": "C",
+      "name": "Luxe Monogram",
+      "file": "concept-c.svg",
+      "description": "Interlocked minimal S/Z with thinnest profile curve. Editorial luxury aesthetic.",
+      "strengths": ["Most fashion-forward", "Highly scalable vector", "Cleanest at large sizes"],
+      "weaknesses": ["Silhouette nearly invisible at 16px", "Less explicit trust cue"]
+    }
+  ],
+  "productionRecommendation": {
+    "concept": "B",
+    "name": "Shield Trust",
+    "rationale": "Best balance of trust, legibility at favicon sizes, premium aesthetic, and subtle non-explicit feminine silhouette for an adult classifieds marketplace."
+  },
+  "showcase": "artifacts/logo-concepts/index.html"
+}

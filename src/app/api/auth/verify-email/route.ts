@@ -9,7 +9,7 @@ const HTML_TEMPLATE = (title: string, body: string) => `
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${title} — Secretza</title>
+  <title>${title} — SecretZa</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -119,16 +119,16 @@ export async function GET(request: NextRequest) {
         <div class="container">
           <div class="logo">
             <div class="logo-icon"><span>S</span></div>
-            <h1>Secretza</h1>
+            <h1>SecretZa</h1>
           </div>
           <div class="card">
             <div class="icon">&#x26A0;&#xFE0F;</div>
             <h2 class="error-text">Invalid Request</h2>
             <p>No verification token provided. Please check your email for the correct link.</p>
-            <a href="/" class="btn">Back to Secretza</a>
+            <a href="/" class="btn">Back to SecretZa</a>
           </div>
         </div>`;
-      return new NextResponse(HTML_TEMPLATE("Invalid Request — Secretza", body), {
+      return new NextResponse(HTML_TEMPLATE("Invalid Request — SecretZa", body), {
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });
     }
@@ -143,16 +143,16 @@ export async function GET(request: NextRequest) {
         <div class="container">
           <div class="logo">
             <div class="logo-icon"><span>S</span></div>
-            <h1>Secretza</h1>
+            <h1>SecretZa</h1>
           </div>
           <div class="card">
             <div class="icon">&#x1F512;</div>
             <h2 class="error-text">Link Expired or Invalid</h2>
             <p>This verification link is invalid or has expired. Please request a new one from your account settings.</p>
-            <a href="/" class="btn">Back to Secretza</a>
+            <a href="/" class="btn">Back to SecretZa</a>
           </div>
         </div>`;
-      return new NextResponse(HTML_TEMPLATE("Link Expired — Secretza", body), {
+      return new NextResponse(HTML_TEMPLATE("Link Expired — SecretZa", body), {
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });
     }
@@ -163,16 +163,16 @@ export async function GET(request: NextRequest) {
         <div class="container">
           <div class="logo">
             <div class="logo-icon"><span>S</span></div>
-            <h1>Secretza</h1>
+            <h1>SecretZa</h1>
           </div>
           <div class="card">
             <div class="icon">&#x26A0;&#xFE0F;</div>
             <h2 class="error-text">Invalid Token</h2>
             <p>This is not a valid email verification link. Please check your email for the correct link.</p>
-            <a href="/" class="btn">Back to Secretza</a>
+            <a href="/" class="btn">Back to SecretZa</a>
           </div>
         </div>`;
-      return new NextResponse(HTML_TEMPLATE("Invalid Token — Secretza", body), {
+      return new NextResponse(HTML_TEMPLATE("Invalid Token — SecretZa", body), {
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });
     }
@@ -199,17 +199,17 @@ export async function GET(request: NextRequest) {
       <div class="container">
         <div class="logo">
           <div class="logo-icon"><span>S</span></div>
-          <h1>Secretza</h1>
+          <h1>SecretZa</h1>
         </div>
         <div class="card">
           <div class="icon">&#x2705;</div>
           <h2 class="success-text">Email Verified!</h2>
-          <p>Your email has been successfully verified. Welcome to Secretza! You can now access all features of your account.</p>
-          <a href="/" class="btn">Go to Secretza</a>
+          <p>Your email has been successfully verified. Welcome to SecretZa! You can now access all features of your account.</p>
+          <a href="/" class="btn">Go to SecretZa</a>
         </div>
       </div>`;
 
-    return new NextResponse(HTML_TEMPLATE("Email Verified — Secretza", body), {
+    return new NextResponse(HTML_TEMPLATE("Email Verified — SecretZa", body), {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   } catch (error) {
@@ -218,16 +218,16 @@ export async function GET(request: NextRequest) {
       <div class="container">
         <div class="logo">
           <div class="logo-icon"><span>S</span></div>
-          <h1>Secretza</h1>
+          <h1>SecretZa</h1>
         </div>
         <div class="card">
           <div class="icon">&#x26A0;&#xFE0F;</div>
           <h2 class="error-text">Verification Failed</h2>
           <p>An unexpected error occurred during email verification. Please try again later.</p>
-          <a href="/" class="btn">Back to Secretza</a>
+          <a href="/" class="btn">Back to SecretZa</a>
         </div>
       </div>`;
-    return new NextResponse(HTML_TEMPLATE("Verification Failed — Secretza", body), {
+    return new NextResponse(HTML_TEMPLATE("Verification Failed — SecretZa", body), {
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
   }

@@ -1,0 +1,28 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Upload Security Audit</title><style>
+:root{--bg:#0B0B0F;--surface:#15151D;--border:rgba(255,255,255,.08);--text:#F5F5F7;--muted:#94a3b8;--blue:#3B82F6;--violet:#6366F1}
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);max-width:1080px;margin:0 auto;padding:2.5rem 1.5rem 5rem;line-height:1.55}
+h1{font-size:1.8rem;background:linear-gradient(135deg,var(--blue),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+h2{font-size:1.15rem;margin:2rem 0 .75rem;color:var(--muted)}
+.chips{display:flex;gap:.75rem;flex-wrap:wrap;margin:1.25rem 0}
+.chip{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:.35rem 1rem;font-size:.85rem}
+.chip.ok{border-color:rgba(52,211,153,.4);color:#34d399}.chip.bad{border-color:rgba(248,113,113,.4);color:#f87171}
+table{width:100%;border-collapse:collapse;font-size:.85rem;margin:.5rem 0}
+th,td{border:1px solid var(--border);padding:.5rem .65rem;text-align:left;vertical-align:top}th{background:var(--surface)}
+.pass{color:#34d399;font-weight:700}.fail{color:#f87171;font-weight:700}
+code{font-size:.78rem;color:#cbd5e1;word-break:break-word}
+ul{margin:.5rem 0 0 1.2rem;color:#cbd5e1;font-size:.9rem}li{margin-bottom:.35rem}
+</style></head><body>
+<h1>Upload Security Audit</h1>
+<p style="color:var(--muted)">Payment screenshot access control · 2026-05-30T14:48:21.658Z</p>
+<div class="chips">
+  <span class="chip ok">16/16 checks passed</span>
+  <span class="chip ok">0 blocker failures</span>
+</div>
+<h2>Access Model (default-deny)</h2>
+<table><tr><th>Key prefix</th><th>Policy</th></tr><tr><td><code>listings/*</code></td><td>public once moderation-approved; otherwise owner/admin/moderator</td></tr><tr><td><code>screenshots/*</code></td><td>NEVER public — authenticated admin OR payment owner only (no caching)</td></tr><tr><td><code>seo/*</code></td><td>public (OG/social assets, crawler-readable, no PII)</td></tr><tr><td><code>*</code></td><td>denied (default-deny)</td></tr></table>
+<h2>Checks</h2>
+<table><tr><th>Check</th><th>Status</th><th>Severity</th><th>Detail</th></tr><tr><td>Anonymous cannot access screenshots/</td><td class="pass">PASS</td><td>blocker</td><td><code>authorizeUploadedFileAccess(screenshots/..., anon) = false</code></td></tr><tr><td>Non-owner user cannot access an unknown screenshot</td><td class="pass">PASS</td><td>blocker</td><td><code>canAccessPaymentScreenshot(unknown, randomUser) = false</code></td></tr><tr><td>Admin can access screenshots/</td><td class="pass">PASS</td><td>info</td><td><code>canAccessPaymentScreenshot(any, admin) = true</code></td></tr><tr><td>SEO/OG images remain public (crawler-accessible)</td><td class="pass">PASS</td><td>info</td><td><code>authorizeUploadedFileAccess(seo/..., anon) = true</code></td></tr><tr><td>Unknown prefix is denied (default-deny, no return-true fallback)</td><td class="pass">PASS</td><td>blocker</td><td><code>authorizeUploadedFileAccess(unknown-prefix) = false</code></td></tr><tr><td>Payment owner can access their own screenshot</td><td class="pass">PASS</td><td>info</td><td><code>owner access for key screenshots/smoke-test.jpg = true</code></td></tr><tr><td>Different user is denied another user's screenshot</td><td class="pass">PASS</td><td>blocker</td><td><code>non-owner access for key screenshots/smoke-test.jpg = false</code></td></tr><tr><td>Removed blanket 'return true' fallback for non-listing keys</td><td class="pass">PASS</td><td>blocker</td><td><code>canAccessListingImageFile no longer returns true for arbitrary keys</code></td></tr><tr><td>File route uses central authorizeUploadedFileAccess()</td><td class="pass">PASS</td><td>info</td><td><code>/api/upload/file delegates to the default-deny gate</code></td></tr><tr><td>File route returns 403 on denial</td><td class="pass">PASS</td><td>info</td><td><code>Unauthorized access =&gt; HTTP 403</code></td></tr><tr><td>Screenshots use non-cacheable headers</td><td class="pass">PASS</td><td>high</td><td><code>Cache-Control: private, no-store for screenshots/ (no shared/CDN caching)</code></td></tr><tr><td>Guard present: POST /api/upload</td><td class="pass">PASS</td><td>info</td><td><code>Listing image upload → listings/{userId}/ — expects `getServerSession`</code></td></tr><tr><td>Guard present: POST /api/upload/seo</td><td class="pass">PASS</td><td>info</td><td><code>SEO image upload → seo/ — expects `requireMinRole("admin")`</code></td></tr><tr><td>Guard present: GET/POST /api/upload/moderate</td><td class="pass">PASS</td><td>info</td><td><code>Image moderation queue — expects `requireMinRole("moderator")`</code></td></tr><tr><td>Guard present: POST /api/payments/manual</td><td class="pass">PASS</td><td>info</td><td><code>Manual payment proof upload → screenshots/ — expects `session.user.isVerified`</code></td></tr><tr><td>Guard present: GET /api/upload/file</td><td class="pass">PASS</td><td>info</td><td><code>Serve uploaded files (access-controlled) — expects `authorizeUploadedFileAccess`</code></td></tr></table>
+<h2>Residual Recommendations</h2>
+<ul><li>If deploying with R2/S3: keep the bucket private and do NOT map a public CDN URL to the screenshots/ prefix, so /api/upload/file issues short-lived presigned URLs only after authorization.</li><li>Move screenshots off ephemeral local disk (uploads/) to durable private object storage in production.</li><li>Wire the existing VirusScanResult model to scan payment screenshots on upload.</li></ul>
+</body></html>

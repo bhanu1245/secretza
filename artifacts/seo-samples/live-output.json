@@ -1,0 +1,203 @@
+﻿prisma:query SELECT `main`.`City`.`id`, `main`.`City`.`name`, `main`.`City`.`slug`, `main`.`City`.`stateId` FROM `main`.`City` WHERE `main`.`City`.`slug` = ? LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Area`.`id`, `main`.`Area`.`name`, `main`.`Area`.`cityId` FROM `main`.`Area` WHERE (`main`.`Area`.`isActive` = ? AND `main`.`Area`.`cityId` IN (?)) ORDER BY `main`.`Area`.`id` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`State`.`id`, `main`.`State`.`name`, `main`.`State`.`slug`, `main`.`State`.`countryId` FROM `main`.`State` WHERE `main`.`State`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Country`.`id`, `main`.`Country`.`slug`, `main`.`Country`.`name` FROM `main`.`Country` WHERE `main`.`Country`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`SeoPage`.`id`, `main`.`SeoPage`.`pageType`, `main`.`SeoPage`.`pageSlug`, `main`.`SeoPage`.`title`, `main`.`SeoPage`.`metaDescription`, `main`.`SeoPage`.`h1`, `main`.`SeoPage`.`introContent` FROM `main`.`SeoPage` WHERE (`main`.`SeoPage`.`pageType` = ? AND `main`.`SeoPage`.`pageSlug` <> ?) ORDER BY `main`.`SeoPage`.`id` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`SeoFaq`.`id`, `main`.`SeoFaq`.`question`, `main`.`SeoFaq`.`answer`, `main`.`SeoFaq`.`seoPageId` FROM `main`.`SeoFaq` WHERE `main`.`SeoFaq`.`seoPageId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`SeoPage` (`id`, `pageType`, `pageSlug`, `title`, `metaDescription`, `h1`, `introContent`, `canonicalUrl`, `featuredImage`, `imageAlt`, `imageTitle`, `imageCaption`, `noindex`, `isPublished`, `customData`, `wordCount`, `faqCount`, `internalLinksCount`, `uniquenessScore`, `duplicateRisk`, `seoQualityScore`, `contentHash`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT  (`pageType`,`pageSlug`) DO UPDATE SET `title` = ?, `metaDescription` = ?, `h1` = ?, `introContent` = ?, `canonicalUrl` = ?, `customData` = ?, `featuredImage` = ?, `imageAlt` = ?, `imageTitle` = ?, `imageCaption` = ?, `isPublished` = ?, `noindex` = ?, `wordCount` = ?, `faqCount` = ?, `internalLinksCount` = ?, `uniquenessScore` = ?, `duplicateRisk` = ?, `seoQualityScore` = ?, `contentHash` = ?, `updatedAt` = ? WHERE ((`main`.`SeoPage`.`pageType` = ? AND `main`.`SeoPage`.`pageSlug` = ?) AND 1=1) RETURNING `id` AS `id`, `pageType` AS `pageType`, `pageSlug` AS `pageSlug`, `title` AS `title`, `metaDescription` AS `metaDescription`, `h1` AS `h1`, `introContent` AS `introContent`, `canonicalUrl` AS `canonicalUrl`, `featuredImage` AS `featuredImage`, `imageAlt` AS `imageAlt`, `imageTitle` AS `imageTitle`, `imageCaption` AS `imageCaption`, `noindex` AS `noindex`, `isPublished` AS `isPublished`, `customData` AS `customData`, `wordCount` AS `wordCount`, `faqCount` AS `faqCount`, `internalLinksCount` AS `internalLinksCount`, `uniquenessScore` AS `uniquenessScore`, `duplicateRisk` AS `duplicateRisk`, `seoQualityScore` AS `seoQualityScore`, `contentHash` AS `contentHash`, `createdAt` AS `createdAt`, `updatedAt` AS `updatedAt`
+prisma:query DELETE FROM `main`.`SeoFaq` WHERE `main`.`SeoFaq`.`seoPageId` = ?
+prisma:query BEGIN IMMEDIATE
+prisma:query INSERT INTO `main`.`SeoFaq` (`id`, `seoPageId`, `question`, `answer`, `sortOrder`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?)
+prisma:query COMMIT
+prisma:query SELECT `main`.`SeoPage`.`id`, `main`.`SeoPage`.`pageType`, `main`.`SeoPage`.`pageSlug`, `main`.`SeoPage`.`title`, `main`.`SeoPage`.`metaDescription`, `main`.`SeoPage`.`h1`, `main`.`SeoPage`.`introContent` FROM `main`.`SeoPage` WHERE (`main`.`SeoPage`.`pageType` = ? AND `main`.`SeoPage`.`pageSlug` <> ?) ORDER BY `main`.`SeoPage`.`id` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`SeoFaq`.`id`, `main`.`SeoFaq`.`question`, `main`.`SeoFaq`.`answer`, `main`.`SeoFaq`.`seoPageId` FROM `main`.`SeoFaq` WHERE `main`.`SeoFaq`.`seoPageId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`City`.`id`, `main`.`City`.`name`, `main`.`City`.`slug`, `main`.`City`.`stateId` FROM `main`.`City` WHERE `main`.`City`.`slug` = ? LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Area`.`id`, `main`.`Area`.`name`, `main`.`Area`.`cityId` FROM `main`.`Area` WHERE (`main`.`Area`.`isActive` = ? AND `main`.`Area`.`cityId` IN (?)) ORDER BY `main`.`Area`.`id` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`State`.`id`, `main`.`State`.`name`, `main`.`State`.`slug`, `main`.`State`.`countryId` FROM `main`.`State` WHERE `main`.`State`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Country`.`id`, `main`.`Country`.`slug`, `main`.`Country`.`name` FROM `main`.`Country` WHERE `main`.`Country`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`SeoPage`.`id`, `main`.`SeoPage`.`pageType`, `main`.`SeoPage`.`pageSlug`, `main`.`SeoPage`.`title`, `main`.`SeoPage`.`metaDescription`, `main`.`SeoPage`.`h1`, `main`.`SeoPage`.`introContent` FROM `main`.`SeoPage` WHERE (`main`.`SeoPage`.`pageType` = ? AND `main`.`SeoPage`.`pageSlug` <> ?) ORDER BY `main`.`SeoPage`.`id` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`SeoFaq`.`id`, `main`.`SeoFaq`.`question`, `main`.`SeoFaq`.`answer`, `main`.`SeoFaq`.`seoPageId` FROM `main`.`SeoFaq` WHERE `main`.`SeoFaq`.`seoPageId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`SeoPage` (`id`, `pageType`, `pageSlug`, `title`, `metaDescription`, `h1`, `introContent`, `canonicalUrl`, `featuredImage`, `imageAlt`, `imageTitle`, `imageCaption`, `noindex`, `isPublished`, `customData`, `wordCount`, `faqCount`, `internalLinksCount`, `uniquenessScore`, `duplicateRisk`, `seoQualityScore`, `contentHash`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT  (`pageType`,`pageSlug`) DO UPDATE SET `title` = ?, `metaDescription` = ?, `h1` = ?, `introContent` = ?, `canonicalUrl` = ?, `customData` = ?, `featuredImage` = ?, `imageAlt` = ?, `imageTitle` = ?, `imageCaption` = ?, `isPublished` = ?, `noindex` = ?, `wordCount` = ?, `faqCount` = ?, `internalLinksCount` = ?, `uniquenessScore` = ?, `duplicateRisk` = ?, `seoQualityScore` = ?, `contentHash` = ?, `updatedAt` = ? WHERE ((`main`.`SeoPage`.`pageType` = ? AND `main`.`SeoPage`.`pageSlug` = ?) AND 1=1) RETURNING `id` AS `id`, `pageType` AS `pageType`, `pageSlug` AS `pageSlug`, `title` AS `title`, `metaDescription` AS `metaDescription`, `h1` AS `h1`, `introContent` AS `introContent`, `canonicalUrl` AS `canonicalUrl`, `featuredImage` AS `featuredImage`, `imageAlt` AS `imageAlt`, `imageTitle` AS `imageTitle`, `imageCaption` AS `imageCaption`, `noindex` AS `noindex`, `isPublished` AS `isPublished`, `customData` AS `customData`, `wordCount` AS `wordCount`, `faqCount` AS `faqCount`, `internalLinksCount` AS `internalLinksCount`, `uniquenessScore` AS `uniquenessScore`, `duplicateRisk` AS `duplicateRisk`, `seoQualityScore` AS `seoQualityScore`, `contentHash` AS `contentHash`, `createdAt` AS `createdAt`, `updatedAt` AS `updatedAt`
+prisma:query DELETE FROM `main`.`SeoFaq` WHERE `main`.`SeoFaq`.`seoPageId` = ?
+prisma:query BEGIN IMMEDIATE
+prisma:query INSERT INTO `main`.`SeoFaq` (`id`, `seoPageId`, `question`, `answer`, `sortOrder`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?)
+prisma:query COMMIT
+prisma:query SELECT `main`.`SeoPage`.`id`, `main`.`SeoPage`.`pageType`, `main`.`SeoPage`.`pageSlug`, `main`.`SeoPage`.`title`, `main`.`SeoPage`.`metaDescription`, `main`.`SeoPage`.`h1`, `main`.`SeoPage`.`introContent` FROM `main`.`SeoPage` WHERE (`main`.`SeoPage`.`pageType` = ? AND `main`.`SeoPage`.`pageSlug` <> ?) ORDER BY `main`.`SeoPage`.`id` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`SeoFaq`.`id`, `main`.`SeoFaq`.`question`, `main`.`SeoFaq`.`answer`, `main`.`SeoFaq`.`seoPageId` FROM `main`.`SeoFaq` WHERE `main`.`SeoFaq`.`seoPageId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`City`.`id`, `main`.`City`.`name`, `main`.`City`.`slug`, `main`.`City`.`stateId` FROM `main`.`City` WHERE `main`.`City`.`slug` = ? LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Area`.`id`, `main`.`Area`.`name`, `main`.`Area`.`cityId` FROM `main`.`Area` WHERE (`main`.`Area`.`isActive` = ? AND `main`.`Area`.`cityId` IN (?)) ORDER BY `main`.`Area`.`id` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`State`.`id`, `main`.`State`.`name`, `main`.`State`.`slug`, `main`.`State`.`countryId` FROM `main`.`State` WHERE `main`.`State`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Country`.`id`, `main`.`Country`.`slug`, `main`.`Country`.`name` FROM `main`.`Country` WHERE `main`.`Country`.`id` IN (?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`SeoPage`.`id`, `main`.`SeoPage`.`pageType`, `main`.`SeoPage`.`pageSlug`, `main`.`SeoPage`.`title`, `main`.`SeoPage`.`metaDescription`, `main`.`SeoPage`.`h1`, `main`.`SeoPage`.`introContent` FROM `main`.`SeoPage` WHERE (`main`.`SeoPage`.`pageType` = ? AND `main`.`SeoPage`.`pageSlug` <> ?) ORDER BY `main`.`SeoPage`.`id` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`SeoFaq`.`id`, `main`.`SeoFaq`.`question`, `main`.`SeoFaq`.`answer`, `main`.`SeoFaq`.`seoPageId` FROM `main`.`SeoFaq` WHERE `main`.`SeoFaq`.`seoPageId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`SeoPage` (`id`, `pageType`, `pageSlug`, `title`, `metaDescription`, `h1`, `introContent`, `canonicalUrl`, `featuredImage`, `imageAlt`, `imageTitle`, `imageCaption`, `noindex`, `isPublished`, `customData`, `wordCount`, `faqCount`, `internalLinksCount`, `uniquenessScore`, `duplicateRisk`, `seoQualityScore`, `contentHash`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT  (`pageType`,`pageSlug`) DO UPDATE SET `title` = ?, `metaDescription` = ?, `h1` = ?, `introContent` = ?, `canonicalUrl` = ?, `customData` = ?, `featuredImage` = ?, `imageAlt` = ?, `imageTitle` = ?, `imageCaption` = ?, `isPublished` = ?, `noindex` = ?, `wordCount` = ?, `faqCount` = ?, `internalLinksCount` = ?, `uniquenessScore` = ?, `duplicateRisk` = ?, `seoQualityScore` = ?, `contentHash` = ?, `updatedAt` = ? WHERE ((`main`.`SeoPage`.`pageType` = ? AND `main`.`SeoPage`.`pageSlug` = ?) AND 1=1) RETURNING `id` AS `id`, `pageType` AS `pageType`, `pageSlug` AS `pageSlug`, `title` AS `title`, `metaDescription` AS `metaDescription`, `h1` AS `h1`, `introContent` AS `introContent`, `canonicalUrl` AS `canonicalUrl`, `featuredImage` AS `featuredImage`, `imageAlt` AS `imageAlt`, `imageTitle` AS `imageTitle`, `imageCaption` AS `imageCaption`, `noindex` AS `noindex`, `isPublished` AS `isPublished`, `customData` AS `customData`, `wordCount` AS `wordCount`, `faqCount` AS `faqCount`, `internalLinksCount` AS `internalLinksCount`, `uniquenessScore` AS `uniquenessScore`, `duplicateRisk` AS `duplicateRisk`, `seoQualityScore` AS `seoQualityScore`, `contentHash` AS `contentHash`, `createdAt` AS `createdAt`, `updatedAt` AS `updatedAt`
+prisma:query DELETE FROM `main`.`SeoFaq` WHERE `main`.`SeoFaq`.`seoPageId` = ?
+prisma:query BEGIN IMMEDIATE
+prisma:query INSERT INTO `main`.`SeoFaq` (`id`, `seoPageId`, `question`, `answer`, `sortOrder`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?), (?,?,?,?,?,?,?,?)
+prisma:query COMMIT
+prisma:query SELECT `main`.`SeoPage`.`id`, `main`.`SeoPage`.`pageType`, `main`.`SeoPage`.`pageSlug`, `main`.`SeoPage`.`title`, `main`.`SeoPage`.`metaDescription`, `main`.`SeoPage`.`h1`, `main`.`SeoPage`.`introContent` FROM `main`.`SeoPage` WHERE (`main`.`SeoPage`.`pageType` = ? AND `main`.`SeoPage`.`pageSlug` <> ?) ORDER BY `main`.`SeoPage`.`id` ASC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`SeoFaq`.`id`, `main`.`SeoFaq`.`question`, `main`.`SeoFaq`.`answer`, `main`.`SeoFaq`.`seoPageId` FROM `main`.`SeoFaq` WHERE `main`.`SeoFaq`.`seoPageId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+{
+  "generated": 3,
+  "samples": [
+    {
+      "city": "Agra",
+      "slug": "agra",
+      "title": "Agra Nightlife & Adult Listings | Secretza",
+      "metaDescription": "Agra adult services: verified escorts, massage & dating in Uttar Pradesh. Explore Taj Ganj listings today.",
+      "h1": "Agra Escorts, Massage & Adult Listings",
+      "canonicalUrl": "/india/uttar-pradesh/agra",
+      "wordCount": 722,
+      "faqCount": 8,
+      "internalLinksCount": 11,
+      "uniquenessScore": 28,
+      "duplicateRisk": "medium",
+      "seoQualityScore": 78,
+      "duplicateFields": {
+        "title": false,
+        "metaDescription": false,
+        "h1": false,
+        "introContent": false,
+        "faqContent": false
+      },
+      "introPreview": "From Taj Ganj to Dayal Bagh, Agra offers neighbourhood-level variety that generic directories miss. Agra, the timeless city of the Taj Mahal on the banks of the Yamuna, blends Mughal grandeur with a bustling modern urban core. Millions of domestic and international visitors pass through each year, creating demand for discreet adult services across Taj Ganj, Sadar Bazaar, and the city's expanding rΓÇª",
+      "faqQuestions": [
+        "What adult classified categories are popular in Agra, Uttar Pradesh?",
+        "How does Secretza verify listings in Agra?",
+        "Which Agra neighbourhoods have the most adult service listings?",
+        "I'm visiting Taj Mahal in Agra. Can I find discreet adult services nearby?",
+        "What do people search for most in Agra?",
+        "Are there adult services in Sadar Bazaar and Kamla Nagar?",
+        "Can I browse adult classifieds in Lucknow and Kanpur from Agra?",
+        "How do I stay safe using adult services in Agra?"
+      ],
+      "landmarks": [
+        "Taj Mahal",
+        "Agra Fort",
+        "Fatehpur Sikri",
+        "Mehtab Bagh",
+        "Itimad-ud-Daulah's Tomb"
+      ],
+      "neighborhoods": [
+        "Taj Ganj",
+        "Sadar Bazaar",
+        "Kamla Nagar",
+        "Sikandra",
+        "Dayal Bagh"
+      ],
+      "searchIntents": [
+        "escorts near Taj Ganj hotels",
+        "massage Sadar Bazaar Agra",
+        "discreet services Fatehabad Road",
+        "verified companions Kamla Nagar",
+        "adult classifieds Sikandra Agra"
+      ]
+    },
+    {
+      "city": "Ahmedabad",
+      "slug": "ahmedabad",
+      "title": "Verified Adult Services in Ahmedabad, Gujarat | Secretza",
+      "metaDescription": "Ahmedabad escorts & adult services ΓÇö real photos, reviews & secure messaging. Coverage: Satellite & Navrangpura.",
+      "h1": "Find Trusted Adult Services in Ahmedabad",
+      "canonicalUrl": "/india/gujarat/ahmedabad",
+      "wordCount": 694,
+      "faqCount": 8,
+      "internalLinksCount": 11,
+      "uniquenessScore": 27,
+      "duplicateRisk": "medium",
+      "seoQualityScore": 78,
+      "duplicateFields": {
+        "title": false,
+        "metaDescription": false,
+        "h1": false,
+        "introContent": false,
+        "faqContent": false
+      },
+      "introPreview": "Secretza's Ahmedabad page is written for this city specifically: local areas, local landmarks, and local search intent. Ahmedabad, Gujarat's largest metropolis and a UNESCO World Heritage City, combines centuries-old pol houses with a rapidly modernising skyline along the Sabarmati. From CG Road's commercial bustle to Satellite's upscale residential blocks, the city offers diverse neighbourhoods fΓÇª",
+      "faqQuestions": [
+        "What adult classified categories are popular in Ahmedabad, Gujarat?",
+        "How does Secretza verify listings in Ahmedabad?",
+        "Which Ahmedabad neighbourhoods have the most adult service listings?",
+        "I'm visiting Sabarmati Ashram in Ahmedabad. Can I find discreet adult services nearby?",
+        "What do people search for most in Ahmedabad?",
+        "Are there adult services in Vastrapur and Navrangpura?",
+        "Can I browse adult classifieds in Surat and Vadodara from Ahmedabad?",
+        "How do I stay safe using adult services in Ahmedabad?"
+      ],
+      "landmarks": [
+        "Sabarmati Ashram",
+        "Kankaria Lake",
+        "Adalaj Stepwell",
+        "Sidi Saiyyed Mosque",
+        "Law Garden"
+      ],
+      "neighborhoods": [
+        "Satellite",
+        "Vastrapur",
+        "Navrangpura",
+        "Maninagar",
+        "Bodakdev"
+      ],
+      "searchIntents": [
+        "verified escorts Satellite Ahmedabad",
+        "massage Vastrapur",
+        "discreet services SG Highway",
+        "independent escorts Navrangpura",
+        "premium companions Bodakdev"
+      ]
+    },
+    {
+      "city": "Mumbai",
+      "slug": "mumbai",
+      "title": "Verified Adult Services in Mumbai, Maharashtra | Secretza",
+      "metaDescription": "Mumbai escorts & adult services ΓÇö real photos, reviews & secure messaging. Coverage: Andheri & Juhu.",
+      "h1": "Mumbai Adult Classifieds & Escort Listings",
+      "canonicalUrl": "/india/maharashtra/mumbai",
+      "wordCount": 694,
+      "faqCount": 8,
+      "internalLinksCount": 11,
+      "uniquenessScore": 27,
+      "duplicateRisk": "medium",
+      "seoQualityScore": 78,
+      "duplicateFields": {
+        "title": false,
+        "metaDescription": false,
+        "h1": false,
+        "introContent": false,
+        "faqContent": false
+      },
+      "introPreview": "Secretza's Mumbai page is written for this city specifically: local areas, local landmarks, and local search intent. Mumbai, India's financial capital and the heart of Bollywood, pulses with relentless energy from Marine Drive to Bandra's nightlife corridors. As the nation's largest metropolitan economy, it draws millions of professionals, artists, and entrepreneurs every year. Find Escorts, MassaΓÇª",
+      "faqQuestions": [
+        "What adult classified categories are popular in Mumbai, Maharashtra?",
+        "How does Secretza verify listings in Mumbai?",
+        "Which Mumbai neighbourhoods have the most adult service listings?",
+        "I'm visiting Gateway of India in Mumbai. Can I find discreet adult services nearby?",
+        "What do people search for most in Mumbai?",
+        "Are there adult services in Bandra and Juhu?",
+        "Can I browse adult classifieds in Pune and Nagpur from Mumbai?",
+        "How do I stay safe using adult services in Mumbai?"
+      ],
+      "landmarks": [
+        "Gateway of India",
+        "Marine Drive",
+        "Siddhivinayak Temple",
+        "Elephanta Caves",
+        "Film City"
+      ],
+      "neighborhoods": [
+        "Andheri",
+        "Bandra",
+        "Juhu",
+        "Powai",
+        "Worli"
+      ],
+      "searchIntents": [
+        "verified escorts Bandra West",
+        "discreet massage Andheri",
+        "premium companions Marine Drive area",
+        "independent escorts Powai",
+        "late-night services Lower Parel"
+      ]
+    }
+  ]
+}

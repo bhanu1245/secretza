@@ -1,0 +1,218 @@
+{
+  "timestamp": "2026-05-30T19:27:58.342Z",
+  "summary": {
+    "passed": 36,
+    "failed": 0,
+    "total": 36
+  },
+  "verdict": "PASS",
+  "checks": [
+    {
+      "id": "P0-1a",
+      "description": "superRefine exists in the schema",
+      "pass": true
+    },
+    {
+      "id": "P0-1b",
+      "description": "boost listingId requirement present",
+      "pass": true
+    },
+    {
+      "id": "P0-1c",
+      "description": "feature listingId requirement present",
+      "pass": true
+    },
+    {
+      "id": "P0-1d",
+      "description": "premium is NOT blocked by listingId check",
+      "pass": true
+    },
+    {
+      "id": "P0-1e",
+      "description": "ZodIssueCode.custom used for the listingId error",
+      "pass": true
+    },
+    {
+      "id": "P0-1f",
+      "description": "Error message references paymentType",
+      "pass": true
+    },
+    {
+      "id": "P0-2a",
+      "description": "redeemCouponOnApproval exists",
+      "pass": true
+    },
+    {
+      "id": "P0-2b",
+      "description": "Coupon-not-found no longer throws (skips gracefully)",
+      "pass": true
+    },
+    {
+      "id": "P0-2c",
+      "description": "Inactive coupon no longer throws (skips gracefully)",
+      "pass": true
+    },
+    {
+      "id": "P0-2d",
+      "description": "Expired coupon no longer throws (skips gracefully)",
+      "pass": true
+    },
+    {
+      "id": "P0-2e",
+      "description": "Idempotency guard still present (existing redemption check)",
+      "pass": true
+    },
+    {
+      "id": "P0-2f",
+      "description": "Warn log for deleted coupon present",
+      "pass": true
+    },
+    {
+      "id": "P0-2g",
+      "description": "Warn log for deactivated coupon present",
+      "pass": true
+    },
+    {
+      "id": "P0-2h",
+      "description": "Warn log for expired coupon present",
+      "pass": true
+    },
+    {
+      "id": "P0-2i",
+      "description": "User-limit reached logs and returns null (no throw)",
+      "pass": true
+    },
+    {
+      "id": "P0-2j",
+      "description": "Global-limit reached logs and returns null (no throw)",
+      "pass": true
+    },
+    {
+      "id": "P0-2k",
+      "description": "Happy-path still increments usedCount",
+      "pass": true
+    },
+    {
+      "id": "P0-2l",
+      "description": "Happy-path still creates CouponRedemption record",
+      "pass": true
+    },
+    {
+      "id": "P1-3a",
+      "description": "Duplicate notification block present",
+      "pass": true
+    },
+    {
+      "id": "P1-3b",
+      "description": "notification type 'payment_duplicate' used",
+      "pass": true
+    },
+    {
+      "id": "P1-3c",
+      "description": "Duplicate notification message references the payment",
+      "pass": true
+    },
+    {
+      "id": "P1-4a",
+      "description": "SubmissionAlreadyProcessedError class defined",
+      "pass": true
+    },
+    {
+      "id": "P1-4b",
+      "description": "Status re-read inside transaction (findUnique inside tx callback)",
+      "pass": true
+    },
+    {
+      "id": "P1-4c",
+      "description": "SubmissionAlreadyProcessedError thrown inside transaction",
+      "pass": true
+    },
+    {
+      "id": "P1-4d",
+      "description": "SubmissionAlreadyProcessedError caught in outer catch and returned as 409",
+      "pass": true
+    },
+    {
+      "id": "P1-5a",
+      "description": "Guard blocks approve when status is 'duplicate'",
+      "pass": true
+    },
+    {
+      "id": "P1-5b",
+      "description": "DUPLICATE_STATUS error code present",
+      "pass": true
+    },
+    {
+      "id": "P1-5c",
+      "description": "409 returned for duplicate → approve attempt",
+      "pass": true
+    },
+    {
+      "id": "PRES-1",
+      "description": "Premium activation (account-level) preserved",
+      "pass": true
+    },
+    {
+      "id": "PRES-2",
+      "description": "Boost activation still uses getDurationForTier",
+      "pass": true
+    },
+    {
+      "id": "PRES-3",
+      "description": "Feature activation still uses getDurationForTier",
+      "pass": true
+    },
+    {
+      "id": "PRES-4",
+      "description": "Approval notification still sent",
+      "pass": true
+    },
+    {
+      "id": "PRES-5",
+      "description": "Rejection notification still sent",
+      "pass": true
+    },
+    {
+      "id": "PRES-6",
+      "description": "Proof-requested notification still sent",
+      "pass": true
+    },
+    {
+      "id": "PRES-7",
+      "description": "AuditLog still created",
+      "pass": true
+    },
+    {
+      "id": "PRES-8",
+      "description": "Payment record still created on approval",
+      "pass": true
+    }
+  ],
+  "implementationReport": {
+    "P0-1": {
+      "fix": "Require listingId for boost/feature payments",
+      "file": "src/lib/manual-payment-validation.ts",
+      "approach": "Added .superRefine() to manualPaymentFormSchema that adds a ZodIssueCode.custom issue when paymentType is 'boost' or 'feature' and listingId is absent. Premium remains account-level and is not affected."
+    },
+    "P0-2": {
+      "fix": "Preserve coupon validity at submission time",
+      "file": "src/lib/coupons.ts",
+      "approach": "Replaced all throws in redeemCouponOnApproval for post-submission coupon state changes (deleted, inactive, expired, limits reached) with console.warn + return null. The approval transaction proceeds regardless — the user already paid the discounted amount. Happy-path still increments usedCount and creates CouponRedemption. Idempotency guard is preserved."
+    },
+    "P1-3": {
+      "fix": "Add notification for duplicate payment status",
+      "file": "src/app/api/admin/payments/manual/[id]/review/route.ts",
+      "approach": "Added an else-if branch for reviewAction === 'duplicate' that calls createNotification with type 'payment_duplicate', explaining the flag and directing the user to contact support."
+    },
+    "P1-4": {
+      "fix": "Move payment status re-check inside the approval transaction",
+      "file": "src/app/api/admin/payments/manual/[id]/review/route.ts",
+      "approach": "Defined SubmissionAlreadyProcessedError sentinel class. Inside the $transaction callback, re-reads the submission status from the DB. If already terminal or duplicate, throws SubmissionAlreadyProcessedError which rolls back the transaction. The outer catch intercepts it and returns 409 — preventing duplicate approval side-effects."
+    },
+    "P1-5": {
+      "fix": "Prevent duplicate-status submissions from being approved",
+      "file": "src/app/api/admin/payments/manual/[id]/review/route.ts",
+      "approach": "Added a pre-transaction guard: if reviewAction === 'approve' and submission.status === 'duplicate', returns 409 with DUPLICATE_STATUS code. Admin can still reject or request proof on duplicate submissions. The in-transaction re-check also covers this case to handle concurrent race conditions."
+    }
+  }
+}

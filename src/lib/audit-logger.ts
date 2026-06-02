@@ -1,5 +1,5 @@
 /**
- * Admin Audit Logger for Secretza
+ * Admin Audit Logger for SecretZa
  *
  * Provides fire-and-forget audit logging for admin actions.
  * Writes to the existing AuditLog Prisma model.

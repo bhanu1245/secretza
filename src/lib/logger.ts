@@ -1,5 +1,5 @@
 /**
- * Client-safe structured logging for Secretza.
+ * Client-safe structured logging for SecretZa.
  *
  * This module contains ONLY pure logging functions that can safely be
  * imported by both client ("use client") and server code. It has ZERO

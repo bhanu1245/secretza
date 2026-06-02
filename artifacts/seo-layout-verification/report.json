@@ -1,0 +1,205 @@
+{
+  "generatedAt": "2026-05-29T11:56:12.876Z",
+  "baseUrl": "http://localhost:3000",
+  "layoutChain": "PublicSiteLayout > SeoPageView",
+  "pages": [
+    "/independent-escorts/ahmedabad",
+    "/independent-escorts/mumbai",
+    "/independent-escorts/delhi",
+    "/independent-escorts/bangalore",
+    "/independent-escorts/hyderabad"
+  ],
+  "results": [
+    {
+      "url": "http://localhost:3000/independent-escorts/ahmedabad",
+      "viewport": "desktop",
+      "checks": {
+        "header": true,
+        "secretzaLogo": true,
+        "searchBar": true,
+        "postAd": true,
+        "navigation": true,
+        "breadcrumbs": true,
+        "h1": true,
+        "featuredImage": true,
+        "listingsSection": true,
+        "relatedLinks": true,
+        "footer": true,
+        "mobileBottomNav": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\seo-layout-verification\\ahmedabad-desktop.png"
+    },
+    {
+      "url": "http://localhost:3000/independent-escorts/ahmedabad",
+      "viewport": "mobile",
+      "checks": {
+        "header": true,
+        "secretzaLogo": false,
+        "searchBar": true,
+        "postAd": true,
+        "navigation": true,
+        "breadcrumbs": true,
+        "h1": true,
+        "featuredImage": true,
+        "listingsSection": true,
+        "relatedLinks": true,
+        "footer": true,
+        "mobileBottomNav": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\seo-layout-verification\\ahmedabad-mobile.png"
+    },
+    {
+      "url": "http://localhost:3000/independent-escorts/mumbai",
+      "viewport": "desktop",
+      "checks": {
+        "header": true,
+        "secretzaLogo": true,
+        "searchBar": true,
+        "postAd": true,
+        "navigation": true,
+        "breadcrumbs": true,
+        "h1": true,
+        "featuredImage": true,
+        "listingsSection": true,
+        "relatedLinks": true,
+        "footer": true,
+        "mobileBottomNav": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\seo-layout-verification\\mumbai-desktop.png"
+    },
+    {
+      "url": "http://localhost:3000/independent-escorts/mumbai",
+      "viewport": "mobile",
+      "checks": {
+        "header": true,
+        "secretzaLogo": false,
+        "searchBar": true,
+        "postAd": true,
+        "navigation": true,
+        "breadcrumbs": true,
+        "h1": true,
+        "featuredImage": true,
+        "listingsSection": true,
+        "relatedLinks": true,
+        "footer": true,
+        "mobileBottomNav": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\seo-layout-verification\\mumbai-mobile.png"
+    },
+    {
+      "url": "http://localhost:3000/independent-escorts/delhi",
+      "viewport": "desktop",
+      "checks": {
+        "header": true,
+        "secretzaLogo": true,
+        "searchBar": true,
+        "postAd": true,
+        "navigation": true,
+        "breadcrumbs": true,
+        "h1": true,
+        "featuredImage": true,
+        "listingsSection": true,
+        "relatedLinks": true,
+        "footer": true,
+        "mobileBottomNav": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\seo-layout-verification\\delhi-desktop.png"
+    },
+    {
+      "url": "http://localhost:3000/independent-escorts/delhi",
+      "viewport": "mobile",
+      "checks": {
+        "header": true,
+        "secretzaLogo": false,
+        "searchBar": true,
+        "postAd": true,
+        "navigation": true,
+        "breadcrumbs": true,
+        "h1": true,
+        "featuredImage": true,
+        "listingsSection": true,
+        "relatedLinks": true,
+        "footer": true,
+        "mobileBottomNav": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\seo-layout-verification\\delhi-mobile.png"
+    },
+    {
+      "url": "http://localhost:3000/independent-escorts/bangalore",
+      "viewport": "desktop",
+      "checks": {
+        "header": true,
+        "secretzaLogo": true,
+        "searchBar": true,
+        "postAd": true,
+        "navigation": true,
+        "breadcrumbs": true,
+        "h1": true,
+        "featuredImage": true,
+        "listingsSection": true,
+        "relatedLinks": true,
+        "footer": true,
+        "mobileBottomNav": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\seo-layout-verification\\bangalore-desktop.png"
+    },
+    {
+      "url": "http://localhost:3000/independent-escorts/bangalore",
+      "viewport": "mobile",
+      "checks": {
+        "header": true,
+        "secretzaLogo": false,
+        "searchBar": true,
+        "postAd": true,
+        "navigation": true,
+        "breadcrumbs": true,
+        "h1": true,
+        "featuredImage": true,
+        "listingsSection": true,
+        "relatedLinks": true,
+        "footer": true,
+        "mobileBottomNav": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\seo-layout-verification\\bangalore-mobile.png"
+    },
+    {
+      "url": "http://localhost:3000/independent-escorts/hyderabad",
+      "viewport": "desktop",
+      "checks": {
+        "header": true,
+        "secretzaLogo": true,
+        "searchBar": true,
+        "postAd": true,
+        "navigation": true,
+        "breadcrumbs": true,
+        "h1": true,
+        "featuredImage": true,
+        "listingsSection": true,
+        "relatedLinks": true,
+        "footer": true,
+        "mobileBottomNav": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\seo-layout-verification\\hyderabad-desktop.png"
+    },
+    {
+      "url": "http://localhost:3000/independent-escorts/hyderabad",
+      "viewport": "mobile",
+      "checks": {
+        "header": true,
+        "secretzaLogo": false,
+        "searchBar": true,
+        "postAd": true,
+        "navigation": true,
+        "breadcrumbs": true,
+        "h1": true,
+        "featuredImage": true,
+        "listingsSection": true,
+        "relatedLinks": true,
+        "footer": true,
+        "mobileBottomNav": true
+      },
+      "screenshot": "D:\\projects\\Secretza-Fresh\\artifacts\\seo-layout-verification\\hyderabad-mobile.png"
+    }
+  ],
+  "allPassed": false
+}

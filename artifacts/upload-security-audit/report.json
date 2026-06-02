@@ -1,0 +1,152 @@
+{
+  "generatedAt": "2026-05-30T14:48:21.658Z",
+  "title": "Upload Security Audit — Payment Screenshot Access Control",
+  "summary": {
+    "total": 16,
+    "passed": 16,
+    "failed": 0,
+    "blockersFailed": 0
+  },
+  "accessModel": {
+    "listings/*": "public once moderation-approved; otherwise owner/admin/moderator",
+    "screenshots/*": "NEVER public — authenticated admin OR payment owner only (no caching)",
+    "seo/*": "public (OG/social assets, crawler-readable, no PII)",
+    "*": "denied (default-deny)"
+  },
+  "residualRecommendations": [
+    "If deploying with R2/S3: keep the bucket private and do NOT map a public CDN URL to the screenshots/ prefix, so /api/upload/file issues short-lived presigned URLs only after authorization.",
+    "Move screenshots off ephemeral local disk (uploads/) to durable private object storage in production.",
+    "Wire the existing VirusScanResult model to scan payment screenshots on upload."
+  ],
+  "uploadEndpoints": [
+    {
+      "route": "POST /api/upload",
+      "file": "src/app/api/upload/route.ts",
+      "expects": "getServerSession",
+      "purpose": "Listing image upload → listings/{userId}/"
+    },
+    {
+      "route": "POST /api/upload/seo",
+      "file": "src/app/api/upload/seo/route.ts",
+      "expects": "requireMinRole(\"admin\")",
+      "purpose": "SEO image upload → seo/"
+    },
+    {
+      "route": "GET/POST /api/upload/moderate",
+      "file": "src/app/api/upload/moderate/route.ts",
+      "expects": "requireMinRole(\"moderator\")",
+      "purpose": "Image moderation queue"
+    },
+    {
+      "route": "POST /api/payments/manual",
+      "file": "src/app/api/payments/manual/route.ts",
+      "expects": "session.user.isVerified",
+      "purpose": "Manual payment proof upload → screenshots/"
+    },
+    {
+      "route": "GET /api/upload/file",
+      "file": "src/app/api/upload/file/route.ts",
+      "expects": "authorizeUploadedFileAccess",
+      "purpose": "Serve uploaded files (access-controlled)"
+    }
+  ],
+  "checks": [
+    {
+      "name": "Anonymous cannot access screenshots/",
+      "ok": true,
+      "detail": "authorizeUploadedFileAccess(screenshots/..., anon) = false",
+      "severity": "blocker"
+    },
+    {
+      "name": "Non-owner user cannot access an unknown screenshot",
+      "ok": true,
+      "detail": "canAccessPaymentScreenshot(unknown, randomUser) = false",
+      "severity": "blocker"
+    },
+    {
+      "name": "Admin can access screenshots/",
+      "ok": true,
+      "detail": "canAccessPaymentScreenshot(any, admin) = true",
+      "severity": "info"
+    },
+    {
+      "name": "SEO/OG images remain public (crawler-accessible)",
+      "ok": true,
+      "detail": "authorizeUploadedFileAccess(seo/..., anon) = true",
+      "severity": "info"
+    },
+    {
+      "name": "Unknown prefix is denied (default-deny, no return-true fallback)",
+      "ok": true,
+      "detail": "authorizeUploadedFileAccess(unknown-prefix) = false",
+      "severity": "blocker"
+    },
+    {
+      "name": "Payment owner can access their own screenshot",
+      "ok": true,
+      "detail": "owner access for key screenshots/smoke-test.jpg = true",
+      "severity": "info"
+    },
+    {
+      "name": "Different user is denied another user's screenshot",
+      "ok": true,
+      "detail": "non-owner access for key screenshots/smoke-test.jpg = false",
+      "severity": "blocker"
+    },
+    {
+      "name": "Removed blanket 'return true' fallback for non-listing keys",
+      "ok": true,
+      "detail": "canAccessListingImageFile no longer returns true for arbitrary keys",
+      "severity": "blocker"
+    },
+    {
+      "name": "File route uses central authorizeUploadedFileAccess()",
+      "ok": true,
+      "detail": "/api/upload/file delegates to the default-deny gate",
+      "severity": "info"
+    },
+    {
+      "name": "File route returns 403 on denial",
+      "ok": true,
+      "detail": "Unauthorized access => HTTP 403",
+      "severity": "info"
+    },
+    {
+      "name": "Screenshots use non-cacheable headers",
+      "ok": true,
+      "detail": "Cache-Control: private, no-store for screenshots/ (no shared/CDN caching)",
+      "severity": "high"
+    },
+    {
+      "name": "Guard present: POST /api/upload",
+      "ok": true,
+      "detail": "Listing image upload → listings/{userId}/ — expects `getServerSession`",
+      "severity": "info"
+    },
+    {
+      "name": "Guard present: POST /api/upload/seo",
+      "ok": true,
+      "detail": "SEO image upload → seo/ — expects `requireMinRole(\"admin\")`",
+      "severity": "info"
+    },
+    {
+      "name": "Guard present: GET/POST /api/upload/moderate",
+      "ok": true,
+      "detail": "Image moderation queue — expects `requireMinRole(\"moderator\")`",
+      "severity": "info"
+    },
+    {
+      "name": "Guard present: POST /api/payments/manual",
+      "ok": true,
+      "detail": "Manual payment proof upload → screenshots/ — expects `session.user.isVerified`",
+      "severity": "info"
+    },
+    {
+      "name": "Guard present: GET /api/upload/file",
+      "ok": true,
+      "detail": "Serve uploaded files (access-controlled) — expects `authorizeUploadedFileAccess`",
+      "severity": "info"
+    }
+  ],
+  "failed": []
+}

@@ -1,0 +1,131 @@
+{
+  "generatedAt": "2026-05-29T12:56:12.517Z",
+  "config": {
+    "SEO_ENGINE": "v5",
+    "SEO_REGEN_PEER_LIMIT": "75",
+    "nodeHeapLimit": "--max-old-space-size=4096"
+  },
+  "database": {
+    "citySeoPages": 153
+  },
+  "baselineMemoryMb": {
+    "rssMb": 113.5,
+    "heapUsedMb": 18.4,
+    "heapTotalMb": 34.6,
+    "externalMb": 4,
+    "timestampMs": 1780059360771
+  },
+  "beforeFixes": {
+    "note": "Estimated from pre-fix code audit (not re-measured)",
+    "issues": [
+      "Double V5 content generation per page (buildRegeneratedContent ×2)",
+      "Triple similarity pass on live writes (predict + upsert metrics)",
+      "loadPeerPages fetched 500 full pages + all FAQs per metrics call",
+      "O(n²) paragraph similarity across all peer paragraphs",
+      "No cache cleanup between batches"
+    ],
+    "estimatedPeakHeapMb153DryRun": "800–1500+",
+    "estimatedPagesPerMinute": "8–15",
+    "leakDetected": true
+  },
+  "afterFixes": {
+    "fixes": [
+      "Single content generation + single metrics pass per page",
+      "precomputedMetrics passed to upsertFromContent",
+      "Peer cache with SEO_REGEN_PEER_LIMIT=75 (one load per pageType per batch)",
+      "Batch city context preload + clearRegenerationCaches() after each batch",
+      "Paragraph similarity capped at 30 peers × 6 paragraphs"
+    ],
+    "singlePagePipeline": {
+      "peakHeap": 23,
+      "peakRss": 119.7,
+      "avgHeap": 19.3,
+      "avgRss": 116.9,
+      "heapGrowthMb": -1.6
+    },
+    "simulations": {
+      "sim10": {
+        "pageCount": 10,
+        "totalProcessed": 10,
+        "batches": 0,
+        "batchSize": 10,
+        "elapsedMs": 402,
+        "pagesPerMinute": 1492.5,
+        "memory": {
+          "peakHeap": 22.9,
+          "peakRss": 139.4,
+          "avgHeap": 18.9,
+          "avgRss": 132.7,
+          "heapGrowthMb": 0.1
+        },
+        "leakDetected": false,
+        "cacheAfterRun": {
+          "pageTypes": [],
+          "totalPeers": 0
+        }
+      },
+      "sim50": {
+        "pageCount": 50,
+        "totalProcessed": 50,
+        "batches": 1,
+        "batchSize": 25,
+        "elapsedMs": 2618,
+        "pagesPerMinute": 1145.9,
+        "memory": {
+          "peakHeap": 19.5,
+          "peakRss": 140.9,
+          "avgHeap": 17.9,
+          "avgRss": 140.2,
+          "heapGrowthMb": 0.1
+        },
+        "leakDetected": false,
+        "cacheAfterRun": {
+          "pageTypes": [],
+          "totalPeers": 0
+        }
+      },
+      "sim153": {
+        "pageCount": 153,
+        "totalProcessed": 153,
+        "batches": 6,
+        "batchSize": 25,
+        "elapsedMs": 8039,
+        "pagesPerMinute": 1141.9,
+        "memory": {
+          "peakHeap": 34,
+          "peakRss": 140.8,
+          "avgHeap": 22.8,
+          "avgRss": 139.7,
+          "heapGrowthMb": 0.1
+        },
+        "leakDetected": false,
+        "cacheAfterRun": {
+          "pageTypes": [],
+          "totalPeers": 0
+        }
+      }
+    },
+    "rollback": {
+      "rolledBack": 5,
+      "runId": "cmpqxe1vp00600slohtk54acv"
+    }
+  },
+  "recommendations": {
+    "batchSize": 25,
+    "concurrency": 1,
+    "peerLimit": 75,
+    "maxHeapMb": "512–1024 sufficient for 153-page dry run",
+    "productionNotes": [
+      "Use dry-run first for full corpus",
+      "Process via processRegenerationBatch API in 25-page chunks",
+      "Set NODE_OPTIONS=--max-old-space-size=2048 for live 153+ writes",
+      "Avoid running regeneration inside Next.js dev server process"
+    ]
+  },
+  "readiness": {
+    "under1GbPreferred": true,
+    "under2GbMaximum": true,
+    "noContinuousHeapGrowth": true,
+    "readyFor153Plus": true
+  }
+}

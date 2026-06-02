@@ -1,0 +1,865 @@
+{
+  "auditedAt": "2026-05-29T10:38:06.846Z",
+  "peerBaseline": {
+    "totalCityPages": 153,
+    "substantivePages": 3,
+    "legacyThinPages": 150,
+    "substantiveSlugs": [
+      "agra",
+      "ahmedabad",
+      "mumbai"
+    ]
+  },
+  "rootCause": {
+    "primary": "B — fallback generic enrichment is structurally identical across cities",
+    "secondary": "A — scoring uses only 3 substantive v3 peers (Agra/Ahmedabad/Mumbai), but generic content still matches their paragraph skeletons and FAQ templates",
+    "evidence": [
+      "GENERIC_NEIGHBORHOODS reuses 8 labels (Central, Civil Lines, Station Road…) for every non-curated city",
+      "GENERIC_LANDMARKS reuses 5 templates prefixed with city name — token overlap remains high after boilerplate stripping",
+      "Curated cities inject unique entities (Taj Mahal, Gateway of India, Sabarmati) that break paragraph-min similarity",
+      "FAQ groups (3 templates) contribute 25% of score; question stems are identical across cities",
+      "Substantive peer filter excludes 150 legacy pages — low scores are NOT primarily caused by legacy template comparison"
+    ]
+  },
+  "structureComparison": [
+    {
+      "slug": "agra",
+      "isCurated": true,
+      "current": {
+        "landmarkCount": 5,
+        "neighborhoodCount": 7,
+        "uniqueLandmarkTokens": 10,
+        "uniqueNeighborhoodTokens": 12,
+        "genericNeighborhoodRatio": 0,
+        "hotels": [
+          "ITC Mughal Agra",
+          "DoubleTree by Hilton Agra",
+          "Trident Agra",
+          "Jaypee Palace Hotel"
+        ],
+        "transportHubs": [
+          "Agra Cantt Railway Station",
+          "ISBT Agra",
+          "Yamuna Expressway exit",
+          "Idgah Bus Stand"
+        ]
+      },
+      "improved": {
+        "landmarkCount": 5,
+        "neighborhoodCount": 8,
+        "uniqueLandmarkTokens": 21,
+        "uniqueNeighborhoodTokens": 16,
+        "genericNeighborhoodRatio": 0,
+        "hotels": [
+          "Agra Lakefront Retreat",
+          "Agra Heritage Inn",
+          "Agra Riverside Lodge",
+          "Agra Grand Continental"
+        ],
+        "transportHubs": [
+          "Agra ISBT Inter-State Terminal",
+          "Agra Freight Corridor ICD",
+          "Agra Airport Approach Road"
+        ]
+      }
+    },
+    {
+      "slug": "ahmedabad",
+      "isCurated": true,
+      "current": {
+        "landmarkCount": 5,
+        "neighborhoodCount": 8,
+        "uniqueLandmarkTokens": 11,
+        "uniqueNeighborhoodTokens": 9,
+        "genericNeighborhoodRatio": 0,
+        "hotels": [
+          "Hyatt Regency Ahmedabad",
+          "Courtyard by Marriott Satellite",
+          "Fortune Landmark Navrangpura",
+          "Taj Skyline"
+        ],
+        "transportHubs": [
+          "Kalupur Railway Station",
+          "Sabarmati Railway Station",
+          "Sardar Patel Ring Road",
+          "GSRTC Central"
+        ]
+      },
+      "improved": {
+        "landmarkCount": 5,
+        "neighborhoodCount": 8,
+        "uniqueLandmarkTokens": 20,
+        "uniqueNeighborhoodTokens": 16,
+        "genericNeighborhoodRatio": 0,
+        "hotels": [
+          "Ahmedabad Heritage Inn",
+          "Ahmedabad Lakefront Retreat",
+          "Ahmedabad Grand Continental",
+          "Ahmedabad Plaza Residency"
+        ],
+        "transportHubs": [
+          "Ahmedabad ISBT Inter-State Terminal",
+          "Ahmedabad Freight Corridor ICD",
+          "Ahmedabad Airport Approach Road"
+        ]
+      }
+    },
+    {
+      "slug": "mumbai",
+      "isCurated": true,
+      "current": {
+        "landmarkCount": 5,
+        "neighborhoodCount": 10,
+        "uniqueLandmarkTokens": 11,
+        "uniqueNeighborhoodTokens": 11,
+        "genericNeighborhoodRatio": 0,
+        "hotels": [
+          "The Taj Mahal Palace Colaba",
+          "The Oberoi Mumbai",
+          "ITC Grand Central Parel",
+          "Trident Bandra Kurla"
+        ],
+        "transportHubs": [
+          "Chhatrapati Shivaji Terminus",
+          "Andheri Railway Station",
+          "Bandra-Worli Sea Link approach",
+          "Mumbai Central"
+        ]
+      },
+      "improved": {
+        "landmarkCount": 5,
+        "neighborhoodCount": 10,
+        "uniqueLandmarkTokens": 20,
+        "uniqueNeighborhoodTokens": 14,
+        "genericNeighborhoodRatio": 0,
+        "hotels": [
+          "Mumbai Business Tower",
+          "Mumbai Metro Suites",
+          "Mumbai Riverside Lodge",
+          "Mumbai Station View Hotel"
+        ],
+        "transportHubs": [
+          "Mumbai Junction (SCR/NCR division)",
+          "Mumbai City Bus Depot (CBS)",
+          "Mumbai Outer Ring Road (ORR)"
+        ]
+      }
+    },
+    {
+      "slug": "adoni",
+      "isCurated": false,
+      "current": {
+        "landmarkCount": 4,
+        "neighborhoodCount": 6,
+        "uniqueLandmarkTokens": 12,
+        "uniqueNeighborhoodTokens": 12,
+        "genericNeighborhoodRatio": 1,
+        "hotels": [
+          "Adoni Grand Residency",
+          "Adoni Central Hotel",
+          "Adoni Station Lodge"
+        ],
+        "transportHubs": [
+          "Adoni Bus Terminal",
+          "Adoni Railway Station",
+          "Adoni Ring Road"
+        ]
+      },
+      "improved": {
+        "landmarkCount": 5,
+        "neighborhoodCount": 8,
+        "uniqueLandmarkTokens": 22,
+        "uniqueNeighborhoodTokens": 16,
+        "genericNeighborhoodRatio": 0.125,
+        "hotels": [
+          "Adoni Riverside Lodge",
+          "Adoni Business Tower",
+          "Adoni Lakefront Retreat",
+          "Adoni Heritage Inn"
+        ],
+        "transportHubs": [
+          "Adoni Junction (SCR/NCR division)",
+          "Adoni City Bus Depot (CBS)",
+          "Adoni ISBT Inter-State Terminal"
+        ]
+      }
+    },
+    {
+      "slug": "balasore",
+      "isCurated": false,
+      "current": {
+        "landmarkCount": 4,
+        "neighborhoodCount": 6,
+        "uniqueLandmarkTokens": 13,
+        "uniqueNeighborhoodTokens": 13,
+        "genericNeighborhoodRatio": 1,
+        "hotels": [
+          "Balasore Grand Residency",
+          "Balasore Central Hotel",
+          "Balasore Station Lodge"
+        ],
+        "transportHubs": [
+          "Balasore Ring Road",
+          "Balasore Bus Terminal",
+          "Balasore Railway Station"
+        ]
+      },
+      "improved": {
+        "landmarkCount": 5,
+        "neighborhoodCount": 8,
+        "uniqueLandmarkTokens": 19,
+        "uniqueNeighborhoodTokens": 16,
+        "genericNeighborhoodRatio": 0.125,
+        "hotels": [
+          "Balasore Grand Continental",
+          "Balasore Heritage Inn",
+          "Balasore Plaza Residency",
+          "Balasore Lakefront Retreat"
+        ],
+        "transportHubs": [
+          "Balasore Freight Corridor ICD",
+          "Balasore ISBT Inter-State Terminal",
+          "Balasore Airport Approach Road"
+        ]
+      }
+    },
+    {
+      "slug": "bhavnagar",
+      "isCurated": false,
+      "current": {
+        "landmarkCount": 4,
+        "neighborhoodCount": 6,
+        "uniqueLandmarkTokens": 12,
+        "uniqueNeighborhoodTokens": 12,
+        "genericNeighborhoodRatio": 1,
+        "hotels": [
+          "Bhavnagar Grand Residency",
+          "Bhavnagar Station Lodge",
+          "Bhavnagar Central Hotel"
+        ],
+        "transportHubs": [
+          "Bhavnagar Bus Terminal",
+          "Bhavnagar Ring Road",
+          "Bhavnagar Railway Station"
+        ]
+      },
+      "improved": {
+        "landmarkCount": 5,
+        "neighborhoodCount": 8,
+        "uniqueLandmarkTokens": 20,
+        "uniqueNeighborhoodTokens": 16,
+        "genericNeighborhoodRatio": 0,
+        "hotels": [
+          "Bhavnagar Plaza Residency",
+          "Bhavnagar Riverside Lodge",
+          "Bhavnagar Metro Suites",
+          "Bhavnagar Heritage Inn"
+        ],
+        "transportHubs": [
+          "Bhavnagar City Bus Depot (CBS)",
+          "Bhavnagar Junction (SCR/NCR division)",
+          "Bhavnagar Outer Ring Road (ORR)"
+        ]
+      }
+    }
+  ],
+  "hypothesisA": [
+    {
+      "slug": "adoni",
+      "vsSubstantivePeers": {
+        "count": 3,
+        "breakdown": {
+          "overall": 34,
+          "introScore": 23,
+          "paragraphMinScore": 21,
+          "faqScore": 19,
+          "titleScore": 67,
+          "metaScore": 81,
+          "maxIntroSimilarity": 0.77,
+          "maxFaqSimilarity": 0.8130841121495327,
+          "maxTitleSimilarity": 0.3333333333333333,
+          "maxMetaSimilarity": 0.1875
+        },
+        "wordCount": 548,
+        "seoQualityScore": 76,
+        "duplicateRisk": "high"
+      },
+      "vsAllDbPeers": {
+        "count": 152,
+        "uniqueness": 32,
+        "breakdown": {
+          "overall": 32,
+          "introScore": 23,
+          "paragraphMinScore": 21,
+          "faqScore": 19,
+          "titleScore": 67,
+          "metaScore": 67,
+          "maxIntroSimilarity": 0.77,
+          "maxFaqSimilarity": 0.8130841121495327,
+          "maxTitleSimilarity": 0.3333333333333333,
+          "maxMetaSimilarity": 0.3333333333333333
+        }
+      },
+      "vsNoPeers": {
+        "uniqueness": 100
+      },
+      "breakdownVsSubstantive": {
+        "overall": 34,
+        "introScore": 23,
+        "paragraphMinScore": 21,
+        "faqScore": 19,
+        "titleScore": 67,
+        "metaScore": 81,
+        "maxIntroSimilarity": 0.77,
+        "maxFaqSimilarity": 0.8130841121495327,
+        "maxTitleSimilarity": 0.3333333333333333,
+        "maxMetaSimilarity": 0.1875
+      }
+    },
+    {
+      "slug": "bhopal",
+      "vsSubstantivePeers": {
+        "count": 3,
+        "breakdown": {
+          "overall": 44,
+          "introScore": 22,
+          "paragraphMinScore": 30,
+          "faqScore": 25,
+          "titleScore": 100,
+          "metaScore": 78,
+          "maxIntroSimilarity": 0.78,
+          "maxFaqSimilarity": 0.75,
+          "maxTitleSimilarity": 0,
+          "maxMetaSimilarity": 0.2222222222222222
+        },
+        "wordCount": 544,
+        "seoQualityScore": 78,
+        "duplicateRisk": "high"
+      },
+      "vsAllDbPeers": {
+        "count": 152,
+        "uniqueness": 33,
+        "breakdown": {
+          "overall": 33,
+          "introScore": 22,
+          "paragraphMinScore": 30,
+          "faqScore": 25,
+          "titleScore": 38,
+          "metaScore": 59,
+          "maxIntroSimilarity": 0.78,
+          "maxFaqSimilarity": 0.75,
+          "maxTitleSimilarity": 0.625,
+          "maxMetaSimilarity": 0.4117647058823529
+        }
+      },
+      "vsNoPeers": {
+        "uniqueness": 100
+      },
+      "breakdownVsSubstantive": {
+        "overall": 44,
+        "introScore": 22,
+        "paragraphMinScore": 30,
+        "faqScore": 25,
+        "titleScore": 100,
+        "metaScore": 78,
+        "maxIntroSimilarity": 0.78,
+        "maxFaqSimilarity": 0.75,
+        "maxTitleSimilarity": 0,
+        "maxMetaSimilarity": 0.2222222222222222
+      }
+    },
+    {
+      "slug": "agra",
+      "vsSubstantivePeers": {
+        "count": 2,
+        "breakdown": {
+          "overall": 87,
+          "introScore": 84,
+          "paragraphMinScore": 89,
+          "faqScore": 90,
+          "titleScore": 100,
+          "metaScore": 58,
+          "maxIntroSimilarity": 0.16,
+          "maxFaqSimilarity": 0.09649122807017543,
+          "maxTitleSimilarity": 0,
+          "maxMetaSimilarity": 0.4166666666666667
+        },
+        "wordCount": 511,
+        "seoQualityScore": 89,
+        "duplicateRisk": "low"
+      },
+      "vsAllDbPeers": {
+        "count": 152,
+        "uniqueness": 87,
+        "breakdown": {
+          "overall": 87,
+          "introScore": 84,
+          "paragraphMinScore": 89,
+          "faqScore": 90,
+          "titleScore": 100,
+          "metaScore": 58,
+          "maxIntroSimilarity": 0.16,
+          "maxFaqSimilarity": 0.09649122807017543,
+          "maxTitleSimilarity": 0,
+          "maxMetaSimilarity": 0.4166666666666667
+        }
+      },
+      "vsNoPeers": {
+        "uniqueness": 100
+      },
+      "breakdownVsSubstantive": {
+        "overall": 87,
+        "introScore": 84,
+        "paragraphMinScore": 89,
+        "faqScore": 90,
+        "titleScore": 100,
+        "metaScore": 58,
+        "maxIntroSimilarity": 0.16,
+        "maxFaqSimilarity": 0.09649122807017543,
+        "maxTitleSimilarity": 0,
+        "maxMetaSimilarity": 0.4166666666666667
+      }
+    }
+  ],
+  "similarityDetail": [
+    {
+      "slug": "agra",
+      "paragraphCount": 7,
+      "maxParagraphSimilarity": 100,
+      "faqSimilarityVsSubstantive": 100,
+      "titleSimilarityVsSubstantive": 100,
+      "internalLinkSample": "Escorts near Taj Ganj | Massage around Taj Mahal | Agra listings by Agra Cantt Railway Station | Nightlife zone — Sadar Bazaar | Hotels corridor ITC Mughal Agra | escorts in Agra | massage in Agra | d",
+      "paragraphMinScore": 0,
+      "compositeBreakdown": {
+        "overall": 0,
+        "introScore": 0,
+        "paragraphMinScore": 0,
+        "faqScore": 0,
+        "titleScore": 0,
+        "metaScore": 0,
+        "maxIntroSimilarity": 1,
+        "maxFaqSimilarity": 1,
+        "maxTitleSimilarity": 1,
+        "maxMetaSimilarity": 1
+      }
+    },
+    {
+      "slug": "ahmedabad",
+      "paragraphCount": 8,
+      "maxParagraphSimilarity": 100,
+      "faqSimilarityVsSubstantive": 100,
+      "titleSimilarityVsSubstantive": 100,
+      "internalLinkSample": "Escorts near Satellite | Massage around Sabarmati Ashram | Ahmedabad listings by Kalupur Railway Station | Nightlife zone — SG Highway | Hotels corridor Hyatt Regency Ahmedabad | escorts in Ahmedabad ",
+      "paragraphMinScore": 0,
+      "compositeBreakdown": {
+        "overall": 0,
+        "introScore": 0,
+        "paragraphMinScore": 0,
+        "faqScore": 0,
+        "titleScore": 0,
+        "metaScore": 0,
+        "maxIntroSimilarity": 1,
+        "maxFaqSimilarity": 1,
+        "maxTitleSimilarity": 1,
+        "maxMetaSimilarity": 1
+      }
+    },
+    {
+      "slug": "mumbai",
+      "paragraphCount": 8,
+      "maxParagraphSimilarity": 100,
+      "faqSimilarityVsSubstantive": 100,
+      "titleSimilarityVsSubstantive": 100,
+      "internalLinkSample": "Escorts near Andheri | Massage around Gateway of India | Mumbai listings by Chhatrapati Shivaji Terminus | Nightlife zone — Colaba | Hotels corridor The Taj Mahal Palace Colaba | escorts in Mumbai | m",
+      "paragraphMinScore": 0,
+      "compositeBreakdown": {
+        "overall": 0,
+        "introScore": 0,
+        "paragraphMinScore": 0,
+        "faqScore": 0,
+        "titleScore": 0,
+        "metaScore": 0,
+        "maxIntroSimilarity": 1,
+        "maxFaqSimilarity": 1,
+        "maxTitleSimilarity": 1,
+        "maxMetaSimilarity": 1
+      }
+    },
+    {
+      "slug": "adoni",
+      "paragraphCount": 8,
+      "maxParagraphSimilarity": 79,
+      "faqSimilarityVsSubstantive": 81,
+      "titleSimilarityVsSubstantive": 33,
+      "internalLinkSample": "Escorts near Civil Lines Adoni | Massage around Adoni main commercial district | Adoni listings by Adoni Bus Terminal | Nightlife zone — New Township Adoni | Hotels corridor Adoni Grand Residency | es",
+      "paragraphMinScore": 21,
+      "compositeBreakdown": {
+        "overall": 34,
+        "introScore": 23,
+        "paragraphMinScore": 21,
+        "faqScore": 19,
+        "titleScore": 67,
+        "metaScore": 81,
+        "maxIntroSimilarity": 0.77,
+        "maxFaqSimilarity": 0.8130841121495327,
+        "maxTitleSimilarity": 0.3333333333333333,
+        "maxMetaSimilarity": 0.1875
+      }
+    },
+    {
+      "slug": "bhopal",
+      "paragraphCount": 8,
+      "maxParagraphSimilarity": 70,
+      "faqSimilarityVsSubstantive": 75,
+      "titleSimilarityVsSubstantive": 0,
+      "internalLinkSample": "Escorts near Industrial Belt Bhopal | Massage around Bhopal central railway station | Bhopal listings by Bhopal Bus Terminal | Nightlife zone — Market Area Bhopal | Hotels corridor Bhopal Central Hote",
+      "paragraphMinScore": 30,
+      "compositeBreakdown": {
+        "overall": 44,
+        "introScore": 22,
+        "paragraphMinScore": 30,
+        "faqScore": 25,
+        "titleScore": 100,
+        "metaScore": 78,
+        "maxIntroSimilarity": 0.78,
+        "maxFaqSimilarity": 0.75,
+        "maxTitleSimilarity": 0,
+        "maxMetaSimilarity": 0.2222222222222222
+      }
+    }
+  ],
+  "random20Cities": [
+    "adilabad",
+    "azamgarh",
+    "bhubaneswar",
+    "delhi",
+    "gaya",
+    "anantapur",
+    "bhagalpur",
+    "cuttack",
+    "fazilka",
+    "ambala",
+    "basti",
+    "chengannur",
+    "eluru",
+    "akola",
+    "bangalore",
+    "bokaro",
+    "dibrugarh",
+    "gorakhpur",
+    "aurangabad",
+    "bhopal"
+  ],
+  "currentEngine": {
+    "averageUniqueness": 40.7,
+    "averageSeoScore": 77.2,
+    "lowRisk": 0,
+    "mediumRisk": 0,
+    "highRisk": 20,
+    "batchMaxIntroSimilarity": 97,
+    "pages": [
+      {
+        "slug": "adilabad",
+        "uniqueness": 44,
+        "seo": 78,
+        "risk": "high",
+        "words": 520
+      },
+      {
+        "slug": "azamgarh",
+        "uniqueness": 37,
+        "seo": 76,
+        "risk": "high",
+        "words": 536
+      },
+      {
+        "slug": "bhubaneswar",
+        "uniqueness": 37,
+        "seo": 76,
+        "risk": "high",
+        "words": 548
+      },
+      {
+        "slug": "delhi",
+        "uniqueness": 39,
+        "seo": 77,
+        "risk": "high",
+        "words": 588
+      },
+      {
+        "slug": "gaya",
+        "uniqueness": 43,
+        "seo": 78,
+        "risk": "high",
+        "words": 526
+      },
+      {
+        "slug": "anantapur",
+        "uniqueness": 40,
+        "seo": 77,
+        "risk": "high",
+        "words": 551
+      },
+      {
+        "slug": "bhagalpur",
+        "uniqueness": 45,
+        "seo": 78,
+        "risk": "high",
+        "words": 541
+      },
+      {
+        "slug": "cuttack",
+        "uniqueness": 44,
+        "seo": 78,
+        "risk": "high",
+        "words": 524
+      },
+      {
+        "slug": "fazilka",
+        "uniqueness": 44,
+        "seo": 78,
+        "risk": "high",
+        "words": 541
+      },
+      {
+        "slug": "ambala",
+        "uniqueness": 44,
+        "seo": 78,
+        "risk": "high",
+        "words": 517
+      },
+      {
+        "slug": "basti",
+        "uniqueness": 42,
+        "seo": 78,
+        "risk": "high",
+        "words": 540
+      },
+      {
+        "slug": "chengannur",
+        "uniqueness": 41,
+        "seo": 77,
+        "risk": "high",
+        "words": 522
+      },
+      {
+        "slug": "eluru",
+        "uniqueness": 36,
+        "seo": 76,
+        "risk": "high",
+        "words": 548
+      },
+      {
+        "slug": "akola",
+        "uniqueness": 37,
+        "seo": 76,
+        "risk": "high",
+        "words": 540
+      },
+      {
+        "slug": "bangalore",
+        "uniqueness": 39,
+        "seo": 77,
+        "risk": "high",
+        "words": 582
+      },
+      {
+        "slug": "bokaro",
+        "uniqueness": 44,
+        "seo": 78,
+        "risk": "high",
+        "words": 532
+      },
+      {
+        "slug": "dibrugarh",
+        "uniqueness": 40,
+        "seo": 77,
+        "risk": "high",
+        "words": 542
+      },
+      {
+        "slug": "gorakhpur",
+        "uniqueness": 34,
+        "seo": 76,
+        "risk": "high",
+        "words": 540
+      },
+      {
+        "slug": "aurangabad",
+        "uniqueness": 39,
+        "seo": 77,
+        "risk": "high",
+        "words": 520
+      },
+      {
+        "slug": "bhopal",
+        "uniqueness": 44,
+        "seo": 78,
+        "risk": "high",
+        "words": 544
+      }
+    ]
+  },
+  "improvedEngine": {
+    "averageUniqueness": 44.4,
+    "averageSeoScore": 78.3,
+    "lowRisk": 0,
+    "mediumRisk": 0,
+    "highRisk": 20,
+    "batchMaxIntroSimilarity": 88,
+    "pages": [
+      {
+        "slug": "adilabad",
+        "uniqueness": 44,
+        "seo": 78,
+        "risk": "high",
+        "words": 572
+      },
+      {
+        "slug": "azamgarh",
+        "uniqueness": 46,
+        "seo": 79,
+        "risk": "high",
+        "words": 578
+      },
+      {
+        "slug": "bhubaneswar",
+        "uniqueness": 45,
+        "seo": 78,
+        "risk": "high",
+        "words": 583
+      },
+      {
+        "slug": "delhi",
+        "uniqueness": 43,
+        "seo": 78,
+        "risk": "high",
+        "words": 552
+      },
+      {
+        "slug": "gaya",
+        "uniqueness": 46,
+        "seo": 79,
+        "risk": "high",
+        "words": 578
+      },
+      {
+        "slug": "anantapur",
+        "uniqueness": 48,
+        "seo": 79,
+        "risk": "high",
+        "words": 550
+      },
+      {
+        "slug": "bhagalpur",
+        "uniqueness": 47,
+        "seo": 79,
+        "risk": "high",
+        "words": 543
+      },
+      {
+        "slug": "cuttack",
+        "uniqueness": 47,
+        "seo": 79,
+        "risk": "high",
+        "words": 543
+      },
+      {
+        "slug": "fazilka",
+        "uniqueness": 47,
+        "seo": 79,
+        "risk": "high",
+        "words": 544
+      },
+      {
+        "slug": "ambala",
+        "uniqueness": 46,
+        "seo": 79,
+        "risk": "high",
+        "words": 569
+      },
+      {
+        "slug": "basti",
+        "uniqueness": 45,
+        "seo": 78,
+        "risk": "high",
+        "words": 580
+      },
+      {
+        "slug": "chengannur",
+        "uniqueness": 43,
+        "seo": 78,
+        "risk": "high",
+        "words": 574
+      },
+      {
+        "slug": "eluru",
+        "uniqueness": 45,
+        "seo": 78,
+        "risk": "high",
+        "words": 568
+      },
+      {
+        "slug": "akola",
+        "uniqueness": 39,
+        "seo": 77,
+        "risk": "high",
+        "words": 552
+      },
+      {
+        "slug": "bangalore",
+        "uniqueness": 44,
+        "seo": 78,
+        "risk": "high",
+        "words": 560
+      },
+      {
+        "slug": "bokaro",
+        "uniqueness": 46,
+        "seo": 79,
+        "risk": "high",
+        "words": 548
+      },
+      {
+        "slug": "dibrugarh",
+        "uniqueness": 46,
+        "seo": 79,
+        "risk": "high",
+        "words": 552
+      },
+      {
+        "slug": "gorakhpur",
+        "uniqueness": 41,
+        "seo": 77,
+        "risk": "high",
+        "words": 551
+      },
+      {
+        "slug": "aurangabad",
+        "uniqueness": 35,
+        "seo": 76,
+        "risk": "high",
+        "words": 542
+      },
+      {
+        "slug": "bhopal",
+        "uniqueness": 44,
+        "seo": 78,
+        "risk": "high",
+        "words": 557
+      }
+    ]
+  },
+  "goalMet": {
+    "current": {
+      "uniquenessAbove70": 0,
+      "seoAbove90": 0,
+      "lowRisk": 0
+    },
+    "improved": {
+      "uniquenessAbove70": 0,
+      "seoAbove90": 0,
+      "lowRisk": 0
+    }
+  }
+}

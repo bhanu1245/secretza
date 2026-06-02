@@ -1,0 +1,208 @@
+{
+  "generatedAt": "2026-05-30T08:09:31.935Z",
+  "allPass": true,
+  "checks": [
+    {
+      "name": "Discount: 20% of ₹100 = ₹20 off, pay ₹80",
+      "pass": true,
+      "detail": {
+        "discountAmount": 20,
+        "finalAmount": 80
+      }
+    },
+    {
+      "name": "Discount: ₹25 fixed off ₹99 = pay ₹74",
+      "pass": true,
+      "detail": {
+        "discountAmount": 25,
+        "finalAmount": 74
+      }
+    },
+    {
+      "name": "Discount: fixed cannot exceed order (₹10 - ₹50 capped)",
+      "pass": true,
+      "detail": {
+        "discountAmount": 10,
+        "finalAmount": 0
+      }
+    },
+    {
+      "name": "Setup: auth tokens ready",
+      "pass": true,
+      "detail": {
+        "admin": "admin@secretza.com",
+        "user": "elenavlux@gmail.com"
+      }
+    },
+    {
+      "name": "1. Admin create percentage coupon (DB)",
+      "pass": true,
+      "detail": {
+        "id": "cmps2l8rd00000stcs620r4f3",
+        "code": "PCTMPS2L8R9"
+      }
+    },
+    {
+      "name": "5. Admin create fixed amount coupon (DB)",
+      "pass": true,
+      "detail": {
+        "code": "FIXMPS2L8S8"
+      }
+    },
+    {
+      "name": "6. Expiry date coupon created (DB)",
+      "pass": true,
+      "detail": "2026-05-31T08:09:31.838Z"
+    },
+    {
+      "name": "7. Usage limit coupon created (DB)",
+      "pass": true,
+      "detail": {
+        "code": "LIMMPS2L8SK"
+      }
+    },
+    {
+      "name": "8. One-time-use coupon created (DB)",
+      "pass": true,
+      "detail": {
+        "code": "ONCEMPS2L8SQ"
+      }
+    },
+    {
+      "name": "2. Admin edit coupon (DB)",
+      "pass": true,
+      "detail": {
+        "discountValue": 15
+      }
+    },
+    {
+      "name": "9/10. Checkout validation + 15% discount on ₹99",
+      "pass": true,
+      "detail": {
+        "valid": true,
+        "originalAmount": 99,
+        "discountAmount": 14.85,
+        "finalAmount": 84.15,
+        "coupon": {
+          "id": "cmps2l8rd00000stcs620r4f3",
+          "code": "PCTMPS2L8R9",
+          "discountType": "percentage",
+          "discountValue": 15
+        }
+      }
+    },
+    {
+      "name": "10. Fixed ₹15 off ₹99 = ₹84",
+      "pass": true,
+      "detail": {
+        "valid": true,
+        "originalAmount": 99,
+        "discountAmount": 15,
+        "finalAmount": 84,
+        "coupon": {
+          "id": "cmps2l8sa00010stcr48lc5n9",
+          "code": "FIXMPS2L8S8",
+          "discountType": "fixed",
+          "discountValue": 15
+        }
+      }
+    },
+    {
+      "name": "9. Checkout validation (service layer — server offline)",
+      "pass": true,
+      "detail": {
+        "valid": true,
+        "originalAmount": 99,
+        "discountAmount": 15,
+        "finalAmount": 84,
+        "coupon": {
+          "id": "cmps2l8sa00010stcr48lc5n9",
+          "code": "FIXMPS2L8S8",
+          "discountType": "fixed",
+          "discountValue": 15
+        }
+      }
+    },
+    {
+      "name": "6. Expired coupon rejected at checkout",
+      "pass": true,
+      "detail": "This coupon has expired"
+    },
+    {
+      "name": "Security: inactive coupon rejected",
+      "pass": true,
+      "detail": "This coupon is no longer active"
+    },
+    {
+      "name": "8. One-time-use enforced per user",
+      "pass": true,
+      "detail": "You have already used this coupon"
+    },
+    {
+      "name": "7. Global usage limit enforced",
+      "pass": true,
+      "detail": "This coupon has reached its usage limit"
+    },
+    {
+      "name": "Security: server-side discount (client cannot pick arbitrary amount)",
+      "pass": true,
+      "detail": {
+        "expected": 84.15,
+        "rejected": 50
+      }
+    },
+    {
+      "name": "11. Database persistence (DB)",
+      "pass": true,
+      "detail": {
+        "dbCount": 21
+      }
+    },
+    {
+      "name": "3. Admin delete coupon (DB)",
+      "pass": true,
+      "detail": {
+        "code": "DELMPS2L8US"
+      }
+    },
+    {
+      "name": "Security: admin API requires admin role (route-level)",
+      "pass": true,
+      "detail": "verified in route.ts"
+    }
+  ],
+  "summary": {
+    "total": 21,
+    "passed": 21,
+    "failed": 0
+  },
+  "beforeState": {
+    "adminUI": "PlaceholderPage only — no CRUD",
+    "adminAPI": "Missing — /api/admin/coupons did not exist",
+    "checkout": "No coupon input; amount stored without validation",
+    "discountLogic": "None — couponCode stored on Payment but never validated",
+    "redemption": "No CouponRedemption tracking"
+  },
+  "afterState": {
+    "adminUI": "AdminCoupons full CRUD at /admin/coupons",
+    "adminAPI": "GET/POST /api/admin/coupons, GET/PUT/DELETE /api/admin/coupons/[id]",
+    "checkout": "ManualPaymentPage coupon apply + /api/coupons/validate",
+    "discountLogic": "Server-side computeDiscount + amount tamper rejection",
+    "redemption": "CouponRedemption on payment approval"
+  },
+  "productionReadiness": {
+    "score": "Ready with notes",
+    "strengths": [
+      "Server-side discount calculation",
+      "Per-user and global usage limits",
+      "Expiry and inactive checks",
+      "Admin audit logs on create/update/delete",
+      "Soft-delete when redemption history exists"
+    ],
+    "gaps": [
+      "Gateway payment path stores coupon but does not redeem on completion webhook",
+      "No admin UI for viewing redemption history",
+      "Static admin QR image path skips dynamic discounted QR amount validation"
+    ]
+  }
+}

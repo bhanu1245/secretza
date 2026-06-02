@@ -1,0 +1,213 @@
+{
+  "generatedAt": "2026-05-29T13:48:34.471Z",
+  "summary": {
+    "totalPages": 346,
+    "dbPass": 346,
+    "dbFail": 0,
+    "withFeaturedImage": 346,
+    "usingPlaceholder": 0,
+    "fallbackCitiesPass": "4/4",
+    "brokenImageCount": 0,
+    "duplicateImageUrlGroups": 0
+  },
+  "passFailByPageType": {
+    "category": {
+      "total": 12,
+      "pass": 12,
+      "withImage": 12,
+      "placeholder": 0,
+      "status": "PASS"
+    },
+    "category_city": {
+      "total": 30,
+      "pass": 30,
+      "withImage": 30,
+      "placeholder": 0,
+      "status": "PASS"
+    },
+    "city": {
+      "total": 153,
+      "pass": 153,
+      "withImage": 153,
+      "placeholder": 0,
+      "status": "PASS"
+    },
+    "country": {
+      "total": 95,
+      "pass": 95,
+      "withImage": 95,
+      "placeholder": 0,
+      "status": "PASS"
+    },
+    "longtail": {
+      "total": 20,
+      "pass": 20,
+      "withImage": 20,
+      "placeholder": 0,
+      "status": "PASS"
+    },
+    "state": {
+      "total": 36,
+      "pass": 36,
+      "withImage": 36,
+      "placeholder": 0,
+      "status": "PASS"
+    }
+  },
+  "imageCounts": {
+    "totalPages": 346,
+    "withStoredImage": 346,
+    "withoutStoredImage": 0,
+    "sitemapEntries": 346
+  },
+  "sitemapReport": {
+    "entryCount": 346,
+    "validEntries": 346,
+    "invalidEntries": [],
+    "duplicateUrls": []
+  },
+  "duplicateImageUrls": [],
+  "brokenImageReport": [],
+  "fallbackCityAudits": [
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/mumbai",
+      "publicPath": "/independent-escorts/mumbai",
+      "source": "fallback",
+      "pass": true,
+      "featuredImage": null,
+      "displayImageUrl": "http://localhost:3000/logo.svg",
+      "isPlaceholder": true,
+      "imageAlt": "Independent Escorts in Mumbai — longtail featured image on Secretza",
+      "ogImage": "https://secretza.com/logo.svg",
+      "twitterImage": "https://secretza.com/logo.svg",
+      "ogWidth": 1200,
+      "ogHeight": 630,
+      "imgWidth": 1200,
+      "imgHeight": 630,
+      "imgLoading": "eager (priority hero)",
+      "imageObjectValid": true,
+      "imageReachable": true,
+      "issues": []
+    },
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/delhi",
+      "publicPath": "/independent-escorts/delhi",
+      "source": "fallback",
+      "pass": true,
+      "featuredImage": null,
+      "displayImageUrl": "http://localhost:3000/logo.svg",
+      "isPlaceholder": true,
+      "imageAlt": "Independent Escorts in Delhi — longtail featured image on Secretza",
+      "ogImage": "https://secretza.com/logo.svg",
+      "twitterImage": "https://secretza.com/logo.svg",
+      "ogWidth": 1200,
+      "ogHeight": 630,
+      "imgWidth": 1200,
+      "imgHeight": 630,
+      "imgLoading": "eager (priority hero)",
+      "imageObjectValid": true,
+      "imageReachable": true,
+      "issues": []
+    },
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/bangalore",
+      "publicPath": "/independent-escorts/bangalore",
+      "source": "fallback",
+      "pass": true,
+      "featuredImage": null,
+      "displayImageUrl": "http://localhost:3000/logo.svg",
+      "isPlaceholder": true,
+      "imageAlt": "Independent Escorts in Bangalore — longtail featured image on Secretza",
+      "ogImage": "https://secretza.com/logo.svg",
+      "twitterImage": "https://secretza.com/logo.svg",
+      "ogWidth": 1200,
+      "ogHeight": 630,
+      "imgWidth": 1200,
+      "imgHeight": 630,
+      "imgLoading": "eager (priority hero)",
+      "imageObjectValid": true,
+      "imageReachable": true,
+      "issues": []
+    },
+    {
+      "pageType": "longtail",
+      "pageSlug": "independent-escorts/hyderabad",
+      "publicPath": "/independent-escorts/hyderabad",
+      "source": "fallback",
+      "pass": true,
+      "featuredImage": null,
+      "displayImageUrl": "http://localhost:3000/logo.svg",
+      "isPlaceholder": true,
+      "imageAlt": "Independent Escorts in Hyderabad — longtail featured image on Secretza",
+      "ogImage": "https://secretza.com/logo.svg",
+      "twitterImage": "https://secretza.com/logo.svg",
+      "ogWidth": 1200,
+      "ogHeight": 630,
+      "imgWidth": 1200,
+      "imgHeight": 630,
+      "imgLoading": "eager (priority hero)",
+      "imageObjectValid": true,
+      "imageReachable": true,
+      "issues": []
+    }
+  ],
+  "imageObjectExample": {
+    "@context": "https://schema.org",
+    "@type": "ImageObject",
+    "url": "https://secretza.com/logo.svg",
+    "contentUrl": "https://secretza.com/logo.svg",
+    "width": 1200,
+    "height": 630,
+    "name": "Example alt",
+    "description": "Example alt",
+    "caption": "Example alt",
+    "mainEntityOfPage": "https://secretza.com/independent-escorts/mumbai"
+  },
+  "liveMeta": [
+    {
+      "slug": "mumbai",
+      "path": "/independent-escorts/mumbai",
+      "ogImage": "https://secretza.com/logo.svg",
+      "twitterImage": "https://secretza.com/logo.svg",
+      "imgAlt": "Independent Escorts in Mumbai — longtail featured image on Secretza",
+      "imgWidth": "1200",
+      "screenshot": "artifacts\\seo-image-audit\\mumbai-image-seo.png"
+    },
+    {
+      "slug": "delhi",
+      "path": "/independent-escorts/delhi",
+      "ogImage": "https://secretza.com/logo.svg",
+      "twitterImage": "https://secretza.com/logo.svg",
+      "imgAlt": "Independent Escorts in Delhi — longtail featured image on Secretza",
+      "imgWidth": "1200",
+      "screenshot": "artifacts\\seo-image-audit\\delhi-image-seo.png"
+    },
+    {
+      "slug": "bangalore",
+      "path": "/independent-escorts/bangalore",
+      "ogImage": "https://secretza.com/logo.svg",
+      "twitterImage": "https://secretza.com/logo.svg",
+      "imgAlt": "Independent Escorts in Bangalore — longtail featured image on Secretza",
+      "imgWidth": "1200",
+      "screenshot": "artifacts\\seo-image-audit\\bangalore-image-seo.png"
+    },
+    {
+      "slug": "hyderabad",
+      "path": "/independent-escorts/hyderabad",
+      "ogImage": "https://secretza.com/logo.svg",
+      "twitterImage": "https://secretza.com/logo.svg",
+      "imgAlt": "Independent Escorts in Hyderabad — longtail featured image on Secretza",
+      "imgWidth": "1200",
+      "screenshot": "artifacts\\seo-image-audit\\hyderabad-image-seo.png"
+    }
+  ],
+  "fixesApplied": [
+    "Added SEO_IMAGE_WIDTH/HEIGHT and buildImageObjectSchema() with width/height/alt",
+    "ImageObject always resolved at render (incl. placeholder for fallback pages)",
+    "Fixed sitemap-seo-images.xml page URLs via getSeoPagePublicUrl()",
+    "OG metadata uses standard 1200×630 dimensions"
+  ]
+}

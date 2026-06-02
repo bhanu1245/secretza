@@ -66,13 +66,13 @@ export async function GET(request: NextRequest) {
   }
 
   const settings = await getPaymentSettings();
-  const note = searchParams.get("note") || "Secretza Payment";
+  const note = searchParams.get("note") || "SecretZa Payment";
   const sanitizedNote = note.replace(/[<>"'&]/g, "").slice(0, 100);
 
   const upiDeepLink = [
     "upi://pay",
     `pa=${settings.upiId}`,
-    "pn=Secretza",
+    "pn=SecretZa",
     `am=${amount}`,
     "cu=INR",
     `tn=${encodeURIComponent(sanitizedNote)}`,

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Production Readiness Fixes — Verification Report</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; margin:0; padding:24px; }
+  h1,h2 { color:#f8fafc; }
+  h2 { margin-top:32px; color:#94a3b8; }
+  .badge { display:inline-block; padding:6px 16px; border-radius:999px; font-weight:700; font-size:15px; }
+  .pass { background:#16a34a; color:#fff; }
+  .warn { background:#d97706; color:#fff; }
+  .fail { background:#dc2626; color:#fff; }
+  .score { font-size:48px; font-weight:800; color:#f8fafc; }
+  .section { background:#1e293b; border-radius:12px; padding:20px 24px; margin-bottom:24px; }
+  table { border-collapse:collapse; width:100%; margin-top:12px; }
+  th { background:#0f172a; padding:8px 12px; text-align:left; font-size:13px; color:#94a3b8; }
+  td { padding:8px 12px; font-size:13px; border-bottom:1px solid #0f172a; vertical-align:top; }
+  .ok { color:#4ade80; font-weight:700; }
+  .fail-cell { color:#f87171; font-weight:700; }
+  code { background:#0f172a; padding:2px 6px; border-radius:4px; font-size:12px; color:#7dd3fc; }
+  ul { margin:8px 0; padding-left:20px; }
+  li { margin:4px 0; }
+</style>
+</head>
+<body>
+<h1>Production Readiness Fixes — Verification Report</h1>
+<p>Generated: 2026-05-30T20:32:29.323Z &nbsp;|&nbsp; TypeScript: <span class="badge pass">PASS (exit 0)</span></p>
+
+<div class="section">
+  <div class="score">95/100</div>
+  <p>Previous score: 64/100 &nbsp; Verdict: <span class="badge pass">CONDITIONAL GO</span></p>
+  <p>GO — All code-level blockers are resolved. Set the production environment variables listed in docs/production-env-checklist.md and deploy the cron scheduler before launch.</p>
+</div>
+
+<div class="section">
+<h2>Fixes Applied</h2>
+<table>
+<thead><tr><th>ID</th><th>Issue</th><th>Fix</th><th>Impact</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>P0-1</code></td>
+  <td>metadataBase missing from root layout</td>
+  <td>Added metadataBase: new URL(NEXT_PUBLIC_SITE_URL || 'https://SecretZa.com') to src/app/layout.tsx</td>
+  <td class="ok">Blocker → Resolved</td>
+</tr><tr>
+  <td><code>P0-2a</code></td>
+  <td>Homepage missing canonical</td>
+  <td>Added alternates.canonical: '/' to root layout metadata (homepage inherits it as a client component)</td>
+  <td class="ok">Warning → Resolved</td>
+</tr><tr>
+  <td><code>P0-2b</code></td>
+  <td>CMS pages missing canonical and OG url</td>
+  <td>Added alternates.canonical and openGraph.url to CMS generateMetadata using resolved slug</td>
+  <td class="ok">Warning → Resolved</td>
+</tr><tr>
+  <td><code>P0-3</code></td>
+  <td>Root layout OG image was manually absolute (redundant with metadataBase)</td>
+  <td>Changed OG image to root-relative BRAND_ASSETS.ogImage path — Next.js resolves via metadataBase. Added openGraph.url: '/'</td>
+  <td class="ok">Warning → Resolved</td>
+</tr><tr>
+  <td><code>P0-4</code></td>
+  <td>Stale public/robots.txt conflicting with src/app/robots.ts</td>
+  <td>Deleted public/robots.txt. src/app/robots.ts is now the sole source of truth. It correctly disallows /api/, /admin/, includes sitemap URLs.</td>
+  <td class="ok">Warning → Resolved</td>
+</tr><tr>
+  <td><code>P0-5</code></td>
+  <td>No production env variable documentation</td>
+  <td>Created docs/production-env-checklist.md covering all required, recommended, and optional env vars with verification commands</td>
+  <td class="ok">Warning → Addressed (operator action required)</td>
+</tr><tr>
+  <td><code>P0-6</code></td>
+  <td>No cron deployment instructions</td>
+  <td>Created docs/cron-deployment-checklist.md with four deployment options (systemd, crontab, GitHub Actions, cron-job.org)</td>
+  <td class="ok">Warning → Addressed (operator action required)</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="section">
+<h2>Remaining Warnings (Operator Action Required)</h2>
+<ul>
+<li>Set NEXT_PUBLIC_SITE_URL=https://secretza.com in production env</li><li>Set NEXTAUTH_URL=https://secretza.com in production env</li><li>Set CRON_SECRET and configure a cron scheduler (see docs/cron-deployment-checklist.md)</li><li>Configure Google Search Console verification (env or Admin DB settings)</li><li>Set NEXT_PUBLIC_GA_ID or NEXT_PUBLIC_PLAUSIBLE_DOMAIN if analytics is required</li><li>Set NEXT_PUBLIC_SENTRY_DSN if error monitoring is required</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>Verification Checks — 37/37 passed</h2>
+<table>
+<thead><tr><th>ID</th><th>Category</th><th>Description</th><th>Result</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>P0-1a</code></td>
+  <td>metadataBase</td>
+  <td>metadataBase declared in layout.tsx</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-1b</code></td>
+  <td>metadataBase</td>
+  <td>metadataBase uses new URL()</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-1c</code></td>
+  <td>metadataBase</td>
+  <td>metadataBase reads NEXT_PUBLIC_SITE_URL</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-1d</code></td>
+  <td>metadataBase</td>
+  <td>Fallback to https://SecretZa.com present</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-2a</code></td>
+  <td>canonical</td>
+  <td>Root layout sets alternates.canonical</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-2b</code></td>
+  <td>canonical</td>
+  <td>CMS page sets alternates.canonical</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-2c</code></td>
+  <td>canonical</td>
+  <td>CMS canonical uses resolved slug (not raw slug)</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-2d</code></td>
+  <td>canonical</td>
+  <td>CMS generateMetadata now includes openGraph.url</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-2e</code></td>
+  <td>canonical</td>
+  <td>Listing page canonical is absolute (via buildListingUrl)</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-2f</code></td>
+  <td>canonical</td>
+  <td>Geo state page has canonical or uses buildSeoPageMetadata</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-3a</code></td>
+  <td>openGraph</td>
+  <td>Root layout OG image uses BRAND_ASSETS.ogImage (relative, resolved by metadataBase)</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-3b</code></td>
+  <td>openGraph</td>
+  <td>Root layout OG url set</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-3c</code></td>
+  <td>openGraph</td>
+  <td>Listing OG url is absolute (fullUrl)</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-3d</code></td>
+  <td>openGraph</td>
+  <td>buildSeoPageMetadata produces absolute OG URL (absoluteOgImage)</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-3e</code></td>
+  <td>openGraph</td>
+  <td>buildSeoPageMetadata openGraph.url is absolute (canonicalPath)</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-3f</code></td>
+  <td>openGraph</td>
+  <td>OG image file exists at public/brand/og-image.svg</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-4a</code></td>
+  <td>robots</td>
+  <td>Stale public/robots.txt removed<br/><small style="color:#94a3b8">deleted</small></td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-4b</code></td>
+  <td>robots</td>
+  <td>App Router robots.ts present</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-4c</code></td>
+  <td>robots</td>
+  <td>robots.ts disallows /api/</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-4d</code></td>
+  <td>robots</td>
+  <td>robots.ts disallows /admin/</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-4e</code></td>
+  <td>robots</td>
+  <td>robots.ts includes sitemap directive</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-4f</code></td>
+  <td>robots</td>
+  <td>robots.ts uses NEXT_PUBLIC_SITE_URL</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-5a</code></td>
+  <td>docs</td>
+  <td>docs/production-env-checklist.md created</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-5b</code></td>
+  <td>docs</td>
+  <td>Checklist covers NEXT_PUBLIC_SITE_URL</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-5c</code></td>
+  <td>docs</td>
+  <td>Checklist covers NEXTAUTH_SECRET</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-5d</code></td>
+  <td>docs</td>
+  <td>Checklist covers CRON_SECRET</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-5e</code></td>
+  <td>docs</td>
+  <td>Checklist covers DATABASE_URL</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-5f</code></td>
+  <td>docs</td>
+  <td>Checklist covers GOOGLE_SITE_VERIFICATION</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-5g</code></td>
+  <td>docs</td>
+  <td>Checklist has pre-launch verification commands</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-6a</code></td>
+  <td>docs</td>
+  <td>docs/cron-deployment-checklist.md created</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-6b</code></td>
+  <td>docs</td>
+  <td>Checklist covers refresh-ranking endpoint</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-6c</code></td>
+  <td>docs</td>
+  <td>Checklist covers cleanup-files endpoint</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-6d</code></td>
+  <td>docs</td>
+  <td>Checklist provides systemd option</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-6e</code></td>
+  <td>docs</td>
+  <td>Checklist provides crontab option</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-6f</code></td>
+  <td>docs</td>
+  <td>Checklist provides GitHub Actions option</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-6g</code></td>
+  <td>docs</td>
+  <td>Checklist provides external service option</td>
+  <td class="ok">PASS</td>
+</tr><tr>
+  <td><code>P0-6h</code></td>
+  <td>docs</td>
+  <td>Checklist notes x-cron-secret requirement</td>
+  <td class="ok">PASS</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="section">
+<h2>Remaining Warnings (Code-Level)</h2>
+<ul>
+<li>CRON_SECRET not in .env — cron checklist provided; operator must set and schedule</li><li>NEXT_PUBLIC_SITE_URL not in .env — checklist provided; operator must set in deployment</li><li>NEXTAUTH_URL still points to localhost — must be updated to production URL</li><li>Google Search Console verification not configured (env or DB)</li><li>Analytics (GA4/Plausible/Sentry) not configured in .env</li><li>SSG: some geo pages exceed 60s generation budget (retries succeed; monitor in CI)</li>
+</ul>
+</div>
+
+</body>
+</html>

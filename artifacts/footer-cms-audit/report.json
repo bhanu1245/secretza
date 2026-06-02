@@ -1,0 +1,149 @@
+{
+  "generatedAt": "2026-05-30T08:56:30.025Z",
+  "allPass": true,
+  "serverUp": false,
+  "rootCause": [
+    "Company footer links were buttons calling navigate('home') — never routed to CMS",
+    "CMS pages lived at /cms/[slug] but footer had no hrefs",
+    "Browse links used /{slug} without rewrites to /category/{slug}",
+    "Location links used /{city} without rewrites to /india/{state}/{city}",
+    "Social icons hardcoded to href='#'",
+    "CMS pages missing PublicSiteLayout (no header/footer on /cms/*)",
+    "dmca and advertise CMS pages were not seeded"
+  ],
+  "fixes": [
+    "Footer company links → Link href to public CMS aliases",
+    "next.config rewrites for CMS, categories, cities",
+    "CmsPageContent wrapped in PublicSiteLayout",
+    "Seeded dmca + advertise CMS pages",
+    "Public social settings API + SiteSettings seed"
+  ],
+  "checks": [
+    {
+      "name": "CMS: undefined",
+      "href": "/about",
+      "pass": true,
+      "detail": "published"
+    },
+    {
+      "name": "CMS: undefined",
+      "href": "/terms",
+      "pass": true,
+      "detail": "published"
+    },
+    {
+      "name": "CMS: undefined",
+      "href": "/privacy-policy",
+      "pass": true,
+      "detail": "published"
+    },
+    {
+      "name": "CMS: undefined",
+      "href": "/contact",
+      "pass": true,
+      "detail": "published"
+    },
+    {
+      "name": "CMS: undefined",
+      "href": "/dmca",
+      "pass": true,
+      "detail": "published"
+    },
+    {
+      "name": "CMS: undefined",
+      "href": "/safety-tips",
+      "pass": true,
+      "detail": "published"
+    },
+    {
+      "name": "CMS: undefined",
+      "href": "/faq",
+      "pass": true,
+      "detail": "published"
+    },
+    {
+      "name": "CMS: undefined",
+      "href": "/advertise",
+      "pass": true,
+      "detail": "published"
+    },
+    {
+      "name": "Browse: Escorts",
+      "href": "/escorts",
+      "pass": true,
+      "detail": "rewrite configured"
+    },
+    {
+      "name": "Browse: Massage",
+      "href": "/massage",
+      "pass": true,
+      "detail": "rewrite configured"
+    },
+    {
+      "name": "Browse: Dating",
+      "href": "/dating",
+      "pass": true,
+      "detail": "rewrite configured"
+    },
+    {
+      "name": "Browse: Trans",
+      "href": "/trans",
+      "pass": true,
+      "detail": "rewrite configured"
+    },
+    {
+      "name": "Browse: Male Escorts",
+      "href": "/male-escorts",
+      "pass": true,
+      "detail": "rewrite configured"
+    },
+    {
+      "name": "Browse: Couples",
+      "href": "/couples",
+      "pass": true,
+      "detail": "rewrite configured"
+    },
+    {
+      "name": "Locations: Mumbai",
+      "href": "/mumbai",
+      "pass": true,
+      "detail": "rewrite configured"
+    },
+    {
+      "name": "Locations: Delhi",
+      "href": "/delhi",
+      "pass": true,
+      "detail": "rewrite configured"
+    },
+    {
+      "name": "Locations: Bangalore",
+      "href": "/bangalore",
+      "pass": true,
+      "detail": "rewrite configured"
+    },
+    {
+      "name": "Locations: Hyderabad",
+      "href": "/hyderabad",
+      "pass": true,
+      "detail": "rewrite configured"
+    },
+    {
+      "name": "Locations: Chennai",
+      "href": "/chennai",
+      "pass": true,
+      "detail": "rewrite configured"
+    },
+    {
+      "name": "Locations: Kolkata",
+      "href": "/kolkata",
+      "pass": true,
+      "detail": "rewrite configured"
+    },
+    {
+      "name": "Social settings in DB",
+      "href": "siteSettings",
+      "pass": true,
+      "detail": "4 keys"
+    }
+  ]
+}

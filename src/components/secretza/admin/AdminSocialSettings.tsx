@@ -21,10 +21,10 @@ const FIELDS: {
   placeholder: string;
   icon: React.ElementType;
 }[] = [
-  { key: "twitter", label: "X (Twitter)", placeholder: "https://twitter.com/secretza", icon: Twitter },
-  { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/secretza", icon: Instagram },
-  { key: "youtube", label: "YouTube", placeholder: "https://youtube.com/@secretza", icon: Youtube },
-  { key: "website", label: "Website", placeholder: "https://secretza.com", icon: Globe },
+  { key: "twitter", label: "X (Twitter)", placeholder: "https://twitter.com/SecretZa", icon: Twitter },
+  { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/SecretZa", icon: Instagram },
+  { key: "youtube", label: "YouTube", placeholder: "https://youtube.com/@SecretZa", icon: Youtube },
+  { key: "website", label: "Website", placeholder: "https://SecretZa.com", icon: Globe },
 ];
 
 export default function AdminSocialSettings() {

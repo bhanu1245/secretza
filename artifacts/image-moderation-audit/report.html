@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"/><title>Image Moderation Audit</title>
+<style>body{font-family:system-ui;background:#0f0f14;color:#eee;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #333;padding:8px}th{background:#1a1a24}.pass{color:#10b981}.fail{color:#ef4444}</style>
+</head><body>
+<h1>Image Moderation Audit</h1>
+<p>Generated: 2026-05-29T18:13:46.503Z</p>
+<p>Overall: <strong class="pass">PASS</strong></p>
+<h2>Checks</h2>
+<table><thead><tr><th>Status</th><th>Check</th><th>Detail</th></tr></thead><tbody><tr><td>✓</td><td>Moderate API route exists</td><td>src/app/api/upload/moderate/route.ts</td></tr><tr><td>✓</td><td>No orphaned ListingImage records</td><td>0 orphaned</td></tr><tr><td>✓</td><td>Anonymous cannot access moderation API</td><td>status 401</td></tr><tr><td>✓</td><td>Admin can load moderation queue</td><td>5 images, pending=5</td></tr><tr><td>✓</td><td>Pending image blocked from public URL</td><td>status 403 for listings/cmppmsauw00000slg9ls8r9ra/1780030543675-4182fe62-c8e6-4eb5-bb14-e83794ad3af3.png</td></tr><tr><td>✓</td><td>Admin can access pending image (file gate)</td><td>true</td></tr><tr><td>✓</td><td>Approve action works</td><td>approved</td></tr><tr><td>✓</td><td>DB status updated to approved</td><td>approved</td></tr><tr><td>✓</td><td>Approved image publicly accessible</td><td>status 200</td></tr><tr><td>✓</td><td>Reject action works</td><td>rejected</td></tr><tr><td>✓</td><td>Rejected image hidden from public URL</td><td>status 403</td></tr><tr><td>✓</td><td>Stats API matches DB counts</td><td>{"pending":5,"approved":0,"rejected":0,"flagged":0,"total":5}</td></tr></tbody></table>
+<h2>Stats</h2><pre>{
+  "before": {
+    "pending": 5,
+    "approved": 0,
+    "rejected": 0,
+    "flagged": 0,
+    "total": 5
+  },
+  "after": {
+    "pending": 5,
+    "approved": 0,
+    "rejected": 0,
+    "flagged": 0,
+    "total": 5
+  }
+}</pre>
+<h2>Issues Fixed</h2><pre>[
+  "Implemented GET/POST /api/upload/moderate (queue, approve, reject, flag, bulk)",
+  "Secured /api/upload/file with moderationStatus gate",
+  "Public listings API returns approved images only",
+  "Listing detail page uses getPublicListingImages (no legacy bypass)",
+  "Moderators can access /api/admin/listings",
+  "ImageModerationPanel uses live stats from API + bulk actions",
+  "Dedupe storageKey on image persist to prevent duplicates"
+]</pre>
+</body></html>

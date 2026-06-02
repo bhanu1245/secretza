@@ -1,0 +1,156 @@
+{
+  "generatedAt": "2026-05-30T17:35:35.799Z",
+  "title": "Premium Expiry Implementation — Verification Report",
+  "summary": {
+    "total": 23,
+    "passed": 23,
+    "failed": 0,
+    "blockersFailed": 0
+  },
+  "layers": {
+    "L1 — JWT request-time (auth.ts)": "Downgrades token.isPremium in-memory if premiumExpiry < now. Zero DB writes. Effective within ≤2 min (cache TTL).",
+    "L2 — Cron DB cleanup (refresh-ranking)": "Batch-updates User.isPremium=false for all rows where isPremium=true and premiumExpiry<now. Runs every 30 min (existing cron).",
+    "L3 — Admin stats (admin/stats)": "premiumUsers count uses OR[premiumExpiry=null, premiumExpiry>now] to exclude expired rows."
+  },
+  "checks": [
+    {
+      "name": "L1 · JWT callback: expiry check inserted after cache-hit AND cache-miss paths",
+      "ok": true,
+      "detail": "Block: `if (token.isPremium && token.premiumExpiry)` must exist in jwt callback",
+      "severity": "blocker"
+    },
+    {
+      "name": "L1 · JWT callback: sets token.isPremium = false when expiry < now",
+      "ok": true,
+      "detail": "Downgrades token in-memory — no DB write required",
+      "severity": "blocker"
+    },
+    {
+      "name": "L1 · JWT callback: uses Date constructor and guards against NaN",
+      "ok": true,
+      "detail": "Prevents invalid-date bugs from crashing the auth flow",
+      "severity": "high"
+    },
+    {
+      "name": "L1 · expiry check is AFTER cache-hit block (correct ordering)",
+      "ok": true,
+      "detail": "Ordering: cache-hit block → cache-miss block → expiry override → return token",
+      "severity": "blocker"
+    },
+    {
+      "name": "L1 · expiry check is AFTER cache-miss block (correct ordering)",
+      "ok": true,
+      "detail": "Override fires after DB data is loaded, not before",
+      "severity": "blocker"
+    },
+    {
+      "name": "L1 · premiumExpiry still forwarded to session (token.premiumExpiry not nulled)",
+      "ok": true,
+      "detail": "UI can still display the expiry date even after isPremium is downed in token",
+      "severity": "info"
+    },
+    {
+      "name": "L2 · Cron: updateMany to set isPremium=false for expired users",
+      "ok": true,
+      "detail": "db.user.updateMany({ where: { isPremium:true, premiumExpiry:{ lt:new Date() } }, data:{ isPremium:false } })",
+      "severity": "blocker"
+    },
+    {
+      "name": "L2 · Cron: filters by premiumExpiry lt new Date()",
+      "ok": true,
+      "detail": "Only updates users whose expiry has already passed",
+      "severity": "blocker"
+    },
+    {
+      "name": "L2 · Cron: premium expiry runs BEFORE listing expiry steps",
+      "ok": true,
+      "detail": "Premium cleanup is Step 1; listing work is Steps 3-6",
+      "severity": "info"
+    },
+    {
+      "name": "L2 · Cron: expiredPremiumUsers included in response stats",
+      "ok": true,
+      "detail": "Operators can observe how many users were expired per run",
+      "severity": "info"
+    },
+    {
+      "name": "L2 · Cron: does NOT touch isBoosted or isFeatured in premium step",
+      "ok": true,
+      "detail": "Boost and Featured logic is untouched as required",
+      "severity": "blocker"
+    },
+    {
+      "name": "L3 · Stats: premiumUsers count excludes expired (uses OR filter)",
+      "ok": true,
+      "detail": "Counts users where premiumExpiry IS NULL (admin-granted) OR premiumExpiry > now",
+      "severity": "blocker"
+    },
+    {
+      "name": "L3 · Stats: still requires isPremium=true as base condition",
+      "ok": true,
+      "detail": "isPremium=false users are excluded even if premiumExpiry is in the future",
+      "severity": "high"
+    },
+    {
+      "name": "L4 · UI not modified: Dashboard still reads isPremium from session/store",
+      "ok": true,
+      "detail": "Dashboard.tsx unchanged — derives isPremium from Zustand/session only",
+      "severity": "info"
+    },
+    {
+      "name": "L4 · UI not modified: Header still reads isPremium from session/store",
+      "ok": true,
+      "detail": "Header.tsx unchanged — no client-side expiry logic introduced",
+      "severity": "info"
+    },
+    {
+      "name": "DB · Cron query: finds an expired-premium user (isPremium=true, expiry<now)",
+      "ok": true,
+      "detail": "Query returned 1 row(s) for the test expired user",
+      "severity": "blocker"
+    },
+    {
+      "name": "DB · Cron simulation: sets isPremium=false for expired user",
+      "ok": true,
+      "detail": "updateMany affected 1 row; isPremium after = false",
+      "severity": "blocker"
+    },
+    {
+      "name": "DB · Cron query: does NOT touch active premium user (expiry in future)",
+      "ok": true,
+      "detail": "Query returned 0 rows for the active premium user (expected 0)",
+      "severity": "blocker"
+    },
+    {
+      "name": "DB · Stats query: active premium user appears in count",
+      "ok": true,
+      "detail": "Stats query found 1 row(s) for the active user (expected 1)",
+      "severity": "blocker"
+    },
+    {
+      "name": "DB · Stats query: expired-then-reset user excluded from count",
+      "ok": true,
+      "detail": "Stats query found 0 row(s) for post-cron expired user (expected 0)",
+      "severity": "blocker"
+    },
+    {
+      "name": "JWT · Request-time logic: isPremium set to false when expiry in the past",
+      "ok": true,
+      "detail": "In-memory override: token.isPremium=true + past expiry → token.isPremium=false",
+      "severity": "blocker"
+    },
+    {
+      "name": "JWT · Request-time logic: isPremium stays true when expiry is in the future",
+      "ok": true,
+      "detail": "Active premium user is not incorrectly downgraded",
+      "severity": "blocker"
+    },
+    {
+      "name": "JWT · Request-time logic: isPremium stays true when premiumExpiry is null (admin-granted)",
+      "ok": true,
+      "detail": "Null expiry = permanent grant; condition short-circuits on the && check",
+      "severity": "blocker"
+    }
+  ],
+  "failed": []
+}

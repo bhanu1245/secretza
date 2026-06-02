@@ -30,7 +30,7 @@ export type ResolvedListingImage = {
 };
 
 /** Shown when a listing has no resolvable image URL. */
-export const LISTING_IMAGE_PLACEHOLDER = "/logo.svg";
+export const LISTING_IMAGE_PLACEHOLDER = "/brand/logo-icon-dark.svg";
 
 function parseJsonArray(value: unknown): unknown[] {
   if (Array.isArray(value)) return value;

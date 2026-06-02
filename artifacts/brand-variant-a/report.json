@@ -1,0 +1,326 @@
+{
+  "variant": "A — Classic Serif Bold",
+  "date": "2026-05-31T07:02:54.162Z",
+  "result": "PASS",
+  "passed": 79,
+  "failed": 0,
+  "total": 79,
+  "checks": [
+    {
+      "name": "public/brand/favicon.svg exists",
+      "pass": true
+    },
+    {
+      "name": "public/brand/favicon.svg — no location-pin path",
+      "pass": true
+    },
+    {
+      "name": "public/brand/favicon.svg — no gaussian blur",
+      "pass": true
+    },
+    {
+      "name": "public/brand/favicon.svg — monochrome (no gradient)",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-dark.svg exists",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-dark.svg — no location-pin path",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-dark.svg — no gaussian blur",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-dark.svg — monochrome (no gradient)",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-light.svg exists",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-light.svg — no location-pin path",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-light.svg — no gaussian blur",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-light.svg — monochrome (no gradient)",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-full-dark.svg exists",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-full-dark.svg — no location-pin path",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-full-dark.svg — no gaussian blur",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-full-dark.svg — monochrome (no gradient)",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-full-light.svg exists",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-full-light.svg — no location-pin path",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-full-light.svg — no gaussian blur",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-full-light.svg — monochrome (no gradient)",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-mobile-dark.svg exists",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-mobile-dark.svg — no location-pin path",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-mobile-dark.svg — no gaussian blur",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-mobile-dark.svg — monochrome (no gradient)",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-192.svg exists",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-192.svg — no location-pin path",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-192.svg — no gaussian blur",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-192.svg — monochrome (no gradient)",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-512.svg exists",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-512.svg — no location-pin path",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-512.svg — no gaussian blur",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-512.svg — monochrome (no gradient)",
+      "pass": true
+    },
+    {
+      "name": "public/brand/og-image.svg exists",
+      "pass": true
+    },
+    {
+      "name": "public/brand/og-image.svg — no location-pin path",
+      "pass": true
+    },
+    {
+      "name": "public/brand/og-image.svg — no gaussian blur",
+      "pass": true
+    },
+    {
+      "name": "public/brand/og-image.svg — monochrome (no gradient)",
+      "pass": true
+    },
+    {
+      "name": "public/logo.svg exists",
+      "pass": true
+    },
+    {
+      "name": "public/logo.svg — no location-pin path",
+      "pass": true
+    },
+    {
+      "name": "public/logo.svg — no gaussian blur",
+      "pass": true
+    },
+    {
+      "name": "public/logo.svg — monochrome (no gradient)",
+      "pass": true
+    },
+    {
+      "name": "src/app/icon.svg exists",
+      "pass": true
+    },
+    {
+      "name": "src/app/icon.svg — no location-pin path",
+      "pass": true
+    },
+    {
+      "name": "src/app/icon.svg — no gaussian blur",
+      "pass": true
+    },
+    {
+      "name": "src/app/icon.svg — monochrome (no gradient)",
+      "pass": true
+    },
+    {
+      "name": "public/brand/favicon.svg — rounded-square tile (rx=\"8\")",
+      "pass": true
+    },
+    {
+      "name": "public/brand/favicon.svg — bold SZ monogram",
+      "pass": true
+    },
+    {
+      "name": "public/brand/favicon.svg — serif typeface",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-dark.svg — rounded-square tile (rx=\"8\")",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-dark.svg — bold SZ monogram",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-dark.svg — serif typeface",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-light.svg — rounded-square tile (rx=\"8\")",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-light.svg — bold SZ monogram",
+      "pass": true
+    },
+    {
+      "name": "public/brand/logo-icon-light.svg — serif typeface",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-192.svg — rounded-square tile (rx=\"8\")",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-192.svg — bold SZ monogram",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-192.svg — serif typeface",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-512.svg — rounded-square tile (rx=\"8\")",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-512.svg — bold SZ monogram",
+      "pass": true
+    },
+    {
+      "name": "public/brand/icon-512.svg — serif typeface",
+      "pass": true
+    },
+    {
+      "name": "src/app/icon.svg — rounded-square tile (rx=\"8\")",
+      "pass": true
+    },
+    {
+      "name": "src/app/icon.svg — bold SZ monogram",
+      "pass": true
+    },
+    {
+      "name": "src/app/icon.svg — serif typeface",
+      "pass": true
+    },
+    {
+      "name": "public/logo.svg — rounded-square tile (rx=\"8\")",
+      "pass": true
+    },
+    {
+      "name": "public/logo.svg — bold SZ monogram",
+      "pass": true
+    },
+    {
+      "name": "public/logo.svg — serif typeface",
+      "pass": true
+    },
+    {
+      "name": "dark icon — dark tile + white ink",
+      "pass": true
+    },
+    {
+      "name": "light icon — light tile + dark ink",
+      "pass": true
+    },
+    {
+      "name": "full logo — SECRETZA serif wordmark",
+      "pass": true
+    },
+    {
+      "name": "LogoMark.tsx — renders SZ",
+      "pass": true
+    },
+    {
+      "name": "LogoMark.tsx — serif stack",
+      "pass": true
+    },
+    {
+      "name": "LogoMark.tsx — rounded-square rx=8",
+      "pass": true
+    },
+    {
+      "name": "LogoMark.tsx — no teardrop path",
+      "pass": true
+    },
+    {
+      "name": "LogoMark.tsx — no gaussian blur",
+      "pass": true
+    },
+    {
+      "name": "LogoMark.tsx — theme-aware (dark/light tile)",
+      "pass": true
+    },
+    {
+      "name": "LogoMark.tsx — preserves idPrefix prop (API compat)",
+      "pass": true
+    },
+    {
+      "name": "BrandWordmark.tsx — serif",
+      "pass": true
+    },
+    {
+      "name": "BrandWordmark.tsx — uppercase caps",
+      "pass": true
+    },
+    {
+      "name": "BrandWordmark.tsx — monochrome (no hardcoded blue)",
+      "pass": true
+    },
+    {
+      "name": "globals.css — --font-serif token registered",
+      "pass": true
+    }
+  ]
+}

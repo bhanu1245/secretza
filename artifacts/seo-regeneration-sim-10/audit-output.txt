@@ -1,0 +1,50 @@
+SEO REGENERATION SIMULATION — 10 INDIAN CITIES (DRY RUN)
+============================================================
+Run ID: cmpqrxjfu00000s2s6na9qx4r
+Completed: 2026-05-29T10:23:27.167Z
+
+SELECTED CITIES (10 different states):
+  • Adoni (adoni) — Andhra Pradesh
+  • Balasore (balasore) — Odisha
+  • Bhavnagar (bhavnagar) — Gujarat
+  • Azamgarh (azamgarh) — Uttar Pradesh
+  • Bhopal (bhopal) — Madhya Pradesh
+  • Bhilai (bhilai) — Chhattisgarh
+  • Dindigul (dindigul) — Tamil Nadu
+  • Dhanbad (dhanbad) — Jharkhand
+  • Dibrugarh (dibrugarh) — Assam
+  • Firozpur (firozpur) — Punjab
+
+AVERAGES (vs full DB peer corpus):
+  Word count:        535.5
+  Uniqueness:        41.2%
+  SEO quality:       85.4%
+
+WITHIN-BATCH AVERAGES (vs other 9 generated pages):
+  Uniqueness:        21.4%
+  LOW / MED / HIGH:  0 / 0 / 10
+
+BEST PAGE:
+  Firozpur (firozpur) — 46% unique, 87% SEO
+
+WORST PAGE:
+  Adoni (adoni) — 34% unique, 84% SEO
+
+DUPLICATE CHECKS (within batch of 10):
+  Titles:            PASS
+  H1:                PASS
+  Meta descriptions: PASS
+  FAQ sets:          PASS
+
+AUDIT TABLE:
+  Slug          State              Words  DB-Uniq  Batch-Uniq  SEO   Risk
+  adoni         Andhra Pradesh       548      34%         26%   84%  HIGH
+  balasore      Odisha               541      45%         24%   86%  HIGH
+  bhavnagar     Gujarat              525      40%         26%   85%  HIGH
+  azamgarh      Uttar Pradesh        536      37%         23%   84%  HIGH
+  bhopal        Madhya Pradesh       544      44%         12%   86%  HIGH
+  bhilai        Chhattisgarh         520      42%         26%   86%  HIGH
+  dindigul      Tamil Nadu           545      40%         19%   85%  HIGH
+  dhanbad       Jharkhand            518      44%         17%   86%  HIGH
+  dibrugarh     Assam                542      40%         21%   85%  HIGH
+  firozpur      Punjab               536      46%         20%   87%  HIGH

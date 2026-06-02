@@ -6,6 +6,33 @@ import { extractIpAddress } from "@/lib/audit-logger";
 import { createStorageService } from "@/lib/storage";
 import { logError } from "@/lib/monitoring";
 import { syncCityListingCount } from "@/lib/listing-count-sync";
+import { computePriorityScore } from "@/lib/ranking-engine";
+
+function rankInputFromListing(listing: {
+  id: string;
+  isFeatured: boolean;
+  isBoosted: boolean;
+  isPremium: boolean;
+  featuredUntil: Date | null;
+  boostUntil: Date | null;
+  lastBumpedAt: Date | null;
+  viewCount: number;
+  createdAt: Date;
+  status: string;
+}) {
+  return {
+    id: listing.id,
+    isFeatured: listing.isFeatured,
+    isBoosted: listing.isBoosted,
+    isPremium: listing.isPremium,
+    featuredUntil: listing.featuredUntil,
+    boostUntil: listing.boostUntil,
+    lastBumpedAt: listing.lastBumpedAt,
+    viewCount: listing.viewCount,
+    createdAt: listing.createdAt,
+    status: listing.status,
+  };
+}
 
 // PATCH /api/admin/listings/[id] — Admin listing moderation
 export async function PATCH(
@@ -38,15 +65,19 @@ export async function PATCH(
     let auditAction: "listing_approve" | "listing_reject" | "listing_feature" | "listing_delete" | "settings_change" = "listing_approve";
 
     switch (action) {
-      case "approve":
+      case "approve": {
+        const approvedData = { ...listing, status: "approved" as const };
         updated = await db.listing.update({
           where: { id },
-          data: { status: "approved" },
+          data: {
+            status: "approved",
+            priorityScore: computePriorityScore(rankInputFromListing(approvedData)),
+          },
         });
         auditAction = "listing_approve";
-        // Sync city count: this listing is now approved
         if (listing.cityId) await syncCityListingCount(listing.cityId);
         break;
+      }
 
       case "reject":
         updated = await db.listing.update({
@@ -60,16 +91,24 @@ export async function PATCH(
         }
         break;
 
-      case "feature":
+      case "feature": {
+        const featuredUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        const featuredData = {
+          ...listing,
+          isFeatured: true,
+          featuredUntil,
+        };
         updated = await db.listing.update({
           where: { id },
           data: {
             isFeatured: true,
-            featuredUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+            featuredUntil,
+            priorityScore: computePriorityScore(rankInputFromListing(featuredData)),
           },
         });
         auditAction = "listing_feature";
         break;
+      }
 
       case "unfeature":
         updated = await db.listing.update({

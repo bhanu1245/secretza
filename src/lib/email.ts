@@ -1,4 +1,5 @@
 import { logInfo } from "@/lib/monitoring";
+import { BRAND_NAME, emailBrandHeader, EMAIL_BUTTON_STYLE } from "@/lib/brand";
 
 interface EmailPayload {
   to: string;
@@ -11,7 +12,6 @@ interface EmailProvider {
   send(payload: EmailPayload): Promise<{ success: boolean; error?: string }>;
 }
 
-// HTML-escape user-supplied values to prevent XSS in email clients
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
@@ -21,7 +21,6 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#039;");
 }
 
-// Console provider (dev mode)
 class ConsoleEmailProvider implements EmailProvider {
   async send(payload: EmailPayload): Promise<{ success: boolean; error?: string }> {
     logInfo("Email sent (dev mode)", { module: "email", to: payload.to, subject: payload.subject });
@@ -29,7 +28,6 @@ class ConsoleEmailProvider implements EmailProvider {
   }
 }
 
-// Resend provider (production)
 class ResendEmailProvider implements EmailProvider {
   private apiKey: string;
   private defaultFrom: string;
@@ -65,13 +63,12 @@ class ResendEmailProvider implements EmailProvider {
   }
 }
 
-// Factory function
 let emailProvider: EmailProvider | undefined;
 
 export function getEmailProvider(): EmailProvider {
   if (!emailProvider) {
     const resendApiKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.EMAIL_FROM || "noreply@secretza.com";
+    const fromEmail = process.env.EMAIL_FROM || "noreply@SecretZa.com";
 
     if (resendApiKey) {
       emailProvider = new ResendEmailProvider(resendApiKey, fromEmail);
@@ -82,7 +79,6 @@ export function getEmailProvider(): EmailProvider {
   return emailProvider;
 }
 
-// Email templates
 export function verificationEmailTemplate(name: string, token: string): string {
   const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
   const url = `${baseUrl}/api/auth/verify-email?token=${token}`;
@@ -91,17 +87,12 @@ export function verificationEmailTemplate(name: string, token: string): string {
   return `
     <div style="max-width: 480px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
       <div style="background: #0B0B0F; padding: 40px; border-radius: 16px;">
-        <div style="text-align: center; margin-bottom: 32px;">
-          <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #7C3AED, #8B5CF6); margin-bottom: 16px;">
-            <span style="color: white; font-weight: bold; font-size: 24px;">S</span>
-          </div>
-          <h1 style="color: #F5F5F7; font-size: 24px; margin: 0;">Verify Your Email</h1>
-        </div>
+        ${emailBrandHeader("Verify Your Email")}
         <p style="color: #A1A1AA; font-size: 16px; line-height: 1.5; margin-bottom: 24px;">
           Hi ${safeName},<br><br>
-          Welcome to Secretza! Please verify your email address to get started.
+          Welcome to ${BRAND_NAME}! Please verify your email address to get started.
         </p>
-        <a href="${url}" style="display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #7C3AED, #8B5CF6); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        <a href="${url}" style="${EMAIL_BUTTON_STYLE}">
           Verify Email
         </a>
         <p style="color: #52525B; font-size: 13px; margin-top: 24px; text-align: center;">
@@ -120,17 +111,12 @@ export function passwordResetEmailTemplate(name: string, token: string): string 
   return `
     <div style="max-width: 480px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
       <div style="background: #0B0B0F; padding: 40px; border-radius: 16px;">
-        <div style="text-align: center; margin-bottom: 32px;">
-          <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #7C3AED, #8B5CF6); margin-bottom: 16px;">
-            <span style="color: white; font-weight: bold; font-size: 24px;">S</span>
-          </div>
-          <h1 style="color: #F5F5F7; font-size: 24px; margin: 0;">Reset Your Password</h1>
-        </div>
+        ${emailBrandHeader("Reset Your Password")}
         <p style="color: #A1A1AA; font-size: 16px; line-height: 1.5; margin-bottom: 24px;">
           Hi ${safeName},<br><br>
           We received a request to reset your password. Click the button below to set a new password.
         </p>
-        <a href="${url}" style="display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #7C3AED, #8B5CF6); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        <a href="${url}" style="${EMAIL_BUTTON_STYLE}">
           Reset Password
         </a>
         <p style="color: #52525B; font-size: 13px; margin-top: 24px; text-align: center;">
@@ -149,15 +135,10 @@ export function loginAlertEmailTemplate(name: string, ip: string, time: string):
   return `
     <div style="max-width: 480px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
       <div style="background: #0B0B0F; padding: 40px; border-radius: 16px;">
-        <div style="text-align: center; margin-bottom: 32px;">
-          <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #7C3AED, #8B5CF6); margin-bottom: 16px;">
-            <span style="color: white; font-weight: bold; font-size: 24px;">S</span>
-          </div>
-          <h1 style="color: #F5F5F7; font-size: 24px; margin: 0;">New Login Detected</h1>
-        </div>
+        ${emailBrandHeader("New Login Detected")}
         <p style="color: #A1A1AA; font-size: 16px; line-height: 1.5;">
           Hi ${safeName},<br><br>
-          A new login was detected on your Secretza account:<br><br>
+          A new login was detected on your ${BRAND_NAME} account:<br><br>
           <strong style="color: #F5F5F7;">IP Address:</strong> ${safeIp}<br>
           <strong style="color: #F5F5F7;">Time:</strong> ${safeTime}<br><br>
           If this was you, no action is needed. If you don't recognize this activity, please secure your account immediately.
@@ -167,7 +148,6 @@ export function loginAlertEmailTemplate(name: string, ip: string, time: string):
   `;
 }
 
-// Send functions
 export async function sendVerificationEmail(
   to: string,
   name: string,
@@ -176,7 +156,7 @@ export async function sendVerificationEmail(
   const provider = getEmailProvider();
   return provider.send({
     to,
-    subject: "Verify your email - Secretza",
+    subject: `Verify your email - ${BRAND_NAME}`,
     html: verificationEmailTemplate(name, token),
   });
 }
@@ -189,7 +169,7 @@ export async function sendPasswordResetEmail(
   const provider = getEmailProvider();
   return provider.send({
     to,
-    subject: "Reset your password - Secretza",
+    subject: `Reset your password - ${BRAND_NAME}`,
     html: passwordResetEmailTemplate(name, token),
   });
 }
@@ -202,7 +182,7 @@ export async function sendLoginAlert(
   const provider = getEmailProvider();
   return provider.send({
     to,
-    subject: "New login detected - Secretza",
+    subject: `New login detected - ${BRAND_NAME}`,
     html: loginAlertEmailTemplate(name, ip, new Date().toISOString()),
   });
 }

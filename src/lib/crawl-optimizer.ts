@@ -1,5 +1,5 @@
 // ==========================================
-// Secretza Crawl Optimization Engine
+// SecretZa Crawl Optimization Engine
 // ==========================================
 // Server-side module that governs how search engine crawlers discover,
 // prioritise, and consume pages on the classifieds site.
@@ -116,7 +116,7 @@ export interface CrawlTrapDetection {
 // ────────────────────────────────────────────
 
 /** Domain used when constructing absolute URLs */
-const SITE_ORIGIN = "https://secretza.com";
+const SITE_ORIGIN = "https://SecretZa.com";
 
 /**
  * Known session-id, tracking, and bot-trap query-param names.
@@ -194,7 +194,7 @@ function measureDepth(url: string): number {
 // ────────────────────────────────────────────
 
 /**
- * Returns the default crawl-budget tuning for Secretza.
+ * Returns the default crawl-budget tuning for SecretZa.
  *
  * Priority pages are the landing pages that drive the most organic
  * traffic — the homepage, the /india country page, top category hubs,

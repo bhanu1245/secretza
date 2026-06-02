@@ -104,8 +104,13 @@ async function main() {
 
   await waitForServer();
 
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) {
+    throw new Error("ADMIN_EMAIL is required.");
+  }
+
   const owner = await db.user.findFirst({
-    where: { email: process.env.ADMIN_EMAIL || "admin@secretza.com" },
+    where: { email: adminEmail },
     select: { id: true, email: true, role: true },
   });
   if (!owner) throw new Error("No owner user found");

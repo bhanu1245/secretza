@@ -1,5 +1,5 @@
 /**
- * Indexation Scoring Engine for Secretza
+ * Indexation Scoring Engine for SecretZa
  * Evaluates pages for index-worthiness and recommends actions.
  * All rules are deterministic (same input = same output).
  */
@@ -273,7 +273,7 @@ export async function scorePage(pageType: string, pageSlug: string): Promise<Ind
   return {
     pageType,
     pageSlug,
-    url: `https://secretza.com/${pageSlug}`,
+    url: `https://SecretZa.com/${pageSlug}`,
     overallScore,
     recommendation,
     reasons: recReasons,
@@ -477,12 +477,12 @@ export async function getPageIndexationAction(
         // Canonical to the city page (broader, more likely to have content)
         const citySlug = pageSlug.split('/')[1];
         const city = indiaCities.find((c) => c.slug === citySlug);
-        canonicalUrl = `https://secretza.com/${city?.name ?? citySlug}`;
+        canonicalUrl = `https://SecretZa.com/${city?.name ?? citySlug}`;
         reasons.push(`Low score (${score.overallScore}) — recommend consolidating to parent city page`);
         break;
       }
       case 'category': {
-        canonicalUrl = 'https://secretza.com';
+        canonicalUrl = 'https://SecretZa.com';
         reasons.push(`Low score (${score.overallScore}) — recommend consolidating to homepage`);
         break;
       }
@@ -490,21 +490,21 @@ export async function getPageIndexationAction(
         // Find the state this city belongs to
         const city = indiaCities.find((c) => c.slug === pageSlug);
         if (city) {
-          canonicalUrl = `https://secretza.com/${city.stateSlug}`;
+          canonicalUrl = `https://SecretZa.com/${city.stateSlug}`;
           reasons.push(`Low score (${score.overallScore}) — recommend consolidating to parent state page`);
         } else {
-          canonicalUrl = 'https://secretza.com';
+          canonicalUrl = 'https://SecretZa.com';
           reasons.push(`Low score (${score.overallScore}) — recommend consolidating to homepage`);
         }
         break;
       }
       case 'state': {
-        canonicalUrl = 'https://secretza.com';
+        canonicalUrl = 'https://SecretZa.com';
         reasons.push(`Low score (${score.overallScore}) — recommend consolidating to homepage`);
         break;
       }
       default: {
-        canonicalUrl = 'https://secretza.com';
+        canonicalUrl = 'https://SecretZa.com';
         reasons.push(`Low score (${score.overallScore}) — recommend consolidating to homepage`);
         break;
       }

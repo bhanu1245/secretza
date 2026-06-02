@@ -66,7 +66,10 @@ async function uploadImage(cookie: string, label: string) {
 }
 
 async function main() {
-  const email = process.env.ADMIN_EMAIL || "admin@secretza.com";
+  const email = process.env.ADMIN_EMAIL;
+  if (!email) {
+    throw new Error("ADMIN_EMAIL is required.");
+  }
   const { cookie, userId } = await sessionCookie(email);
 
   const cat = await db.category.findFirst({ where: { isActive: true, parentId: null } });

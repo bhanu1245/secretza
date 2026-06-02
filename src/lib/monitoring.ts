@@ -1,5 +1,5 @@
 /**
- * Monitoring & Error Logging Infrastructure for Secretza
+ * Monitoring & Error Logging Infrastructure for SecretZa
  *
  * Provides structured logging, request tracing, health monitoring,
  * and failed upload tracking. All functions are safe — they never throw.

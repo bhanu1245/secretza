@@ -1,0 +1,245 @@
+{
+  "generatedAt": "2026-05-30T13:36:35.060Z",
+  "summary": {
+    "premiumLogoMarkInReact": true,
+    "allStaticAssetsUpdated": true,
+    "serverUp": true,
+    "screenshotsCaptured": 9
+  },
+  "finding": {
+    "rootCause": "Header/Footer/Admin/Auth render LogoIcon inline SVG (LogoMark.tsx), NOT public/brand/*.svg. Old design persisted because LogoIcon.tsx was never updated to the premium mark.",
+    "resolution": "LogoMark.tsx is now the single React source; public/brand/* synced via scripts/generate-brand-assets.mjs"
+  },
+  "surfaces": [
+    {
+      "id": "header",
+      "label": "Header (desktop)",
+      "component": "src/components/secretza/layout/Header.tsx",
+      "renderSource": "Logo variant=full → LogoIcon (LogoMark.tsx inline SVG)",
+      "staticAsset": null,
+      "url": "/",
+      "selector": "header a[href='/'] svg, header .shrink-0 svg",
+      "notes": "Full wordmark hidden below sm; icon always visible"
+    },
+    {
+      "id": "footer",
+      "label": "Footer",
+      "component": "src/components/secretza/layout/Footer.tsx",
+      "renderSource": "Logo variant=full → LogoMark + BrandWordmark",
+      "staticAsset": null,
+      "url": "/",
+      "selector": "footer svg",
+      "notes": "Scroll to footer for capture"
+    },
+    {
+      "id": "mobile-header",
+      "label": "Mobile header / sheet",
+      "component": "src/components/secretza/layout/Header.tsx",
+      "renderSource": "Logo variant=mobile in mobile sheet",
+      "staticAsset": null,
+      "url": "/",
+      "selector": "[data-slot='sheet-content'] svg",
+      "notes": "Requires mobile viewport + menu open"
+    },
+    {
+      "id": "admin-sidebar",
+      "label": "Admin sidebar",
+      "component": "src/components/secretza/admin/routes/AdminShell.tsx",
+      "renderSource": "Logo variant=icon iconSize=32 → LogoMark",
+      "staticAsset": null,
+      "url": "/admin",
+      "selector": "aside svg",
+      "notes": "Requires admin session"
+    },
+    {
+      "id": "auth-modal",
+      "label": "Login / Register",
+      "component": "src/components/secretza/auth/AuthModal.tsx",
+      "renderSource": "Logo variant=icon iconSize=44 → LogoMark",
+      "staticAsset": null,
+      "url": "/?auth=login",
+      "selector": "[role='dialog'] svg",
+      "notes": "Auth modal via ?auth=login if supported, else homepage"
+    },
+    {
+      "id": "email",
+      "label": "Email templates",
+      "component": "src/lib/email.ts",
+      "renderSource": "emailBrandHeader() → img src BRAND_ASSETS.logoIconDark",
+      "staticAsset": "public/brand/logo-icon-dark.svg",
+      "url": null,
+      "selector": "",
+      "notes": "Static SVG served at /brand/logo-icon-dark.svg"
+    },
+    {
+      "id": "favicon",
+      "label": "Favicon / tab icon",
+      "component": "src/app/layout.tsx",
+      "renderSource": "metadata.icons → BRAND_ASSETS.favicon",
+      "staticAsset": "public/brand/favicon.svg",
+      "url": "/brand/favicon.svg",
+      "selector": "body",
+      "notes": "Also src/app/icon.svg for Next.js"
+    },
+    {
+      "id": "og-image",
+      "label": "Social / OG image",
+      "component": "src/app/layout.tsx",
+      "renderSource": "openGraph.images → BRAND_ASSETS.ogImage",
+      "staticAsset": "public/brand/og-image.svg",
+      "url": "/brand/og-image.svg",
+      "selector": "body",
+      "notes": "1200×630 share card"
+    },
+    {
+      "id": "not-found",
+      "label": "404 page",
+      "component": "src/app/not-found.tsx",
+      "renderSource": "img src={BRAND_ASSETS.logoIconDark}",
+      "staticAsset": "public/brand/logo-icon-dark.svg",
+      "url": "/this-page-does-not-exist-secretza",
+      "selector": "img[alt='SecretZa']",
+      "notes": "Static asset reference"
+    }
+  ],
+  "uiFilesUsed": [
+    {
+      "surface": "Header",
+      "files": [
+        "src/components/secretza/layout/Header.tsx",
+        "src/components/brand/Logo.tsx",
+        "src/components/brand/LogoIcon.tsx",
+        "src/components/brand/LogoMark.tsx",
+        "src/components/brand/BrandWordmark.tsx"
+      ]
+    },
+    {
+      "surface": "Footer",
+      "files": [
+        "src/components/secretza/layout/Footer.tsx",
+        "src/components/brand/Logo.tsx",
+        "src/components/brand/LogoMark.tsx",
+        "src/components/brand/BrandWordmark.tsx"
+      ]
+    },
+    {
+      "surface": "Mobile header sheet",
+      "files": [
+        "src/components/secretza/layout/Header.tsx",
+        "src/components/brand/Logo.tsx (variant=mobile)"
+      ]
+    },
+    {
+      "surface": "Admin sidebar",
+      "files": [
+        "src/components/secretza/admin/routes/AdminShell.tsx",
+        "src/components/brand/Logo.tsx (variant=icon)"
+      ]
+    },
+    {
+      "surface": "Dashboard mobile nav",
+      "files": [
+        "src/components/secretza/dashboard/Dashboard.tsx",
+        "src/components/brand/Logo.tsx (variant=mobile)"
+      ]
+    },
+    {
+      "surface": "Auth modal",
+      "files": [
+        "src/components/secretza/auth/AuthModal.tsx",
+        "src/components/brand/Logo.tsx (variant=icon)"
+      ]
+    },
+    {
+      "surface": "CMS pages",
+      "files": [
+        "src/components/secretza/cms/CmsPageContent.tsx",
+        "src/components/brand/Logo.tsx (variant=mobile)"
+      ]
+    },
+    {
+      "surface": "Emails",
+      "files": [
+        "src/lib/email.ts",
+        "src/lib/brand.ts",
+        "public/brand/logo-icon-dark.svg"
+      ]
+    },
+    {
+      "surface": "Favicon / metadata",
+      "files": [
+        "src/app/layout.tsx",
+        "src/app/icon.svg",
+        "public/brand/favicon.svg"
+      ]
+    },
+    {
+      "surface": "404 / global error",
+      "files": [
+        "src/app/not-found.tsx",
+        "src/app/global-error.tsx",
+        "public/brand/logo-icon-dark.svg"
+      ]
+    },
+    {
+      "surface": "PWA manifest",
+      "files": [
+        "src/app/manifest.ts",
+        "public/brand/icon-192.svg",
+        "public/brand/icon-512.svg"
+      ]
+    }
+  ],
+  "assetChecks": [
+    {
+      "file": "public/brand/logo-icon-dark.svg",
+      "premium": true
+    },
+    {
+      "file": "public/brand/logo-full-dark.svg",
+      "premium": true
+    },
+    {
+      "file": "public/brand/logo-mobile-dark.svg",
+      "premium": true
+    },
+    {
+      "file": "public/brand/favicon.svg",
+      "premium": true
+    },
+    {
+      "file": "public/brand/og-image.svg",
+      "premium": true
+    },
+    {
+      "file": "public/brand/icon-192.svg",
+      "premium": true
+    },
+    {
+      "file": "public/brand/icon-512.svg",
+      "premium": true
+    },
+    {
+      "file": "public/logo.svg",
+      "premium": true
+    },
+    {
+      "file": "src/app/icon.svg",
+      "premium": true
+    }
+  ],
+  "screenshots": [
+    "artifacts/logo-rollout/screenshots/after-header.png",
+    "artifacts/logo-rollout/screenshots/after-footer.png",
+    "artifacts/logo-rollout/screenshots/after-favicon.png",
+    "artifacts/logo-rollout/screenshots/after-logo-icon-dark.png",
+    "artifacts/logo-rollout/screenshots/after-logo-full-dark.png",
+    "artifacts/logo-rollout/screenshots/after-og-image.png",
+    "artifacts/logo-rollout/screenshots/after-not-found.png",
+    "artifacts/logo-rollout/screenshots/before-assets-comparison.png",
+    "artifacts/logo-rollout/screenshots/after-assets-comparison.png"
+  ],
+  "skippedScreenshots": [
+    "mobile-header"
+  ]
+}

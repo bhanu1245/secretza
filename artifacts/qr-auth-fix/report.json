@@ -1,0 +1,148 @@
+{
+  "timestamp": "2026-05-31T10:34:19.227Z",
+  "score": 100,
+  "passed": 23,
+  "total": 23,
+  "status": "PASS",
+  "fix": {
+    "file": "src/lib/image-moderation.ts",
+    "change": "Added `if (key.startsWith(\"payments/qr/\")) return true;` to authorizeUploadedFileAccess",
+    "existingRulesPreserved": [
+      "screenshots/ → canAccessPaymentScreenshot",
+      "listings/ → canAccessListingImageFile",
+      "seo/ → true"
+    ],
+    "defaultDenyPreserved": true,
+    "wildcardFallbackRestored": false
+  },
+  "authorizationMatrix": {
+    "payments/qr/": "public (no auth required)",
+    "screenshots/": "owner or admin only",
+    "listings/": "approved = public; else owner/mod/admin",
+    "seo/": "public",
+    "unknown prefixes": "denied"
+  },
+  "rootCauseConfirmed": {
+    "uploadSucceeds": true,
+    "dbFieldCorrect": true,
+    "retrievalWas403": true,
+    "fixedBy": "payments/qr/ added to authorizeUploadedFileAccess allowlist"
+  },
+  "checks": [
+    {
+      "id": "1a",
+      "description": "payments/qr/ branch exists in authorizeUploadedFileAccess",
+      "pass": true
+    },
+    {
+      "id": "1b",
+      "description": "payments/qr/ branch returns true",
+      "pass": true
+    },
+    {
+      "id": "1c",
+      "description": "payments/qr/ branch is inside authorizeUploadedFileAccess",
+      "pass": true
+    },
+    {
+      "id": "1d",
+      "description": "payments/qr/ is documented in JSDoc comment",
+      "pass": true
+    },
+    {
+      "id": "2a",
+      "description": "screenshots/ still routes to canAccessPaymentScreenshot",
+      "pass": true
+    },
+    {
+      "id": "2b",
+      "description": "listings/ still routes to canAccessListingImageFile",
+      "pass": true
+    },
+    {
+      "id": "2c",
+      "description": "seo/ still returns true",
+      "pass": true
+    },
+    {
+      "id": "2d",
+      "description": "final return false (default deny) still present",
+      "pass": true
+    },
+    {
+      "id": "2e",
+      "description": "no wildcard return true fallback (security regression check)",
+      "pass": true
+    },
+    {
+      "id": "3-payments/qr/1748000000000-abc1",
+      "description": "auth(\"payments/qr/1748000000000-abc123.png\") → payments/qr",
+      "pass": true
+    },
+    {
+      "id": "3-payments/qr/1748666543210-def4",
+      "description": "auth(\"payments/qr/1748666543210-def456.jpg\") → payments/qr",
+      "pass": true
+    },
+    {
+      "id": "3-payments/qr/test.webp",
+      "description": "auth(\"payments/qr/test.webp\") → payments/qr",
+      "pass": true
+    },
+    {
+      "id": "3-screenshots/payment-proof.jpg",
+      "description": "auth(\"screenshots/payment-proof.jpg\") → screenshots",
+      "pass": true
+    },
+    {
+      "id": "3-listings/user123/image.jpg",
+      "description": "auth(\"listings/user123/image.jpg\") → listings",
+      "pass": true
+    },
+    {
+      "id": "3-seo/og-city-mumbai.jpg",
+      "description": "auth(\"seo/og-city-mumbai.jpg\") → seo",
+      "pass": true
+    },
+    {
+      "id": "3-payment-qr/old-style.png",
+      "description": "auth(\"payment-qr/old-style.png\") → deny",
+      "pass": true
+    },
+    {
+      "id": "3-admin/secret.jpg",
+      "description": "auth(\"admin/secret.jpg\") → deny",
+      "pass": true
+    },
+    {
+      "id": "3-payments/invoice.pdf",
+      "description": "auth(\"payments/invoice.pdf\") → deny",
+      "pass": true
+    },
+    {
+      "id": "3-empty",
+      "description": "auth(\"(empty)\") → deny",
+      "pass": true
+    },
+    {
+      "id": "4a",
+      "description": "upload route uses payments/qr/ prefix (matches auth rule)",
+      "pass": true
+    },
+    {
+      "id": "4b",
+      "description": "upload route is admin-protected (requireMinRole)",
+      "pass": true
+    },
+    {
+      "id": "5a",
+      "description": "PaymentSettings model has qrImageUrl field",
+      "pass": true
+    },
+    {
+      "id": "5b",
+      "description": "public /api/payment-settings exposes qrImageUrl",
+      "pass": true
+    }
+  ]
+}

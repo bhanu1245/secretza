@@ -1,0 +1,133 @@
+{
+  "generatedAt": "2026-05-30T10:47:38.373Z",
+  "baseUrl": "http://localhost:3000",
+  "summary": {
+    "total": 18,
+    "passed": 17,
+    "failed": 1
+  },
+  "existingFunctionality": [
+    "Footer fetches /api/site-settings/public for social icons",
+    "Social URLs stored in SiteSettings (social_twitter_url, etc.)",
+    "Footer hides empty or # hrefs",
+    "Seed populates default social URLs"
+  ],
+  "newFunctionality": [
+    "Admin Settings → Social Media Links (save/load via /api/admin/site-settings)",
+    "ShareButtons on listing SSR pages, SPA modal, and SEO landing pages",
+    "WhatsApp, Telegram, Facebook, X, Copy Link + mobile native share",
+    "Public API returns only configured non-empty URLs"
+  ],
+  "checks": [
+    {
+      "name": "SiteSettings table has social keys",
+      "ok": true,
+      "detail": "Keys: social_twitter_url, social_instagram_url, social_youtube_url, social_website_url"
+    },
+    {
+      "name": "Social URLs stored in SiteSettings",
+      "ok": true,
+      "detail": "4 row(s) in DB"
+    },
+    {
+      "name": "Public social API returns 200",
+      "ok": true,
+      "detail": "Keys exposed: twitter, instagram, youtube, website"
+    },
+    {
+      "name": "Empty Twitter URL hidden from public API",
+      "ok": true,
+      "detail": "Public keys after clear: instagram, youtube, website"
+    },
+    {
+      "name": "Configured Twitter URL exposed publicly",
+      "ok": true,
+      "detail": "https://twitter.com/secretza-test"
+    },
+    {
+      "name": "Share URL builder: whatsapp",
+      "ok": true,
+      "detail": "https://wa.me/?text=Test%20Listing%20https%3A%2F%2Fsecretza.com%2Flisting%2Ftest-slug"
+    },
+    {
+      "name": "Share URL builder: telegram",
+      "ok": true,
+      "detail": "https://t.me/share/url?url=https%3A%2F%2Fsecretza.com%2Flisting%2Ftest-slug&text=Test%20Listing"
+    },
+    {
+      "name": "Share URL builder: facebook",
+      "ok": true,
+      "detail": "https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fsecretza.com%2Flisting%2Ftest-slug"
+    },
+    {
+      "name": "Share URL builder: twitter",
+      "ok": true,
+      "detail": "https://twitter.com/intent/tweet?url=https%3A%2F%2Fsecretza.com%2Flisting%2Ftest-slug&text=Test%20Li"
+    },
+    {
+      "name": "SEO page share URL resolver",
+      "ok": true,
+      "detail": "https://secretza.com/category/escorts"
+    },
+    {
+      "name": "Listing SSR page has ShareButtons",
+      "ok": true,
+      "detail": "ListingPageContent.tsx"
+    },
+    {
+      "name": "Listing SPA modal has ShareButtons",
+      "ok": true,
+      "detail": "ListingDetail.tsx"
+    },
+    {
+      "name": "SEO pages have ShareButtons",
+      "ok": true,
+      "detail": "SeoPageView.tsx"
+    },
+    {
+      "name": "Admin can configure social URLs",
+      "ok": true,
+      "detail": "AdminSocialSettings.tsx"
+    },
+    {
+      "name": "Page loads: Homepage (footer social)",
+      "ok": false,
+      "detail": "TypeError: fetch failed"
+    },
+    {
+      "name": "Page loads: Category SEO",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Page loads: Listing page",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Listing page HTML includes share controls",
+      "ok": true,
+      "detail": "ShareButtons rendered client-side (may hydrate after load)"
+    }
+  ],
+  "failed": [
+    {
+      "name": "Page loads: Homepage (footer social)",
+      "ok": false,
+      "detail": "TypeError: fetch failed"
+    }
+  ],
+  "filesChanged": [
+    "src/lib/social-settings.ts",
+    "src/lib/share-links.ts",
+    "src/components/secretza/shared/ShareButtons.tsx",
+    "src/components/secretza/admin/AdminSocialSettings.tsx",
+    "src/app/api/admin/site-settings/route.ts",
+    "src/app/api/site-settings/public/route.ts",
+    "src/components/secretza/layout/Footer.tsx",
+    "src/app/listing/[slug]/ListingPageContent.tsx",
+    "src/components/secretza/listing/ListingDetail.tsx",
+    "src/components/seo/SeoPageView.tsx",
+    "src/components/secretza/admin/pages/AdminContentPages.tsx"
+  ]
+}

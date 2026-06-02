@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://secretza.com";
+export const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://SecretZa.com";
 
 export function buildUrl(path: string): string {
   return `${BASE_URL}${path}`;
@@ -64,7 +64,7 @@ export function buildListingSchema(listing: {
   reviewCount?: number;
 }) {
   const primaryImage =
-    listing.images?.[0]?.url || `${BASE_URL}/logo.svg`;
+    listing.images?.[0]?.url || `${BASE_URL}/brand/logo-icon-dark.svg`;
   return {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -74,7 +74,7 @@ export function buildListingSchema(listing: {
     image: primaryImage,
     brand: {
       "@type": "Brand",
-      name: "Secretza",
+      name: "SecretZa",
     },
     offers: {
       "@type": "Offer",
@@ -107,7 +107,7 @@ export function buildCollectionSchema(params: {
     url: params.url,
     isPartOf: {
       "@type": "WebSite",
-      name: "Secretza",
+      name: "SecretZa",
       url: BASE_URL,
     },
     numberOfItems: params.numberOfItems,
@@ -117,5 +117,5 @@ export function buildCollectionSchema(params: {
 // Build OG image metadata helper
 export function ogImage(title: string, description?: string): string {
   // Use the logo as default OG image (in production, generate dynamic OG images)
-  return `${BASE_URL}/logo.svg`;
+  return `${BASE_URL}/brand/logo-icon-dark.svg`;
 }

@@ -105,11 +105,11 @@ const SEASONAL_KEYWORDS: Record<string, string[]> = {
 // ------------------------------------------
 
 function cityTitle(cityName: string, stateName: string): string {
-  return `Adult Services in ${cityName}, ${stateName} — Secretza`;
+  return `Adult Services in ${cityName}, ${stateName} — SecretZa`;
 }
 
 function cityMeta(cityName: string, stateName: string, count: number): string {
-  return `Browse ${count}+ verified adult service listings in ${cityName}, ${stateName}. Find escorts, massage, dating and more on Secretza — India's trusted classifieds platform.`;
+  return `Browse ${count}+ verified adult service listings in ${cityName}, ${stateName}. Find escorts, massage, dating and more on SecretZa — India's trusted classifieds platform.`;
 }
 
 function cityH1(cityName: string): string {
@@ -312,8 +312,8 @@ async function handleTrending(limit: number) {
       if (comboCount > 0) {
         pages.push({
           url: `/${comboKey}`,
-          title: `${cat.name} in ${city.name} — Trending on Secretza`,
-          metaDescription: `Discover ${comboCount}+ trending ${cat.name.toLowerCase()} listings in ${city.name}. Browse verified profiles with real photos on Secretza.`,
+          title: `${cat.name} in ${city.name} — Trending on SecretZa`,
+          metaDescription: `Discover ${comboCount}+ trending ${cat.name.toLowerCase()} listings in ${city.name}. Browse verified profiles with real photos on SecretZa.`,
           h1: `Trending ${cat.name} in ${city.name}`,
           type: 'category_city',
           priority: city.tier === 1 ? 10 : 7,
@@ -324,8 +324,8 @@ async function handleTrending(limit: number) {
     // Also add the city page itself as trending
     pages.push({
       url: `/${city.slug}`,
-      title: `Trending Adult Services in ${city.name} — Secretza`,
-      metaDescription: `Explore ${city.listingCount}+ trending adult service listings in ${city.name}. Updated daily with verified profiles on Secretza.`,
+      title: `Trending Adult Services in ${city.name} — SecretZa`,
+      metaDescription: `Explore ${city.listingCount}+ trending adult service listings in ${city.name}. Updated daily with verified profiles on SecretZa.`,
       h1: `Trending Services in ${city.name}`,
       type: 'city',
       priority: city.tier === 1 ? 9 : 6,
@@ -381,8 +381,8 @@ async function handlePremium(limit: number) {
 
     return {
       url: `/${combo.categorySlug}/${combo.citySlug}`,
-      title: `${catName} in ${cityName} — Premium Listings on Secretza`,
-      metaDescription: `Browse ${count}+ premium verified ${catName.toLowerCase()} listings in ${cityName}. Top-rated providers with real photos on Secretza.`,
+      title: `${catName} in ${cityName} — Premium Listings on SecretZa`,
+      metaDescription: `Browse ${count}+ premium verified ${catName.toLowerCase()} listings in ${cityName}. Top-rated providers with real photos on SecretZa.`,
       h1: `Premium ${catName} in ${cityName}`,
       type: 'category_city',
       priority: isTier1 ? 10 : 8,
@@ -437,8 +437,8 @@ async function handleSeasonal(limit: number) {
 
     pages.push({
       url: `/${city.slug}`,
-      title: `${season.charAt(0).toUpperCase() + season.slice(1)} ${relevantKeywords[0]} in ${city.name} — Secretza`,
-      metaDescription: `Discover the best ${relevantKeywords[0]} and ${relevantKeywords[1]} in ${city.name} this ${season}. ${city.listingCount}+ verified listings on Secretza.`,
+      title: `${season.charAt(0).toUpperCase() + season.slice(1)} ${relevantKeywords[0]} in ${city.name} — SecretZa`,
+      metaDescription: `Discover the best ${relevantKeywords[0]} and ${relevantKeywords[1]} in ${city.name} this ${season}. ${city.listingCount}+ verified listings on SecretZa.`,
       season,
       keywords: metaKeywords,
     });
@@ -450,8 +450,8 @@ async function handleSeasonal(limit: number) {
       const slug = keyword.toLowerCase().replace(/\s+/g, '-');
       pages.push({
         url: `/${category.slug}`,
-        title: `${keyword.charAt(0).toUpperCase() + keyword.slice(1)} — ${category.name} on Secretza`,
-        metaDescription: `Find the best ${keyword} and ${category.name.toLowerCase()} across India. Verified providers and daily-updated listings on Secretza.`,
+        title: `${keyword.charAt(0).toUpperCase() + keyword.slice(1)} — ${category.name} on SecretZa`,
+        metaDescription: `Find the best ${keyword} and ${category.name.toLowerCase()} across India. Verified providers and daily-updated listings on SecretZa.`,
         season,
         keywords: [keyword, category.slug, `${keyword} ${category.name.toLowerCase()}`],
       });

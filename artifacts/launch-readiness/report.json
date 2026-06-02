@@ -1,0 +1,145 @@
+{
+  "generatedAt": "2026-05-30T14:35:00.000Z",
+  "scope": "Read-only audit (no code modified)",
+  "overallScore": 76,
+  "verdict": "Conditional Go — functional core is solid; 1 security blocker + 1 missing subscription-expiry job must be fixed before public launch.",
+  "scoring": {
+    "method": "weighted average of per-module readiness scores",
+    "weights": { "payments": 20, "subscriptions": 15, "reports": 15, "search": 15, "build": 15, "coupons": 10, "pricing": 10 }
+  },
+  "modules": [
+    {
+      "name": "Coupons",
+      "status": "Pass",
+      "score": 95,
+      "broken": [],
+      "missing": ["No minimum-order-amount or category/plan scoping on coupons"],
+      "database": ["Coupon, CouponRedemption well-indexed; unique manualPaymentSubmissionId enforces 1 redemption per submission"],
+      "ui": ["AdminCoupons.tsx present and wired"],
+      "security": ["validate route: auth + email-verified + rate limited; admin CRUD gated by requireMinRole('admin'); audit logged"],
+      "notes": [
+        "Robust validation: per-user + global limits, pending-use accounting prevents over-redemption, expiry, zero-final-amount guard",
+        "Redemption is atomic + idempotent inside approval transaction",
+        "Minor: usedCount check+increment not row-locked (SQLite serializes writes, low risk)"
+      ],
+      "productionReady": true
+    },
+    {
+      "name": "Pricing",
+      "status": "Partial",
+      "score": 75,
+      "broken": ["POST with duplicate slug throws raw UNIQUE constraint => 500 instead of 409 (no pre-check, no try/catch)"],
+      "missing": [
+        "No range validation (negative/zero durationDays, price not bounded)",
+        "No audit logging on plan create/update/delete (inconsistent with Coupons)"
+      ],
+      "database": ["PricingPlan indexed on (isActive, sortOrder); raw SQL uses parameterized tagged templates (injection-safe)", "DELETE is hard delete (no soft-delete / historical retention)"],
+      "ui": ["AdminPricingPlans.tsx present"],
+      "security": ["Admin routes gated by requireMinRole('admin'); public GET exposes active plans only"],
+      "notes": ["Plans are display/label-only; not FK-referenced by Payment, so hard delete causes no orphan integrity error"],
+      "productionReady": false
+    },
+    {
+      "name": "Payments",
+      "status": "Partial",
+      "score": 60,
+      "broken": [],
+      "missing": [
+        "No real payment gateway integration — /api/payments only creates 'pending' records with no webhook/signature verification (stub)",
+        "Manual UPI is the only functional payment path",
+        "VirusScanResult model exists but is not wired to screenshot uploads"
+      ],
+      "database": ["ManualPaymentSubmission: unique utrNumber prevents duplicate proofs; Payment + PaymentAuditLog indexed", "Float used for money (acceptable on SQLite; migrate to Decimal on Postgres)"],
+      "ui": ["ManualPaymentPage + admin review panel present"],
+      "security": [
+        "BLOCKER: payment-proof screenshots are publicly downloadable. /api/upload/file has no auth requirement and canAccessListingImageFile() returns true for any key not starting with 'listings/' (screenshots/ included). UTR/transaction proofs leak via guessable key.",
+        "Manual submit: auth + verified + rate limited + MIME sniffing; admin approve atomic + audit + notification"
+      ],
+      "notes": [
+        "Screenshots written to local disk uploads/screenshots — ephemeral on standalone/serverless, not durable, no CDN",
+        "Coupon amount-match re-validated server-side on submit and QR generation (good — prevents discount tampering)",
+        "Amount-match logic duplicated across payments, payments/manual, qr routes"
+      ],
+      "productionReady": false
+    },
+    {
+      "name": "Subscriptions (Premium)",
+      "status": "Partial",
+      "score": 45,
+      "broken": [
+        "CRITICAL: premium never expires. premiumExpiry is set (+30d) on approval but NO cron/job/read-time check ever resets isPremium=false. refresh-ranking cron expires only listing boost/featured, not user premium."
+      ],
+      "missing": [
+        "No recurring/auto-renew billing",
+        "No renewal reminders or grace period",
+        "No auto-downgrade when premiumExpiry lapses",
+        "No dedicated Subscription model (premium = User.isPremium + premiumExpiry one-time flag)"
+      ],
+      "database": ["User.isPremium / premiumExpiry indexed (isPremium, premiumExpiry) — index exists but is never used to expire"],
+      "ui": ["Premium badge surfaced in dashboard/profile"],
+      "security": ["Premium status flows through JWT with 2-min cache + sessionVersion invalidation"],
+      "notes": ["Effectively a permanent one-time perk, not a subscription. Revenue leakage: users keep premium forever after a single payment."],
+      "productionReady": false
+    },
+    {
+      "name": "Reports",
+      "status": "Pass",
+      "score": 92,
+      "broken": [],
+      "missing": ["Legacy Report model still in schema (deprecated, unused dead weight)"],
+      "database": ["ListingReport @@unique(listingId,userId) prevents duplicate reports; well-indexed by resolution + recency"],
+      "ui": ["AdminReportsPage.tsx present with filters/pagination"],
+      "security": ["Submit: auth required, self-report blocked, P2002 -> 409; resolve gated by admin, atomic, audit logged, suspends bump sessionVersion"],
+      "notes": [
+        "Auto risk-score bump at 3+ reports",
+        "moderatorNotes read/written via raw SQL ($executeRaw / parameterized $queryRawUnsafe) — works but hints at prisma-client/schema drift"
+      ],
+      "productionReady": true
+    },
+    {
+      "name": "Search & Filters",
+      "status": "Partial",
+      "score": 82,
+      "broken": [
+        "keyword + category combined: the category branch overwrites where.OR, dropping the keyword filter (keyword ignored when a category is also selected)"
+      ],
+      "missing": ["No full-text index (uses SQLite LIKE 'contains') — slow at scale; no fuzzy/typo tolerance"],
+      "database": ["Listing has extensive composite indexes for status/priority/geo/category filters"],
+      "ui": ["SearchResults.tsx present"],
+      "security": ["Public GET rate-limited per IP; userId queries require matching authenticated session (no enumeration)"],
+      "notes": ["'ranking' sort re-sorts in-memory per page only — global ordering relies on stored priorityScore; minor pagination inconsistency"],
+      "productionReady": true
+    },
+    {
+      "name": "Production Build",
+      "status": "Pass",
+      "score": 95,
+      "broken": [],
+      "missing": [],
+      "database": [],
+      "ui": [],
+      "security": [],
+      "notes": [
+        "tsc --noEmit: 0 errors",
+        "next build: exit 0, 1554 static pages generated, standalone asset copy now cross-platform (bun scripts/copy-standalone-assets.mjs)",
+        "Warning: metadataBase not set -> OG/Twitter images resolve to http://localhost:3000 (SEO/social cosmetic)"
+      ],
+      "productionReady": true
+    }
+  ],
+  "launchBlockers": [
+    "Payment-proof screenshots publicly accessible (broken access control on /api/upload/file for screenshots/ keys)",
+    "Premium subscriptions never expire (no downgrade job) — revenue leakage"
+  ],
+  "highPriority": [
+    "No real payment gateway / webhook verification (manual UPI only)",
+    "Search ignores keyword when combined with category filter",
+    "Local-disk screenshot storage not durable for standalone/serverless deploy"
+  ],
+  "mediumPriority": [
+    "Pricing admin: add slug uniqueness pre-check, range validation, audit logging, error handling",
+    "Migrate money fields Float -> Decimal on Postgres",
+    "Set metadataBase for correct OG image URLs",
+    "Remove deprecated legacy Report model"
+  ]
+}

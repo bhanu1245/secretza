@@ -1,5 +1,5 @@
 /**
- * Secretza Rate Limiter — Production-grade in-memory rate limiting
+ * SecretZa Rate Limiter — Production-grade in-memory rate limiting
  *
  * Features:
  *   • Sliding window counters (no fixed-window edge bursts)
