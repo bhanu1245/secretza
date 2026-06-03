@@ -62,6 +62,7 @@ export async function POST(req: Request) {
       select: {
         id: true,
         isSuspended: true,
+        isVerified: true,
       },
     });
 
@@ -75,6 +76,13 @@ export async function POST(req: Request) {
     if (user.isSuspended) {
       return NextResponse.json(
         { error: "Account suspended" },
+        { status: 403 },
+      );
+    }
+
+    if (!user.isVerified) {
+      return NextResponse.json(
+        { error: "Email verification required to create listings" },
         { status: 403 },
       );
     }

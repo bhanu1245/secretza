@@ -145,7 +145,7 @@ export async function POST(request: Request) {
     }
 
     // Rate limiting per user for review creation
-    const rl = await rateLimit(`review:${session.user.id}`, RATE_LIMITS.api);
+    const rl = await rateLimit(`review:${session.user.id}`, RATE_LIMITS.reviewCreate);
     if (!rl.success) {
       return NextResponse.json(
         { error: "Too many review requests. Please try again later.", resetAt: rl.resetAt },
@@ -235,6 +235,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!user.isVerified) {
+      return NextResponse.json(
+        { error: "Email verification required to submit reviews" },
+        { status: 403 }
+      );
+    }
+
     // Anti-spam: check if user already reviewed this listing
     const existingReview = await db.review.findUnique({
       where: {
@@ -252,9 +259,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Auto-approve if user is verified, otherwise pending
-    const reviewStatus = user.isVerified ? "approved" : "pending";
-
     const review = await db.review.create({
       data: {
         listingId,
@@ -263,7 +267,7 @@ export async function POST(request: Request) {
         title: title || null,
         body: reviewBody || null,
         isVerified: user.isVerified,
-        status: reviewStatus,
+        status: "pending",
       },
       include: {
         user: {
@@ -279,9 +283,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        message: user.isVerified
-          ? "Review created and auto-approved"
-          : "Review submitted for moderation",
+        message: "Review submitted for moderation",
         review: {
           ...review,
           createdAt: review.createdAt.toISOString(),
@@ -290,8 +292,21 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     logError(error, { component: "route:api/reviews" });
+
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002"
+    ) {
+      return NextResponse.json(
+        { error: "You have already reviewed this listing" },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to create review" },
       { status: 500 }

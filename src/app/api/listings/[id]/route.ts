@@ -203,6 +203,18 @@ export async function PUT(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { isVerified: true },
+    });
+
+    if (!user?.isVerified) {
+      return NextResponse.json(
+        { error: "Email verification required to edit listings" },
+        { status: 403 }
+      );
+    }
+
     // Status restriction: don't allow editing suspended/banned listings
     if (existing.status === "suspended" || existing.status === "banned") {
       return NextResponse.json(

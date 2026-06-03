@@ -349,6 +349,8 @@ export const RATE_LIMITS = {
   upload: { maxRequests: 30, windowSeconds: 60 * 60 } satisfies RateLimitConfig,
   // Manual payment submission: 5 per hour per user
   manualPayment: { maxRequests: 5, windowSeconds: 60 * 60 } satisfies RateLimitConfig,
+  // Review creation: 5 per hour per user
+  reviewCreate: { maxRequests: 5, windowSeconds: 60 * 60 } satisfies RateLimitConfig,
 } as const;
 
 // ---------------------------------------------------------------------------
