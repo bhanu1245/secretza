@@ -9,6 +9,7 @@ import { detectMimeType, ALLOWED_MIME_TYPES } from "@/lib/image-processing";
 import { createStorageService } from "@/lib/storage";
 import { getValidAmounts } from "@/lib/payment-settings";
 import { validateCouponForCheckout } from "@/lib/coupons";
+import { requireVerifiedEmail } from "@/lib/email-verification-guard";
 import {
   formatZodErrors,
   manualPaymentFormSchema,
@@ -36,17 +37,14 @@ export async function POST(request: Request) {
         { status: 401 },
       );
     }
-    if (!session.user.isVerified) {
-      return NextResponse.json(
-        {
-          error: "Email verification required before submitting payment proof",
-          field: "isVerified",
-        },
-        { status: 403 },
-      );
-    }
 
     const userId = session.user.id;
+
+    const verificationError = await requireVerifiedEmail(
+      userId,
+      "Email verification required before submitting payment proof",
+    );
+    if (verificationError) return verificationError;
 
     const rateLimitResult = await rateLimit(
       `manualPayment:${userId}`,

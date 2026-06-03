@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { logError } from "@/lib/monitoring";
 import { validateCouponForCheckout } from "@/lib/coupons";
+import { requireVerifiedEmail } from "@/lib/email-verification-guard";
 
 /**
  * POST /api/coupons/validate
@@ -15,9 +16,12 @@ export async function POST(request: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    if (!session.user.isVerified) {
-      return NextResponse.json({ error: "Email verification required" }, { status: 403 });
-    }
+
+    const verificationError = await requireVerifiedEmail(
+      session.user.id,
+      "Email verification required before purchasing premium listings",
+    );
+    if (verificationError) return verificationError;
 
     const rl = await rateLimit(`couponValidate:${session.user.id}`, RATE_LIMITS.login);
     if (!rl.success) {

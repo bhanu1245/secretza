@@ -55,6 +55,7 @@ interface SchemaFAQItem {
 // ------------------------------------------
 
 import { indiaStates, indiaCities, getCityBySlug, getNearbyCities as getGeoNearbyCities } from '@/lib/india-geo-data';
+import { generateCitySEOContent } from '@/lib/seo-engine';
 import {
   type CityEnrichment,
 } from '@/lib/seo-city-enrichment';
@@ -897,7 +898,6 @@ export function generateCitySEO(
   countryNameParam: string = "India",
   options?: { stateSlug?: string; dbAreas?: string[] },
 ): SEOContent {
-  const { generateCitySEOContent } = require("@/lib/seo-engine") as typeof import("@/lib/seo-engine");
   return generateCitySEOContent(cityName, citySlug, stateName, countryNameParam, options);
 }
 

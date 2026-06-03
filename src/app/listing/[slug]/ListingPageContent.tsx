@@ -24,7 +24,6 @@ import StarRating from "@/components/secretza/review/StarRating";
 import ReviewList from "@/components/secretza/review/ReviewList";
 import ListingContactSection from "@/components/secretza/listing/ListingContactSection";
 import ShareButtons from "@/components/secretza/shared/ShareButtons";
-import { normalizeListingContact } from "@/lib/listing-contact";
 import { buildCategoryUrl, buildListingUrl } from "@/lib/seo-ssr";
 import { cn } from "@/lib/utils";
 import {
@@ -111,7 +110,6 @@ export default function ListingPageContent({ listing }: ListingPageContentProps)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const images = useImages(listing);
   const currentImage = images[selectedImageIndex] || images[0];
-  const contact = normalizeListingContact(listing);
 
   const handlePrevImage = () => {
     setSelectedImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
@@ -297,7 +295,7 @@ export default function ListingPageContent({ listing }: ListingPageContentProps)
 
       {/* Right Column — Sidebar */}
       <div className="flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
-        <ListingContactSection contact={contact} />
+        <ListingContactSection listingId={listing.id} />
 
         {/* Advertiser Card */}
         <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-surface p-5">

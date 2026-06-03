@@ -1462,7 +1462,6 @@ export default function SeoManager() {
                       {/* Featured Image Preview */}
                       <td className="px-4 py-3">
                         <div className="w-12 h-8 rounded overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[#1E1E2A]">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={page.featuredImageUrl || '/brand/logo-icon-dark.svg'}
                             alt={page.imageAlt || page.title || page.pageSlug}
@@ -1733,7 +1732,6 @@ export default function SeoManager() {
               </div>
               {editForm.featuredImage && (
                 <div className="mb-3 rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] aspect-[1200/630] max-h-40">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={editForm.featuredImage.startsWith('http') || editForm.featuredImage.startsWith('/')
                       ? editForm.featuredImage

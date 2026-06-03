@@ -10,7 +10,7 @@ import {
   isFeaturedActive,
 } from "@/lib/ranking-engine";
 import { rateLimit, RATE_LIMITS, getClientIp, getRateLimitHeaders } from "@/lib/rate-limit";
-import { serializeListingContact } from "@/lib/listing-contact";
+import { requireVerifiedEmail } from "@/lib/email-verification-guard";
 
 function safeJsonParse(str: unknown, fallback: unknown): unknown {
   if (typeof str !== 'string') return fallback;
@@ -237,8 +237,6 @@ export async function GET(request: Request) {
     const computedScore = computePriorityScore(rankInput);
     const rankLabel = getRankLabel(rankInput, computedScore);
 
-    const contactFields = serializeListingContact(l as any);
-
     return {
       id: l.id,
       title: l.title,
@@ -292,14 +290,14 @@ export async function GET(request: Request) {
       services: safeJsonParse((l as any).services, []),
       price: l.price,
       currency: l.currency,
-      contact: contactFields.contact,
-      whatsapp: contactFields.whatsapp,
-      telegram: contactFields.telegram,
-      contactEmail: contactFields.contactEmail,
-      contactTelegram: contactFields.contactTelegram,
-      contactText: contactFields.contactText,
-      contactInstagram: contactFields.contactInstagram,
-      contactWebsite: contactFields.contactWebsite,
+      contact: {},
+      whatsapp: null,
+      telegram: null,
+      contactEmail: null,
+      contactTelegram: null,
+      contactText: null,
+      contactInstagram: null,
+      contactWebsite: null,
       images: legacyImages,
       profileImage: (l as any).profileImage,
       galleryImages,
@@ -374,13 +372,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verification guard: must be verified to create listings
-    if (!session.user.isVerified) {
-      return NextResponse.json(
-        { error: "Email verification required to create listings" },
-        { status: 403 }
-      );
-    }
+    const verificationError = await requireVerifiedEmail(
+      session.user.id,
+      "Email verification required to create listings",
+    );
+    if (verificationError) return verificationError;
 
     const body = await request.json();
     const {

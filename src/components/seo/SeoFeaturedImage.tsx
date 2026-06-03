@@ -21,7 +21,6 @@ export default function SeoFeaturedImage({
   return (
     <figure className="mb-8 max-w-4xl">
       <div className="relative overflow-hidden rounded-xl border border-border bg-surface-light aspect-[1200/630]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imageUrl}
           alt={alt}

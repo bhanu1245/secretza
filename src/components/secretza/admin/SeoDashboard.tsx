@@ -163,6 +163,7 @@ export default function SeoDashboard() {
 
   const fetchDashboard = useCallback(
     (showToast = false) => {
+      setLoading(true);
       const started = performance.now();
       fetch(`/api/seo/dashboard?days=${days}`)
         .then((res) => {
@@ -185,8 +186,11 @@ export default function SeoDashboard() {
   );
 
   useEffect(() => {
-    setLoading(true);
-    fetchDashboard();
+    const timeoutId = window.setTimeout(() => {
+      fetchDashboard();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [fetchDashboard]);
 
   if (loading && !data) {

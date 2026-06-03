@@ -7,6 +7,7 @@ import { getClientIp } from "@/lib/rate-limit";
 import { logError } from "@/lib/monitoring";
 import { getValidAmounts } from "@/lib/payment-settings";
 import { validateCouponForCheckout } from "@/lib/coupons";
+import { requireVerifiedEmail } from "@/lib/email-verification-guard";
 
 /**
  * Payment hooks endpoint for external payment gateway callbacks
@@ -17,14 +18,17 @@ export async function POST(request: Request) {
     if (!session?.user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    if (!session.user.isVerified) {
-      return NextResponse.json({ error: "Email verification required" }, { status: 403 });
-    }
 
     const body = await request.json();
     const { type, listingId, amount, gatewayTxId, couponCode } = body;
 
     const authenticatedUserId = session.user.id;
+
+    const verificationError = await requireVerifiedEmail(
+      authenticatedUserId,
+      "Email verification required before purchasing premium listings",
+    );
+    if (verificationError) return verificationError;
 
     if (!type) {
       return NextResponse.json(

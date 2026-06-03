@@ -50,6 +50,8 @@ type ListingDraft = {
   values: ListingFormValues;
 };
 
+type FormErrors = Partial<Record<keyof ListingFormValues | "images" | "form", string>>;
+
 interface CreateListingFormProps {
   editListingId?: string | null;
   editMode?: boolean;
@@ -205,9 +207,11 @@ export default function CreateListingForm({
   const [loading, setLoading] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FormErrors>({});
   const latestValuesRef = useRef(values);
   const restoredDraftRef = useRef(false);
   const existingImageKeysRef = useRef<Set<string>>(new Set());
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const selectedCategory = categories.find((category) => category.slug === values.categorySlug);
   const selectedCountry = countries.find((country) => country.slug === values.countrySlug);
@@ -366,43 +370,155 @@ export default function CreateListingForm({
     field: K,
     value: ListingFormValues[K],
   ) {
-    setValues((current) => ({
+    setErrors((current) => ({ ...current, [field]: undefined, form: undefined }));
+    updateValues((current) => ({
       ...current,
       [field]: value,
       ...(field === "title" && !editMode ? { slug: slugify(String(value)) } : {}),
     }));
   }
 
+  function updateValues(updater: (current: ListingFormValues) => ListingFormValues) {
+    setValues((current) => {
+      const next = updater(current);
+      latestValuesRef.current = next;
+      return next;
+    });
+  }
+
+  function updateDependentField(updater: (current: ListingFormValues) => ListingFormValues) {
+    setErrors((current) => ({ ...current, form: undefined }));
+    updateValues(updater);
+  }
+
   function toggleService(service: string) {
-    setValues((current) => ({
+    setErrors((current) => ({ ...current, services: undefined, form: undefined }));
+    updateValues((current) => {
+      const next = {
+        ...current,
+        services: current.services.includes(service)
+          ? current.services.filter((item) => item !== service)
+          : [...current.services, service],
+      };
+      return next;
+    });
+  }
+
+  function selectPricingPlan(plan: ListingFormValues["pricingPlan"]) {
+    console.info("[CreateListingForm] pricing plan selected", { plan });
+    setErrors((current) => ({ ...current, pricingPlan: undefined, form: undefined }));
+    updateValues((current) => ({
       ...current,
-      services: current.services.includes(service)
-        ? current.services.filter((item) => item !== service)
-        : [...current.services, service],
+      pricingPlan: plan,
     }));
+  }
+
+  function scrollToField(field: keyof ListingFormValues | "images" | "form") {
+    window.requestAnimationFrame(() => {
+      const selector = `[data-field="${field}"]`;
+      const container = formRef.current?.querySelector<HTMLElement>(selector);
+      const target =
+        container?.querySelector<HTMLElement>("input, textarea, select, button") ||
+        container;
+
+      if (!target) return;
+
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      if ("focus" in target) {
+        target.focus({ preventScroll: true });
+      }
+    });
+  }
+
+  function setValidationFailure(
+    nextErrors: FormErrors,
+    fallbackMessage = "Please check the form",
+  ) {
+    setErrors(nextErrors);
+    const firstField = (Object.keys(nextErrors)[0] || "form") as keyof ListingFormValues | "images" | "form";
+    const firstMessage = nextErrors[firstField] || fallbackMessage;
+    console.warn("[CreateListingForm] validation failed", {
+      firstField,
+      message: firstMessage,
+      errors: nextErrors,
+    });
+    toast.error(firstMessage);
+    scrollToField(firstField);
+  }
+
+  function handlePaidPlanRedirect(listing: { id?: string; title?: string }, pricingPlan: ListingFormValues["pricingPlan"]) {
+    if (editMode || pricingPlan === "normal") {
+      window.localStorage.setItem("dashboardPage", "listings");
+      navigate("dashboard", { tab: "listings" });
+      return;
+    }
+
+    const paymentType = pricingPlan === "featured" ? "feature" : pricingPlan;
+    const params: Record<string, string> = {
+      paymentType,
+      listingId: listing.id || "",
+      listingTitle: listing.title || latestValuesRef.current.title,
+    };
+
+    console.info("[CreateListingForm] redirecting to selected plan payment", {
+      pricingPlan,
+      paymentType,
+      listingId: params.listingId,
+    });
+
+    window.location.href = `/?${new URLSearchParams({
+      view: "payment-manual",
+      ...params,
+    }).toString()}`;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const selectedPlan =
+      (formData.get("pricingPlan") as ListingFormValues["pricingPlan"] | null) ||
+      latestValuesRef.current.pricingPlan;
+    if (selectedPlan && selectedPlan !== latestValuesRef.current.pricingPlan) {
+      latestValuesRef.current = {
+        ...latestValuesRef.current,
+        pricingPlan: selectedPlan,
+      };
+    }
+    console.info("[CreateListingForm] submit function entered", {
+      editMode,
+      pricingPlan: latestValuesRef.current.pricingPlan,
+      pointer: window.matchMedia("(pointer: coarse)").matches ? "coarse" : "fine",
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+    });
     saveDraft();
 
-    const validation = formSchema.safeParse(values);
+    const submitValues = latestValuesRef.current;
+    const validation = formSchema.safeParse(submitValues);
     if (!validation.success) {
-      toast.error(validation.error.issues[0]?.message || "Please check the form");
+      const nextErrors: FormErrors = {};
+      for (const issue of validation.error.issues) {
+        const field = issue.path[0] as keyof ListingFormValues | undefined;
+        if (field && !nextErrors[field]) nextErrors[field] = issue.message;
+      }
+      setValidationFailure(nextErrors);
       return;
     }
 
+    console.info("[CreateListingForm] validation passed", {
+      pricingPlan: submitValues.pricingPlan,
+      hasImages: submitValues.images.length > 0,
+    });
+
     try {
       setLoading(true);
-      const submitValues = latestValuesRef.current;
 
       if (submitValues.images.some((image) => image.isUploading)) {
-        toast.error("Please wait for all images to finish uploading");
+        setValidationFailure({ images: "Please wait for all images to finish uploading" });
         return;
       }
 
       if (submitValues.images.some((image) => image.url?.startsWith("blob:"))) {
-        toast.error("Images are still processing. Wait a moment and try again.");
+        setValidationFailure({ images: "Images are still processing. Wait a moment and try again." });
         return;
       }
 
@@ -453,26 +569,52 @@ export default function CreateListingForm({
         pricingPlan: submitValues.pricingPlan,
       };
 
-      const response = await fetch(
+      const endpoint =
         editMode && editListingId
           ? `/api/listings/${editListingId}`
-          : "/api/listings/create",
+          : "/api/listings/create";
+      const method = editMode && editListingId ? "PUT" : "POST";
+
+      console.info("[CreateListingForm] API request sent", {
+        endpoint,
+        method,
+        pricingPlan: payload.pricingPlan,
+        categorySlug: payload.categorySlug,
+        countrySlug: payload.countrySlug,
+        stateSlug: payload.stateSlug,
+        citySlug: payload.citySlug,
+      });
+
+      const response = await fetch(
+        endpoint,
         {
-          method: editMode && editListingId ? "PUT" : "POST",
+          method,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         },
       );
       const data = await response.json();
 
+      console.info("[CreateListingForm] API response received", {
+        ok: response.ok,
+        status: response.status,
+        listingId: data.listing?.id || data.id,
+        pricingPlan: submitValues.pricingPlan,
+      });
+
       if (!response.ok) throw new Error(data.error || "Failed to save listing");
 
       toast.success(editMode ? "Listing updated" : "Listing submitted for review");
       window.localStorage.removeItem(draftKey);
-      window.localStorage.setItem("dashboardPage", "listings");
-      navigate("dashboard", { tab: "listings" });
+      handlePaidPlanRedirect(
+        data.listing || { id: data.id, title: submitValues.title },
+        submitValues.pricingPlan,
+      );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to save listing");
+      const message = error instanceof Error ? error.message : "Failed to save listing";
+      setErrors((current) => ({ ...current, form: message }));
+      toast.error(message);
+      scrollToField("form");
     } finally {
       setLoading(false);
     }
@@ -485,27 +627,36 @@ export default function CreateListingForm({
         <p className="text-sm text-zinc-400 mt-2">Complete all required sections for faster moderation approval.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form ref={formRef} onSubmit={handleSubmit} noValidate className="space-y-6 pb-28 md:pb-0">
+        {errors.form && (
+          <div
+            data-field="form"
+            className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200"
+            role="alert"
+          >
+            {errors.form}
+          </div>
+        )}
         <Section title="Basic Info">
-          <Input label="Title" value={values.title} onChange={(value) => updateField("title", value)} required />
-          <Input label="Slug" value={values.slug} onChange={(value) => updateField("slug", slugify(value))} />
-          <Textarea label="Description" value={values.description} onChange={(value) => updateField("description", value)} required />
+          <Input field="title" label="Title" value={values.title} onChange={(value) => updateField("title", value)} error={errors.title} required />
+          <Input field="slug" label="Slug" value={values.slug} onChange={(value) => updateField("slug", slugify(value))} error={errors.slug} />
+          <Textarea field="description" label="Description" value={values.description} onChange={(value) => updateField("description", value)} error={errors.description} required />
           <div className="grid gap-4 md:grid-cols-2">
-            <Input label="Age" type="number" value={values.age} onChange={(value) => updateField("age", value)} />
-            <Input label="WhatsApp" value={values.whatsapp} onChange={(value) => updateField("whatsapp", value)} />
-            <Input label="Telegram" value={values.telegram} onChange={(value) => updateField("telegram", value)} />
-            <Input label="Mobile Phone" value={values.contactPhone} onChange={(value) => updateField("contactPhone", value)} />
-            <Input label="Email" type="email" value={values.contactEmail} onChange={(value) => updateField("contactEmail", value)} />
+            <Input field="age" label="Age" type="number" value={values.age} onChange={(value) => updateField("age", value)} error={errors.age} />
+            <Input field="whatsapp" label="WhatsApp" value={values.whatsapp} onChange={(value) => updateField("whatsapp", value)} error={errors.whatsapp} />
+            <Input field="telegram" label="Telegram" value={values.telegram} onChange={(value) => updateField("telegram", value)} error={errors.telegram} />
+            <Input field="contactPhone" label="Mobile Phone" value={values.contactPhone} onChange={(value) => updateField("contactPhone", value)} error={errors.contactPhone} />
+            <Input field="contactEmail" label="Email" type="email" value={values.contactEmail} onChange={(value) => updateField("contactEmail", value)} error={errors.contactEmail} />
           </div>
         </Section>
 
         <Section title="Category">
           <div className="grid gap-4 md:grid-cols-2">
-            <Select label="Category" value={values.categorySlug} onChange={(value) => setValues((current) => ({ ...current, categorySlug: value, subcategorySlug: "" }))} required>
+            <Select field="categorySlug" label="Category" value={values.categorySlug} onChange={(value) => updateDependentField((current) => ({ ...current, categorySlug: value, subcategorySlug: "" }))} error={errors.categorySlug} required>
               <option value="">Select category</option>
               {categories.map((category) => <option key={category.id} value={category.slug}>{category.name}</option>)}
             </Select>
-            <Select label="Subcategory" value={values.subcategorySlug} onChange={(value) => updateField("subcategorySlug", value)}>
+            <Select field="subcategorySlug" label="Subcategory" value={values.subcategorySlug} onChange={(value) => updateField("subcategorySlug", value)} error={errors.subcategorySlug}>
               <option value="">Select subcategory</option>
               {selectedCategory?.children?.map((subcategory) => <option key={subcategory.id} value={subcategory.slug}>{subcategory.name}</option>)}
             </Select>
@@ -514,43 +665,47 @@ export default function CreateListingForm({
 
         <Section title="Location">
           <div className="grid gap-4 md:grid-cols-2">
-            <Select label="Country" value={values.countrySlug} onChange={(value) => setValues((current) => ({ ...current, countrySlug: value, stateSlug: "", citySlug: "", areaId: "" }))} required>
+            <Select field="countrySlug" label="Country" value={values.countrySlug} onChange={(value) => updateDependentField((current) => ({ ...current, countrySlug: value, stateSlug: "", citySlug: "", areaId: "" }))} error={errors.countrySlug} required>
               <option value="">Select country</option>
               {countries.map((country) => <option key={country.id} value={country.slug}>{country.name}</option>)}
             </Select>
-            <Select label="State" value={values.stateSlug} onChange={(value) => setValues((current) => ({ ...current, stateSlug: value, citySlug: "", areaId: "" }))}>
+            <Select field="stateSlug" label="State" value={values.stateSlug} onChange={(value) => updateDependentField((current) => ({ ...current, stateSlug: value, citySlug: "", areaId: "" }))} error={errors.stateSlug}>
               <option value="">Select state</option>
               {selectedCountry?.states?.map((state) => <option key={state.id} value={state.slug}>{state.name}</option>)}
             </Select>
-            <Select label="City" value={values.citySlug} onChange={(value) => setValues((current) => ({ ...current, citySlug: value, areaId: "" }))} required>
+            <Select field="citySlug" label="City" value={values.citySlug} onChange={(value) => updateDependentField((current) => ({ ...current, citySlug: value, areaId: "" }))} error={errors.citySlug} required>
               <option value="">Select city</option>
               {selectedState?.cities?.map((city) => <option key={city.id} value={city.slug}>{city.name}</option>)}
             </Select>
-            <Select label="Area" value={values.areaId} onChange={(value) => updateField("areaId", value)}>
+            <Select field="areaId" label="Area" value={values.areaId} onChange={(value) => updateField("areaId", value)} error={errors.areaId}>
               <option value="">Select area</option>
               {selectedCity?.areas?.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}
             </Select>
           </div>
-          <Input label="Area / Landmark" value={values.area} onChange={(value) => updateField("area", value)} />
+          <Input field="area" label="Area / Landmark" value={values.area} onChange={(value) => updateField("area", value)} error={errors.area} />
         </Section>
 
         <Section title="Media">
-          <ImageUploader
-            images={values.images}
-            onImagesChange={(update) =>
-              setValues((current) => {
-                const nextImages =
-                  typeof update === "function" ? update(current.images) : update;
-                const nextValues = { ...current, images: nextImages };
-                latestValuesRef.current = nextValues;
-                return nextValues;
-              })
-            }
-          />
+          <div data-field="images">
+            <ImageUploader
+              images={values.images}
+              onImagesChange={(update) =>
+                setValues((current) => {
+                  const nextImages =
+                    typeof update === "function" ? update(current.images) : update;
+                  const nextValues = { ...current, images: nextImages };
+                  latestValuesRef.current = nextValues;
+                  setErrors((currentErrors) => ({ ...currentErrors, images: undefined, form: undefined }));
+                  return nextValues;
+                })
+              }
+            />
+            {errors.images && <p className="mt-2 text-sm text-red-400">{errors.images}</p>}
+          </div>
         </Section>
 
         <Section title="Services">
-          <Input label="Tags (comma separated)" value={values.tags} onChange={(value) => updateField("tags", value)} />
+          <Input field="tags" label="Tags (comma separated)" value={values.tags} onChange={(value) => updateField("tags", value)} error={errors.tags} />
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {serviceOptions.map((service) => (
               <button
@@ -571,37 +726,61 @@ export default function CreateListingForm({
 
         <Section title="Pricing">
           <div className="grid gap-4 md:grid-cols-2">
-            <Input label="Price" type="number" value={values.price} onChange={(value) => updateField("price", value)} required />
-            <Select label="Currency" value={values.currency} onChange={(value) => updateField("currency", value)}>
+            <Input field="price" label="Price" type="number" value={values.price} onChange={(value) => updateField("price", value)} error={errors.price} required />
+            <Select field="currency" label="Currency" value={values.currency} onChange={(value) => updateField("currency", value)} error={errors.currency}>
               {["USD", "INR", "EUR", "GBP", "AED"].map((currency) => <option key={currency}>{currency}</option>)}
             </Select>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div data-field="pricingPlan" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {(["normal", "boost", "featured", "premium"] as const).map((plan) => (
-              <button
+              <label
                 key={plan}
-                type="button"
-                onClick={() => updateField("pricingPlan", plan)}
                 className={`rounded-xl border p-4 text-left capitalize ${
                   values.pricingPlan === plan
                     ? "border-violet-500/40 bg-violet-500/15"
                     : "border-white/10 bg-zinc-900"
                 }`}
               >
+                <input
+                  type="radio"
+                  name="pricingPlan"
+                  value={plan}
+                  checked={values.pricingPlan === plan}
+                  onChange={() => selectPricingPlan(plan)}
+                  className="sr-only"
+                />
                 <span className="font-semibold">{plan}</span>
                 <p className="text-xs text-zinc-400 mt-1">{plan === "normal" ? "Submit for review" : `Submit and continue to ${plan} payment`}</p>
-              </button>
+              </label>
             ))}
           </div>
+          {errors.pricingPlan && <p className="text-sm text-red-400">{errors.pricingPlan}</p>}
         </Section>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 -mx-4 border-t border-white/10 bg-[#0B0B0F]/95 px-4 py-4 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-zinc-400">
             {lastSavedAt ? `Draft autosaved at ${new Date(lastSavedAt).toLocaleTimeString()}` : "Draft autosaves while you type."}
           </p>
-          <button disabled={loading} className="rounded-xl bg-blue-600 px-8 py-4 font-semibold transition hover:bg-blue-700 disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={loading}
+            onTouchStart={() => {
+              console.info("[CreateListingForm] submit button touch fired", {
+                pricingPlan: latestValuesRef.current.pricingPlan,
+              });
+            }}
+            onClick={() => {
+              console.info("[CreateListingForm] submit button click fired", {
+                pricingPlan: latestValuesRef.current.pricingPlan,
+                loading,
+              });
+            }}
+            className="min-h-12 rounded-xl bg-blue-600 px-8 py-4 font-semibold transition hover:bg-blue-700 disabled:opacity-60"
+          >
             {loading ? "Saving..." : editMode ? "Save Changes" : "Submit Listing"}
           </button>
+          </div>
         </div>
       </form>
     </div>
@@ -617,31 +796,105 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Input({ label, value, onChange, type = "text", required }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) {
+function Input({
+  field,
+  label,
+  value,
+  onChange,
+  type = "text",
+  required,
+  error,
+}: {
+  field: keyof ListingFormValues;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  required?: boolean;
+  error?: string;
+}) {
   return (
-    <label className="block">
+    <label data-field={field} className="block">
       <span className="mb-2 block text-sm text-zinc-300">{label}{required && " *"}</span>
-      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} required={required} className="w-full rounded-xl border border-zinc-700 bg-zinc-900 p-4 outline-none focus:border-violet-500" />
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${field}-error` : undefined}
+        className={`w-full rounded-xl border bg-zinc-900 p-4 outline-none focus:border-violet-500 ${
+          error ? "border-red-500" : "border-zinc-700"
+        }`}
+      />
+      {error && <p id={`${field}-error`} className="mt-2 text-sm text-red-400">{error}</p>}
     </label>
   );
 }
 
-function Textarea({ label, value, onChange, required }: { label: string; value: string; onChange: (value: string) => void; required?: boolean }) {
+function Textarea({
+  field,
+  label,
+  value,
+  onChange,
+  required,
+  error,
+}: {
+  field: keyof ListingFormValues;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+  error?: string;
+}) {
   return (
-    <label className="block">
+    <label data-field={field} className="block">
       <span className="mb-2 block text-sm text-zinc-300">{label}{required && " *"}</span>
-      <textarea value={value} onChange={(event) => onChange(event.target.value)} required={required} className="min-h-[180px] w-full rounded-xl border border-zinc-700 bg-zinc-900 p-4 outline-none focus:border-violet-500" />
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${field}-error` : undefined}
+        className={`min-h-[180px] w-full rounded-xl border bg-zinc-900 p-4 outline-none focus:border-violet-500 ${
+          error ? "border-red-500" : "border-zinc-700"
+        }`}
+      />
+      {error && <p id={`${field}-error`} className="mt-2 text-sm text-red-400">{error}</p>}
     </label>
   );
 }
 
-function Select({ label, value, onChange, children, required }: { label: string; value: string; onChange: (value: string) => void; children: ReactNode; required?: boolean }) {
+function Select({
+  field,
+  label,
+  value,
+  onChange,
+  children,
+  required,
+  error,
+}: {
+  field: keyof ListingFormValues;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: ReactNode;
+  required?: boolean;
+  error?: string;
+}) {
   return (
-    <label className="block">
+    <label data-field={field} className="block">
       <span className="mb-2 block text-sm text-zinc-300">{label}{required && " *"}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} required={required} className="w-full rounded-xl border border-zinc-700 bg-zinc-900 p-4 outline-none focus:border-violet-500">
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${field}-error` : undefined}
+        className={`w-full rounded-xl border bg-zinc-900 p-4 outline-none focus:border-violet-500 ${
+          error ? "border-red-500" : "border-zinc-700"
+        }`}
+      >
         {children}
       </select>
+      {error && <p id={`${field}-error`} className="mt-2 text-sm text-red-400">{error}</p>}
     </label>
   );
 }

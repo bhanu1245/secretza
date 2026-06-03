@@ -51,9 +51,14 @@ export default function AgeGate() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!hasValidAcceptance()) {
+    const showGate = !hasValidAcceptance();
+    if (!showGate) return;
+
+    const timeoutId = window.setTimeout(() => {
       setVisible(true);
-    }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   // Scroll-lock: prevent the page from scrolling while the gate is open.

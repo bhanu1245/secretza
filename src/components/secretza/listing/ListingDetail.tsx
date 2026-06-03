@@ -33,7 +33,6 @@ import { cn } from "@/lib/utils";
 import ReviewList from "@/components/secretza/review/ReviewList";
 import ListingContactSection from "@/components/secretza/listing/ListingContactSection";
 import ShareButtons from "@/components/secretza/shared/ShareButtons";
-import { normalizeListingContact } from "@/lib/listing-contact";
 import { buildListingUrl } from "@/lib/seo-ssr";
 import {
   getListingImages,
@@ -136,7 +135,6 @@ export default function ListingDetail({
     resolvedImages.length > 0
       ? resolvedImages
       : [getListingCoverImageWithPlaceholder(listing)];
-  const contact = normalizeListingContact(listing as any);
 
   const currentImage = images[selectedImageIndex] || images[0];
 
@@ -372,7 +370,7 @@ export default function ListingDetail({
 
               <Separator className="bg-[rgba(255,255,255,0.08)]" />
 
-              <ListingContactSection contact={contact} className="bg-surface" />
+              <ListingContactSection listingId={listing.id} className="bg-surface" />
 
               {/* Report */}
               <Button

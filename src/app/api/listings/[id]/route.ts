@@ -119,7 +119,29 @@ export async function GET(
   const computedScore = computePriorityScore(rankInput);
   const rankLabel = getRankLabel(rankInput, computedScore);
 
-  const contactFields = serializeListingContact(listing as any);
+  const requester = session?.user?.id
+    ? await db.user.findUnique({
+        where: { id: session.user.id },
+        select: { isVerified: true, role: true },
+      })
+    : null;
+  const requesterRole = String(requester?.role || "").toLowerCase();
+  const canAccessContact =
+    Boolean(requester?.isVerified) ||
+    requesterRole === "admin" ||
+    requesterRole === "moderator";
+  const contactFields = canAccessContact
+    ? serializeListingContact(listing as any)
+    : {
+        contact: {},
+        whatsapp: null,
+        telegram: null,
+        contactEmail: null,
+        contactTelegram: null,
+        contactText: null,
+        contactInstagram: null,
+        contactWebsite: null,
+      };
 
   return NextResponse.json({
     id: listing.id,

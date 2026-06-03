@@ -4,12 +4,19 @@ import { authOptions } from "@/lib/auth";
 import QRCode from "qrcode";
 import { getPaymentSettings, getValidAmounts } from "@/lib/payment-settings";
 import { validateCouponForCheckout } from "@/lib/coupons";
+import { requireVerifiedEmail } from "@/lib/email-verification-guard";
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
+
+  const verificationError = await requireVerifiedEmail(
+    session.user.id,
+    "Email verification required before purchasing premium listings",
+  );
+  if (verificationError) return verificationError;
 
   const { searchParams } = new URL(request.url);
 

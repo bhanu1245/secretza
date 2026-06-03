@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Globe, Instagram, Mail, MessageSquare, Phone, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ContactInfo } from "@/lib/types";
@@ -10,7 +11,8 @@ import {
 } from "@/lib/listing-contact";
 
 type ListingContactSectionProps = {
-  contact: ContactInfo;
+  listingId?: string;
+  contact?: ContactInfo;
   title?: string;
   className?: string;
 };
@@ -45,12 +47,56 @@ function openContact(type: keyof ContactInfo, value: string) {
 }
 
 export default function ListingContactSection({
-  contact,
+  listingId,
+  contact: initialContact = {},
   title = "Contact Information",
   className = "",
 }: ListingContactSectionProps) {
+  const [contact, setContact] = useState<ContactInfo>(initialContact);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function revealContact() {
+    if (!listingId) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/listings/${encodeURIComponent(listingId)}/contact`, {
+        credentials: "include",
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setError(data.error || "Unable to load contact information");
+        return;
+      }
+
+      setContact(data.contact || {});
+    } catch {
+      setError("Unable to load contact information");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   if (!hasContactInfo(contact)) {
-    return null;
+    if (!listingId) return null;
+
+    return (
+      <div className={`rounded-xl border border-[rgba(255,255,255,0.08)] bg-surface p-5 ${className}`}>
+        <h3 className="mb-4 text-base font-semibold text-foreground">{title}</h3>
+        <Button
+          className="w-full bg-violet text-white hover:bg-violet/90"
+          onClick={revealContact}
+          disabled={loading}
+        >
+          {loading ? "Loading contact..." : "Show Contact Information"}
+        </Button>
+        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+      </div>
+    );
   }
 
   return (
