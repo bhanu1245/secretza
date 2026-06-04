@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -46,11 +47,31 @@ function makeSlug(title: string) {
   return `${base}-${Date.now()}`;
 }
 
+function logListingAuthFailure(req: Request, session: Session | null) {
+  const cookieNames = (req.headers.get("cookie") || "")
+    .split(";")
+    .map((cookie) => cookie.split("=")[0]?.trim())
+    .filter(Boolean);
+
+  console.warn("[api:listings/create] getServerSession returned no user id", {
+    hasSession: Boolean(session),
+    hasUser: Boolean(session?.user),
+    userEmail: session?.user?.email,
+    userId: session?.user?.id || null,
+    cookieNames,
+    userAgent: req.headers.get("user-agent"),
+    host: req.headers.get("host"),
+    forwardedHost: req.headers.get("x-forwarded-host"),
+    forwardedProto: req.headers.get("x-forwarded-proto"),
+  });
+}
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
+      logListingAuthFailure(req, session);
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 },

@@ -15,6 +15,7 @@ import { rateLimit, RATE_LIMITS, getClientIp, recordFailure, clearFailures } fro
 // ---------------------------------------------------------------------------
 const userStatusCache = new Map<string, { data: { role: string; isVerified: boolean; isSuspended: boolean; isPremium: boolean; premiumExpiry: Date | null; sessionVersion: number }; ts: number }>();
 const USER_STATUS_TTL = 2 * 60 * 1000; // 2 minutes
+type UserStatus = { role: string; isVerified: boolean; isSuspended: boolean; isPremium: boolean; premiumExpiry: Date | null; sessionVersion: number };
 
 function getCachedUserStatus(userId: string) {
   const entry = userStatusCache.get(userId);
@@ -27,12 +28,37 @@ function setCachedUserStatus(userId: string, data: { role: string; isVerified: b
   userStatusCache.set(userId, { data, ts: Date.now() });
 }
 
+function clearTokenClaims(token: JWT) {
+  const userId = token.id;
+  if (userId) userStatusCache.delete(userId);
+  token.id = undefined;
+  token.role = undefined;
+  token.isVerified = undefined;
+  token.isSuspended = undefined;
+  token.isPremium = undefined;
+  token.premiumExpiry = undefined;
+  token.provider = undefined;
+  token.sessionVersion = undefined;
+}
+
+function applyUserStatusToToken(token: JWT, status: UserStatus) {
+  token.role = normalizeRole(status.role);
+  token.isVerified = status.isVerified;
+  token.isSuspended = status.isSuspended;
+  token.isPremium = status.isPremium;
+  token.premiumExpiry = status.premiumExpiry;
+  token.sessionVersion = status.sessionVersion;
+}
+
 function normalizeRole(role: string | null | undefined): string {
   const value = (role || "user").toLowerCase();
   if (value === "admin") return "admin";
   if (value === "moderator") return "moderator";
   return "user";
 }
+
+const isProduction = process.env.NODE_ENV === "production";
+const authCookieDomain = process.env.NEXTAUTH_COOKIE_DOMAIN?.trim() || undefined;
 
 // Extend NextAuth types to include our custom fields
 declare module "next-auth" {
@@ -85,12 +111,13 @@ export const authOptions: NextAuthOptions = {
   },
   cookies: {
     sessionToken: {
-      name: `${process.env.NODE_ENV === "production" ? "__Secure-" : ""}next-auth.session-token`,
+      name: `${isProduction ? "__Secure-" : ""}next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        secure: isProduction,
+        domain: authCookieDomain,
       },
     },
   },
@@ -204,13 +231,32 @@ export const authOptions: NextAuthOptions = {
       // On first sign in, add user fields to token
       if (user) {
         token.id = user.id;
-        token.role = normalizeRole(user.role);
-        token.isVerified = user.isVerified;
-        token.isSuspended = user.isSuspended;
-        token.isPremium = user.isPremium;
-        token.premiumExpiry = user.premiumExpiry;
         token.provider = user.provider;
-        token.sessionVersion = user.sessionVersion;
+
+        const dbUser = await db.user.findUnique({
+          where: { id: user.id },
+          select: {
+            role: true,
+            isVerified: true,
+            isSuspended: true,
+            isPremium: true,
+            premiumExpiry: true,
+            provider: true,
+            sessionVersion: true,
+          },
+        });
+
+        if (dbUser) {
+          applyUserStatusToToken(token, dbUser);
+          token.provider = dbUser.provider;
+          setCachedUserStatus(user.id, dbUser);
+        } else {
+          console.warn("[auth:jwt] Signed-in user no longer exists", {
+            userId: user.id,
+            provider: account?.provider,
+          });
+          clearTokenClaims(token);
+        }
       }
 
       // If this is an OAuth account (e.g., Google), update user image
@@ -224,7 +270,7 @@ export const authOptions: NextAuthOptions = {
       }
 
       // Handle session update (e.g., when user updates profile)
-      if (trigger === "update" && session) {
+      if (trigger === "update" && session && token.id) {
         // Refresh user data from DB on session update
         const dbUser = await db.user.findUnique({
           where: { id: token.id },
@@ -238,12 +284,8 @@ export const authOptions: NextAuthOptions = {
           },
         });
         if (dbUser) {
-          token.role = normalizeRole(dbUser.role);
-          token.isVerified = dbUser.isVerified;
-          token.isSuspended = dbUser.isSuspended;
-          token.isPremium = dbUser.isPremium;
-          token.premiumExpiry = dbUser.premiumExpiry;
-          token.sessionVersion = dbUser.sessionVersion;
+          applyUserStatusToToken(token, dbUser);
+          setCachedUserStatus(token.id, dbUser);
         }
       }
 
@@ -254,23 +296,15 @@ export const authOptions: NextAuthOptions = {
         const cached = getCachedUserStatus(token.id);
         if (cached) {
           // Use cached data to update token
-          token.role = normalizeRole(cached.role);
-          token.isVerified = cached.isVerified;
-          token.isPremium = cached.isPremium;
-          token.premiumExpiry = cached.premiumExpiry;
-          token.isSuspended = cached.isSuspended;
-
           if (token.sessionVersion !== undefined && cached.sessionVersion !== token.sessionVersion) {
-            token.id = undefined;
-            token.role = undefined;
-            token.isVerified = undefined;
-            token.isSuspended = undefined;
-            token.isPremium = undefined;
-            token.premiumExpiry = undefined;
-            token.provider = undefined;
-            token.sessionVersion = undefined;
+            console.warn("[auth:jwt] Session version mismatch from cache", {
+              userId: token.id,
+              tokenVersion: token.sessionVersion,
+              cachedVersion: cached.sessionVersion,
+            });
+            clearTokenClaims(token);
           } else {
-            token.sessionVersion = cached.sessionVersion;
+            applyUserStatusToToken(token, cached);
           }
         } else {
           // Cache miss — query DB
@@ -287,24 +321,22 @@ export const authOptions: NextAuthOptions = {
           });
           if (suspensionCheck) {
             setCachedUserStatus(token.id, suspensionCheck);
-            token.role = normalizeRole(suspensionCheck.role);
-            token.isVerified = suspensionCheck.isVerified;
-            token.isPremium = suspensionCheck.isPremium;
-            token.premiumExpiry = suspensionCheck.premiumExpiry;
-            token.isSuspended = suspensionCheck.isSuspended;
 
             if (token.sessionVersion !== undefined && suspensionCheck.sessionVersion !== token.sessionVersion) {
-              token.id = undefined;
-              token.role = undefined;
-              token.isVerified = undefined;
-              token.isSuspended = undefined;
-              token.isPremium = undefined;
-              token.premiumExpiry = undefined;
-              token.provider = undefined;
-              token.sessionVersion = undefined;
+              console.warn("[auth:jwt] Session version mismatch from database", {
+                userId: token.id,
+                tokenVersion: token.sessionVersion,
+                databaseVersion: suspensionCheck.sessionVersion,
+              });
+              clearTokenClaims(token);
             } else {
-              token.sessionVersion = suspensionCheck.sessionVersion;
+              applyUserStatusToToken(token, suspensionCheck);
             }
+          } else {
+            console.warn("[auth:jwt] Token references missing user", {
+              userId: token.id,
+            });
+            clearTokenClaims(token);
           }
         }
       }
@@ -330,7 +362,16 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id || "";
+        if (!token.id) {
+          console.warn("[auth:session] JWT is missing user id", {
+            email: session.user.email,
+            hasTokenRole: Boolean(token.role),
+            sessionVersion: token.sessionVersion,
+          });
+          delete (session as Partial<Session>).user;
+          return session;
+        }
+        session.user.id = token.id;
         session.user.role = normalizeRole(token.role);
         session.user.isVerified = token.isVerified || false;
         session.user.isSuspended = token.isSuspended || false;

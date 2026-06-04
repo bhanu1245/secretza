@@ -91,7 +91,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   login: (user) => set({ user, isAuthenticated: true, isAuthModalOpen: false }),
   logout: () => set({ user: null, isAuthenticated: false }),
   syncFromSession: (sessionUser) => {
-    if (sessionUser) {
+    if (sessionUser?.id) {
       set({
         user: {
           id: sessionUser.id,

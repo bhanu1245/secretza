@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
+import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import {
   computePriorityScore,
@@ -15,6 +16,25 @@ import { requireVerifiedEmail } from "@/lib/email-verification-guard";
 function safeJsonParse(str: unknown, fallback: unknown): unknown {
   if (typeof str !== 'string') return fallback;
   try { return JSON.parse(str); } catch { return fallback; }
+}
+
+function logListingAuthFailure(request: Request, session: Session | null) {
+  const cookieNames = (request.headers.get("cookie") || "")
+    .split(";")
+    .map((cookie) => cookie.split("=")[0]?.trim())
+    .filter(Boolean);
+
+  console.warn("[api:listings] getServerSession returned no user id", {
+    hasSession: Boolean(session),
+    hasUser: Boolean(session?.user),
+    userEmail: session?.user?.email,
+    userId: session?.user?.id || null,
+    cookieNames,
+    userAgent: request.headers.get("user-agent"),
+    host: request.headers.get("host"),
+    forwardedHost: request.headers.get("x-forwarded-host"),
+    forwardedProto: request.headers.get("x-forwarded-proto"),
+  });
 }
 
 export async function GET(request: Request) {
@@ -356,7 +376,8 @@ export async function POST(request: Request) {
   try {
     // Auth guard: must be authenticated
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    if (!session?.user?.id) {
+      logListingAuthFailure(request, session);
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }

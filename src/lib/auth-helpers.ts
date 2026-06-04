@@ -20,21 +20,21 @@ interface SessionUser {
 // Get the current server session
 export async function getCurrentUser(): Promise<SessionUser | null> {
   const session = await getServerSession(authOptions);
-  if (!session?.user) return null;
+  if (!session?.user?.id) return null;
   return session.user as SessionUser;
 }
 
 // Require authentication — returns user or null
 export async function requireAuth(): Promise<SessionUser | null> {
   const session = await getServerSession(authOptions);
-  if (!session?.user) return null;
+  if (!session?.user?.id) return null;
   return session.user as SessionUser;
 }
 
 // Require specific role — returns user or null
 export async function requireRole(role: UserRole): Promise<SessionUser | null> {
   const session = await getServerSession(authOptions);
-  if (!session?.user) return null;
+  if (!session?.user?.id) return null;
   const user = session.user as SessionUser;
   if (user.role.toLowerCase() !== role) return null;
   return user;
@@ -43,7 +43,7 @@ export async function requireRole(role: UserRole): Promise<SessionUser | null> {
 // Require minimum role level (admin > moderator > user)
 export async function requireMinRole(minRole: UserRole): Promise<SessionUser | null> {
   const session = await getServerSession(authOptions);
-  if (!session?.user) return null;
+  if (!session?.user?.id) return null;
   const user = session.user as SessionUser;
   const hierarchy: Record<UserRole, number> = { user: 0, moderator: 1, admin: 2 };
   if (hierarchy[user.role.toLowerCase() as UserRole] < hierarchy[minRole]) return null;

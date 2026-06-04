@@ -53,6 +53,17 @@ export default function AuthSync() {
     if (status === "loading") return;
 
     if (status === "authenticated" && session?.user) {
+      if (!session.user.id) {
+        console.warn("[AuthSync] Authenticated session is missing user id; clearing client auth state");
+        prevSessionRef.current = null;
+        prevStatusRef.current = "unauthenticated";
+        logout();
+        setHydrated(true);
+        hydratedRef.current = true;
+        void signOut({ redirect: false });
+        return;
+      }
+
       const sessionKey = `${session.user.id}-${session.user.email}`;
       const previousSessionKey = prevSessionRef.current;
       const previousStatus = prevStatusRef.current;

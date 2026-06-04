@@ -8,7 +8,7 @@ import { requireVerifiedEmail } from "@/lib/email-verification-guard";
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
 

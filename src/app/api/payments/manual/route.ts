@@ -31,7 +31,7 @@ function parseFormField(value: FormDataEntryValue | null): string | null {
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Authentication required", field: "auth" },
         { status: 401 },
@@ -345,7 +345,7 @@ export async function POST(request: Request) {
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Authentication required", field: "auth" },
         { status: 401 },
