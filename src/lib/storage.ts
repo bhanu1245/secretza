@@ -16,15 +16,35 @@ import path from "path";
 
 export type StorageProvider = "r2" | "s3" | "local";
 
+const NEXT_PHASE_ENV = "NEXT_PHASE";
+const NEXT_PRODUCTION_BUILD_PHASE = "phase-production-build";
+
+function isNextProductionBuild(): boolean {
+  return process.env[NEXT_PHASE_ENV] === NEXT_PRODUCTION_BUILD_PHASE;
+}
+
 /**
  * Root directory for local file uploads.
- * Uses UPLOADS_DIR when set (production VPS: /data/uploads), otherwise cwd/uploads.
+ * Uses UPLOADS_DIR when set (production VPS: /data/uploads). In production
+ * local-storage mode this must be explicit so standalone/PM2 cwd changes cannot
+ * silently move uploads into .next/standalone/uploads.
  */
 export function getUploadsBasePath(): string {
   const configured = process.env.UPLOADS_DIR?.trim();
   if (configured) {
+    if (!path.isAbsolute(configured)) {
+      throw new Error("UPLOADS_DIR must be an absolute path for local storage.");
+    }
     return path.resolve(configured);
   }
+
+  const provider = (process.env.STORAGE_PROVIDER || "local").toLowerCase();
+  if (process.env.NODE_ENV === "production" && provider === "local" && !isNextProductionBuild()) {
+    throw new Error(
+      "UPLOADS_DIR is required when STORAGE_PROVIDER=local in production. Set it to a persistent absolute path, e.g. /root/secretza/uploads.",
+    );
+  }
+
   return path.resolve(process.cwd(), "uploads");
 }
 
@@ -362,7 +382,9 @@ export function createStorageService(): StorageService {
 
     case "local": {
       config.bucket = "local";
-      config.publicUrl = process.env.LOCAL_PUBLIC_URL;
+      // Local uploads are served through /api/upload/file so auth checks,
+      // path validation, and standalone-safe UPLOADS_DIR resolution are always
+      // applied. Do not construct direct filesystem-style public URLs here.
       break;
     }
 

@@ -16,7 +16,7 @@ import { encode } from "blurhash";
 export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 /** Allowed MIME types (checked via magic bytes, not extension) */
-export const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"] as const;
 
 /** Maximum pixel dimensions */
 export const MAX_DIMENSIONS = { width: 8000, height: 8000 } as const;
@@ -45,6 +45,24 @@ export interface ImageValidation {
   height?: number;
   mimeType?: string;
   sizeBytes?: number;
+}
+
+type SharpFormatSupport = {
+  input?: {
+    buffer?: boolean;
+    file?: boolean;
+    stream?: boolean;
+  };
+};
+
+function isHeicLikeMime(mimeType: string): boolean {
+  return mimeType === "image/heic" || mimeType === "image/heif";
+}
+
+export function hasHeicRuntimeSupport(): boolean {
+  const formats = sharp.format as unknown as Record<string, SharpFormatSupport | undefined>;
+  const heif = formats.heif;
+  return Boolean(heif?.input?.buffer || heif?.input?.file || heif?.input?.stream);
 }
 
 // ==========================================
@@ -82,6 +100,16 @@ export function detectMimeType(buffer: Buffer): string | null {
     return "image/webp";
   }
 
+  // HEIF/HEIC: ISO BMFF with ftyp brand (common iPhone camera/gallery output)
+  const brand = buffer.subarray(4, 12).toString("ascii");
+  if (brand.startsWith("ftyp")) {
+    const heifBrands = ["heic", "heix", "hevc", "hevx", "mif1", "msf1"];
+    const detectedBrand = buffer.subarray(8, 12).toString("ascii");
+    if (heifBrands.includes(detectedBrand)) {
+      return detectedBrand === "mif1" || detectedBrand === "msf1" ? "image/heif" : "image/heic";
+    }
+  }
+
   return null;
 }
 
@@ -117,6 +145,16 @@ export async function validateImage(buffer: Buffer, fileName: string): Promise<I
       valid: false,
       error: `Unsupported file type. Allowed: ${ALLOWED_MIME_TYPES.join(", ")}. File: "${fileName}"`,
       mimeType: detectedMime ?? "unknown",
+      sizeBytes: buffer.length,
+    };
+  }
+
+  if (isHeicLikeMime(detectedMime) && !hasHeicRuntimeSupport()) {
+    return {
+      valid: false,
+      error:
+        "HEIC/HEIF images are not supported by this server runtime. On iPhone, choose JPEG/Most Compatible or upload JPG, PNG, or WebP.",
+      mimeType: detectedMime,
       sizeBytes: buffer.length,
     };
   }
@@ -229,20 +267,18 @@ export async function processImage(buffer: Buffer): Promise<ProcessedImage> {
 /**
  * Encode a WebP (or any image) buffer into a BlurHash string.
  *
- * The image is decoded to raw RGB pixels via sharp, then passed directly
- * to the blurhash library which expects a Uint8ClampedArray of RGB values.
+ * The image is decoded to raw RGBA pixels via sharp, then passed directly
+ * to the blurhash library which expects four values per pixel.
  */
 async function generateBlurHash(imageBuffer: Buffer, xComponents = 4, yComponents = 3): Promise<string> {
-  // Decode to raw RGB pixels (blurhash only needs RGB, not alpha)
+  // Decode to raw RGBA pixels. blurhash.encode expects width * height * 4 bytes.
   const { data, info } = await sharp(imageBuffer)
     .resize(64, 64, { fit: "inside", withoutEnlargement: true }) // downscale for speed
-    .removeAlpha()
+    .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  // sharp raw output with .removeAlpha() is a flat Buffer of R,G,B,R,G,B,...
-  // blurhash.encode expects Uint8ClampedArray of RGB values.
-  const rgbData = new Uint8ClampedArray(data.buffer, data.byteOffset, data.byteLength);
+  const rgbaData = new Uint8ClampedArray(data.buffer, data.byteOffset, data.byteLength);
 
-  return encode(rgbData, info.width, info.height, xComponents, yComponents);
+  return encode(rgbaData, info.width, info.height, xComponents, yComponents);
 }

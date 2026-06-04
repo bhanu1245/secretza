@@ -14,20 +14,34 @@ import { toast } from "sonner";
 // Types
 // ==========================================
 
+type UploadStatus = "pending" | "uploading" | "processing" | "success" | "failed";
+type PreviewStatus = "pending" | "loaded" | "failed";
+
 export interface UploadedImage {
   id: string;
   url: string;
   thumbnailUrl?: string;
+  mediumUrl?: string;
   sortOrder?: number;
   isUploading?: boolean;
   error?: string | null;
+  uploadStatus?: UploadStatus;
+  status?: UploadStatus;
+  previewStatus?: PreviewStatus;
+  previewError?: string | null;
+  previewRetryToken?: number;
   uploadResult?: {
     id: string;
     key: string;
     storageKey?: string;
     url: string;
+    thumbnailUrl?: string;
+    mediumUrl?: string;
     sizeBytes: number;
     mimeType: string;
+    width?: number;
+    height?: number;
+    blurHash?: string;
   } | null;
 }
 
@@ -42,7 +56,30 @@ interface ImageUploaderProps {
 // ==========================================
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+const UPLOAD_TIMEOUT_MS = 120_000;
+
+type UploadApiFile = NonNullable<UploadedImage["uploadResult"]> & {
+  fileName?: string;
+};
+
+function firstUploadedFile(data: unknown): UploadApiFile | null {
+  if (!data || typeof data !== "object") return null;
+  const value = data as { files?: unknown; file?: unknown };
+  if (Array.isArray(value.files) && value.files[0] && typeof value.files[0] === "object") {
+    return value.files[0] as UploadApiFile;
+  }
+  if (value.file && typeof value.file === "object") {
+    return value.file as UploadApiFile;
+  }
+  return null;
+}
+
+function isTransientUploadError(error: unknown): boolean {
+  if (error instanceof DOMException && error.name === "AbortError") return true;
+  if (!(error instanceof Error)) return false;
+  return /network|fetch|timeout|abort|failed to fetch/i.test(error.message);
+}
 
 // ==========================================
 // Component
@@ -56,13 +93,14 @@ export default function ImageUploader({
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const completedCount = images.filter((img) => !img.isUploading && !img.error).length;
-  const canAddMore = completedCount < maxImages;
+  const activeCount = images.filter((img) => !img.error).length;
+  const completedCount = images.filter((img) => !img.isUploading && !img.error && img.url).length;
+  const canAddMore = activeCount < maxImages;
 
   // ── Upload Logic ──────────────────────────────────────────
   const uploadFile = useCallback(
     async (file: File) => {
-      if (completedCount >= maxImages) {
+      if (activeCount >= maxImages) {
         toast.error("Limit reached", {
           description: `Maximum ${maxImages} images allowed.`,
         });
@@ -72,7 +110,7 @@ export default function ImageUploader({
       // Client-side validation
       if (!ACCEPTED_TYPES.includes(file.type)) {
         toast.error("Invalid format", {
-          description: "Only JPG, PNG, and WebP are supported.",
+          description: "Only JPG, PNG, WebP, HEIC, and HEIF images are supported.",
         });
         return;
       }
@@ -110,6 +148,10 @@ export default function ImageUploader({
         url: "",
         isUploading: true,
         error: null,
+        uploadStatus: "pending",
+        status: "pending",
+        previewStatus: "pending",
+        previewError: null,
       };
       onImagesChange((prev) => [...prev, placeholder]);
 
@@ -119,7 +161,15 @@ export default function ImageUploader({
         previewUrl = URL.createObjectURL(file);
         onImagesChange((prev) =>
           prev.map((img) =>
-            img.id === tempId ? { ...img, url: previewUrl } : img
+            img.id === tempId
+              ? {
+                  ...img,
+                  url: previewUrl,
+                  uploadStatus: "uploading",
+                  status: "uploading",
+                  previewStatus: "pending",
+                }
+              : img
           )
         );
       } catch {
@@ -128,13 +178,41 @@ export default function ImageUploader({
 
       // Upload to server
       try {
-        const formData = new FormData();
-        formData.append("files", file);
+        let res: Response | null = null;
+        let lastError: unknown = null;
 
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          const controller = new AbortController();
+          const timeoutId = window.setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
+          try {
+            const formData = new FormData();
+            formData.append("files", file);
+            res = await fetch("/api/upload", {
+              method: "POST",
+              body: formData,
+              credentials: "include",
+              cache: "no-store",
+              signal: controller.signal,
+            });
+            break;
+          } catch (error) {
+            lastError = error;
+            if (attempt === 2 || !isTransientUploadError(error)) throw error;
+            onImagesChange((prev) =>
+              prev.map((img) =>
+                img.id === tempId
+                  ? { ...img, uploadStatus: "uploading", status: "uploading", error: null }
+                  : img
+              )
+            );
+          } finally {
+            window.clearTimeout(timeoutId);
+          }
+        }
+
+        if (!res) {
+          throw lastError instanceof Error ? lastError : new Error("Upload failed");
+        }
 
         const data = await res.json().catch(() => ({}));
 
@@ -146,9 +224,20 @@ export default function ImageUploader({
           throw new Error(data.error || "Upload failed");
         }
 
-        const uploadedFile = data.files?.[0];
+        onImagesChange((prev) =>
+          prev.map((img) =>
+            img.id === tempId
+              ? { ...img, uploadStatus: "processing", status: "processing", isUploading: true }
+              : img
+          )
+        );
+
+        const uploadedFile = firstUploadedFile(data);
         if (!uploadedFile) {
           throw new Error("No file returned from server");
+        }
+        if (!uploadedFile.url || !uploadedFile.key) {
+          throw new Error("Upload response was missing image URL or storage key");
         }
 
         // Replace placeholder with real uploaded image
@@ -158,17 +247,27 @@ export default function ImageUploader({
               ? {
                   id: uploadedFile.id || tempId,
                   url: uploadedFile.url,
-                  thumbnailUrl: uploadedFile.url,
+                  thumbnailUrl: uploadedFile.thumbnailUrl || uploadedFile.url,
+                  mediumUrl: uploadedFile.mediumUrl || uploadedFile.url,
                   sortOrder: prev.length,
                   isUploading: false,
                   error: null,
+                  uploadStatus: "success",
+                  status: "success",
+                  previewStatus: "pending",
+                  previewError: null,
                   uploadResult: {
                     id: uploadedFile.id || tempId,
                     key: uploadedFile.key || "",
                     storageKey: uploadedFile.storageKey || uploadedFile.key || "",
                     url: uploadedFile.url,
+                    thumbnailUrl: uploadedFile.thumbnailUrl || uploadedFile.url,
+                    mediumUrl: uploadedFile.mediumUrl || uploadedFile.url,
                     sizeBytes: uploadedFile.sizeBytes || 0,
                     mimeType: uploadedFile.mimeType || "",
+                    width: uploadedFile.width,
+                    height: uploadedFile.height,
+                    blurHash: uploadedFile.blurHash,
                   },
                 }
               : img
@@ -188,7 +287,15 @@ export default function ImageUploader({
         onImagesChange((prev) =>
           prev.map((img) =>
             img.id === tempId
-              ? { ...img, isUploading: false, error: message }
+              ? {
+                  ...img,
+                  isUploading: false,
+                  uploadStatus: "failed",
+                  status: "failed",
+                  error: message,
+                  previewStatus: "failed",
+                  previewError: message,
+                }
               : img
           )
         );
@@ -202,18 +309,18 @@ export default function ImageUploader({
         });
       }
     },
-    [completedCount, maxImages, onImagesChange]
+    [activeCount, maxImages, onImagesChange]
   );
 
   // ── Handlers ───────────────────────────────────────────────
   const handleFileSelect = useCallback(
     (files: FileList | null) => {
       if (!files) return;
-      const remaining = maxImages - completedCount;
+      const remaining = maxImages - activeCount;
       const toUpload = Array.from(files).slice(0, remaining);
       toUpload.forEach((f) => uploadFile(f));
     },
-    [uploadFile, maxImages, completedCount]
+    [uploadFile, maxImages, activeCount]
   );
 
   const handleDrop = useCallback(
@@ -273,6 +380,37 @@ export default function ImageUploader({
   );
 
   // ── Helper ────────────────────────────────────────────────
+  const getPreviewSrc = (img: UploadedImage) => {
+    const src = img.thumbnailUrl || img.url;
+    if (!src || src.startsWith("blob:") || !img.previewRetryToken) return src;
+    try {
+      const parsed = new URL(src, window.location.origin);
+      parsed.searchParams.set("previewRetry", String(img.previewRetryToken));
+      return parsed.pathname + parsed.search + parsed.hash;
+    } catch {
+      const separator = src.includes("?") ? "&" : "?";
+      return `${src}${separator}previewRetry=${img.previewRetryToken}`;
+    }
+  };
+
+  const retryPreview = useCallback(
+    (id: string) => {
+      onImagesChange((prev) =>
+        prev.map((img) =>
+          img.id === id
+            ? {
+                ...img,
+                previewStatus: "pending",
+                previewError: null,
+                previewRetryToken: Date.now(),
+              }
+            : img,
+        ),
+      );
+    },
+    [onImagesChange],
+  );
+
   const getFileName = (url: string) => {
     try {
       const pathname = new URL(url, "https://placeholder.com").pathname;
@@ -290,8 +428,8 @@ export default function ImageUploader({
           Listing Images
         </h3>
         <p className="text-sm text-[#A1A1AA]">
-          Upload up to {maxImages} images. First image is the cover. JPG, PNG, or
-          WebP — max 10MB each. Minimum 50×50px.
+          Upload up to {maxImages} images. First image is the cover. JPG, PNG,
+          WebP, HEIC, or HEIF — max 10MB each. Minimum 50×50px.
         </p>
       </div>
 
@@ -327,7 +465,7 @@ export default function ImageUploader({
               or drag and drop
             </p>
             <p className="text-xs text-[#52525B] mt-1">
-              JPG, PNG, or WebP — max 10MB each
+              JPG, PNG, WebP, HEIC, or HEIF — max 10MB each
             </p>
           </div>
         </div>
@@ -336,8 +474,12 @@ export default function ImageUploader({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
         multiple
+        onClick={(e) => {
+          // Allows selecting the same camera/gallery file again after removal.
+          e.currentTarget.value = "";
+        }}
         onChange={(e) => handleFileSelect(e.target.files)}
         className="hidden"
       />
@@ -345,7 +487,9 @@ export default function ImageUploader({
       {/* Image Grid */}
       {images.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {images.map((img, idx) => (
+          {images.map((img, idx) => {
+            const uploadStatus = img.uploadStatus ?? img.status;
+            return (
             <div
               key={img.id}
               className={`group relative aspect-square rounded-lg overflow-hidden border transition-all duration-200 ${
@@ -357,9 +501,9 @@ export default function ImageUploader({
               }`}
             >
               {/* Image */}
-              {img.url ? (
+              {img.url && img.previewStatus !== "failed" ? (
                 <img
-                  src={img.thumbnailUrl || img.url}
+                  src={getPreviewSrc(img)}
                   alt={
                     img.isUploading
                       ? "Uploading..."
@@ -368,6 +512,30 @@ export default function ImageUploader({
                         : `Image ${idx + 1}`
                   }
                   className={`w-full h-full object-cover ${img.isUploading ? "opacity-50" : ""}`}
+                  onLoad={() => {
+                    if (img.previewStatus === "loaded") return;
+                    onImagesChange((prev) =>
+                      prev.map((item) =>
+                        item.id === img.id
+                          ? { ...item, previewStatus: "loaded", previewError: null }
+                          : item,
+                      ),
+                    );
+                  }}
+                  onError={() => {
+                    if (img.isUploading || img.error) return;
+                    onImagesChange((prev) =>
+                      prev.map((item) =>
+                        item.id === img.id
+                          ? {
+                              ...item,
+                              previewStatus: "failed",
+                              previewError: "Preview failed to load. The upload is saved; retry the preview.",
+                            }
+                          : item,
+                      ),
+                    );
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -376,6 +544,25 @@ export default function ImageUploader({
                   ) : (
                     <ImageIcon className="size-5 text-[#52525B]" />
                   )}
+                </div>
+              )}
+
+              {img.previewStatus === "failed" && !img.error && !img.isUploading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#15151D] px-3 text-center">
+                  <ImageIcon className="size-5 text-[#52525B]" />
+                  <p className="text-[10px] font-medium text-[#A1A1AA]">
+                    Preview unavailable
+                  </p>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      retryPreview(img.id);
+                    }}
+                    className="rounded bg-white/10 px-2 py-1 text-[10px] text-white hover:bg-white/15"
+                  >
+                    Retry preview
+                  </button>
                 </div>
               )}
 
@@ -388,8 +575,11 @@ export default function ImageUploader({
 
               {/* Uploading Overlay */}
               {img.isUploading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 px-2">
                   <Loader2 className="size-6 text-white animate-spin" />
+                  <span className="rounded bg-black/50 px-2 py-1 text-[10px] font-medium text-white">
+                    {uploadStatus === "processing" ? "Processing" : "Uploading"}
+                  </span>
                 </div>
               )}
 
@@ -461,7 +651,8 @@ export default function ImageUploader({
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
 
           {/* Add More Card */}
           {canAddMore && (
@@ -472,7 +663,7 @@ export default function ImageUploader({
             >
               <Upload className="size-4" />
               <span className="text-[10px] font-medium">
-                {maxImages - completedCount} left
+                {maxImages - activeCount} left
               </span>
             </button>
           )}
@@ -483,7 +674,7 @@ export default function ImageUploader({
       {images.length > 0 && (
         <p className="text-xs text-[#52525B]">
           {completedCount} of {maxImages} images
-          {images.some((img) => img.isUploading) && " (uploading...)"}
+          {images.some((img) => img.isUploading) && " (uploading/processing...)"}
         </p>
       )}
     </div>

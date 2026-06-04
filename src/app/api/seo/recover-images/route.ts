@@ -31,7 +31,6 @@ import { writeFile, mkdir, stat } from "fs/promises";
 import path from "path";
 
 const DEFAULT_BATCH = 100;
-const UPLOADS_BASE = getUploadsBasePath();
 
 /** True when the storage provider is local filesystem. */
 function isLocalStorage(): boolean {
@@ -45,7 +44,7 @@ function isLocalStorage(): boolean {
  *   → "<cwd>/uploads/seo/category_city/escorts--mumbai.svg"
  */
 function localPathForKey(storageKey: string): string {
-  return path.resolve(UPLOADS_BASE, storageKey);
+  return path.resolve(getUploadsBasePath(), storageKey);
 }
 
 interface RecoverStats {

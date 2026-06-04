@@ -23,7 +23,7 @@ Railway environment panel, or CI secrets) before the first production deploy.
 | `CRON_SECRET` | `openssl rand -hex 32` | Secures `/api/cron/*` endpoints. Required for ranking refresh and file cleanup to run. |
 | `STORAGE_PROVIDER` | `local` or `r2` or `s3` | Determines where uploaded files (listings, screenshots) are stored. Default `local`. |
 | `UPLOADS_DIR` | `/data/uploads` | **Required for VPS local storage.** Absolute path to persistent upload directory. Payment screenshots, listing images, and SEO assets are written here when `STORAGE_PROVIDER=local`. |
-| `LOCAL_PUBLIC_URL` | `https://secretza.com` | Base URL for local file serving. Only required when `STORAGE_PROVIDER=local`. |
+| `LOCAL_PUBLIC_URL` | unset | Local files are served through `/api/upload/file?key=...` so auth checks and `UPLOADS_DIR` path validation always run. Do not set this for local VPS uploads unless you intentionally switch to a separate public CDN/static mount. |
 
 ---
 

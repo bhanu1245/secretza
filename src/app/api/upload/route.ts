@@ -2,24 +2,23 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createStorageService } from "@/lib/storage";
+import { processImage, validateImage } from "@/lib/image-processing";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 type UploadedFileResponse = {
   id: string;
   key: string;
   storageKey: string;
   url: string;
+  thumbnailUrl: string;
+  mediumUrl: string;
   sizeBytes: number;
   mimeType: string;
+  width: number;
+  height: number;
+  blurHash: string;
   fileName: string;
 };
-
-function extensionFor(type: string) {
-  if (type === "image/png") return "png";
-  if (type === "image/webp") return "webp";
-  return "jpg";
-}
 
 export async function POST(request: Request) {
   try {
@@ -44,15 +43,6 @@ export async function POST(request: Request) {
     const uploaded: UploadedFileResponse[] = [];
 
     for (const file of files) {
-      if (!ACCEPTED_TYPES.has(file.type)) {
-        console.warn("[Upload] invalid mime type", {
-          userId: session.user.id,
-          fileName: file.name,
-          mimeType: file.type,
-        });
-        return NextResponse.json({ error: "Only JPG, PNG, and WebP images are allowed" }, { status: 400 });
-      }
-
       if (file.size > MAX_FILE_SIZE) {
         console.warn("[Upload] file too large", {
           userId: session.user.id,
@@ -63,16 +53,61 @@ export async function POST(request: Request) {
       }
 
       const buffer = Buffer.from(await file.arrayBuffer());
-      const key = `listings/${session.user.id}/${Date.now()}-${crypto.randomUUID()}.${extensionFor(file.type)}`;
-      const result = await storage.upload(key, buffer, file.type);
+      const validation = await validateImage(buffer, file.name);
+      if (!validation.valid) {
+        console.warn("[Upload] invalid image", {
+          userId: session.user.id,
+          fileName: file.name,
+          mimeType: validation.mimeType || file.type,
+          error: validation.error,
+        });
+        return NextResponse.json({ error: validation.error || "Unsupported image file" }, { status: 400 });
+      }
+
+      let processed;
+      try {
+        processed = await processImage(buffer);
+      } catch (error) {
+        console.warn("[Upload] image processing failed", {
+          userId: session.user.id,
+          fileName: file.name,
+          mimeType: validation.mimeType || file.type,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return NextResponse.json(
+          {
+            error:
+              validation.mimeType === "image/heic" || validation.mimeType === "image/heif"
+                ? "This HEIC/HEIF image could not be converted on the server. Please choose JPEG, PNG, or WebP."
+                : "Image processing failed. Please try a different image.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const baseKey = `listings/${session.user.id}/${Date.now()}-${crypto.randomUUID()}`;
+      const key = `${baseKey}.webp`;
+      const thumbnailKey = `${baseKey}-thumb.webp`;
+      const mediumKey = `${baseKey}-medium.webp`;
+
+      const [originalResult, thumbnailResult, mediumResult] = await Promise.all([
+        storage.upload(key, processed.original, processed.mimeType),
+        storage.upload(thumbnailKey, processed.thumbnail, processed.mimeType),
+        storage.upload(mediumKey, processed.medium, processed.mimeType),
+      ]);
 
       uploaded.push({
         id: key,
-        key: result.key,
-        storageKey: result.key,
-        url: result.url,
-        sizeBytes: result.sizeBytes,
-        mimeType: file.type,
+        key: originalResult.key,
+        storageKey: originalResult.key,
+        url: originalResult.url,
+        thumbnailUrl: thumbnailResult.url,
+        mediumUrl: mediumResult.url,
+        sizeBytes: originalResult.sizeBytes,
+        mimeType: processed.mimeType,
+        width: processed.width,
+        height: processed.height,
+        blurHash: processed.blurHash,
         fileName: file.name,
       });
     }
