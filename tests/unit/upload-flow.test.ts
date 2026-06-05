@@ -4,10 +4,11 @@ import { mkdtemp, readFile, rm } from "fs/promises";
 import os from "os";
 import path from "path";
 import { hasHeicRuntimeSupport, processImage, validateImage } from "@/lib/image-processing";
-import { createStorageService, getUploadsBasePath } from "@/lib/storage";
+import { createStorageService, getUploadsBasePath, resolveUploadStoragePath } from "@/lib/storage";
 
 const originalEnv = { ...process.env };
 const tempDirs: string[] = [];
+const originalCwd = process.cwd();
 
 async function makeTempUploadsDir() {
   const dir = await mkdtemp(path.join(os.tmpdir(), "secretza-uploads-"));
@@ -30,6 +31,7 @@ async function makeImageBuffer(width = 100, height = 100) {
 
 afterEach(async () => {
   process.env = { ...originalEnv };
+  process.chdir(originalCwd);
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
@@ -66,6 +68,27 @@ describe("upload flow storage and processing", () => {
 
     expect(secondResult.url).toContain("/api/upload/file?key=");
     await expect(readFile(path.join(process.env.UPLOADS_DIR, "listings/user-1/restart.webp"))).resolves.toBeTruthy();
+  });
+
+  it("resolves reads and writes from UPLOADS_DIR even when cwd is standalone output", async () => {
+    const projectRoot = await makeTempUploadsDir();
+    const standaloneDir = path.join(projectRoot, ".next", "standalone");
+    const uploadsDir = path.join(projectRoot, "uploads");
+    await rm(standaloneDir, { recursive: true, force: true });
+    await import("fs/promises").then(({ mkdir }) => mkdir(standaloneDir, { recursive: true }));
+
+    process.env.STORAGE_PROVIDER = "local";
+    process.env.UPLOADS_DIR = uploadsDir;
+    process.chdir(standaloneDir);
+
+    const storage = createStorageService();
+    const result = await storage.upload("listings/user-1/standalone.webp", await makeImageBuffer(), "image/webp");
+    const physicalPath = resolveUploadStoragePath("listings/user-1/standalone.webp");
+
+    expect(result.url).toBe("/api/upload/file?key=listings%2Fuser-1%2Fstandalone.webp");
+    expect(physicalPath).toBe(path.join(uploadsDir, "listings", "user-1", "standalone.webp"));
+    await expect(readFile(physicalPath)).resolves.toBeTruthy();
+    await expect(readFile(path.join(standaloneDir, "uploads", "listings", "user-1", "standalone.webp"))).rejects.toThrow();
   });
 
   it.each([1, 5, 20])("writes %i listing images without changing URL contract", async (count) => {

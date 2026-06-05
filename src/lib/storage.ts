@@ -6,7 +6,7 @@
 
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { mkdir, writeFile, readFile, unlink, rm } from "fs/promises";
+import { mkdir, writeFile, unlink, rm } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 
@@ -18,19 +18,34 @@ export type StorageProvider = "r2" | "s3" | "local";
 
 const NEXT_PHASE_ENV = "NEXT_PHASE";
 const NEXT_PRODUCTION_BUILD_PHASE = "phase-production-build";
+const UPLOADS_DIR_ENV = "UPLOADS_DIR";
 
 function isNextProductionBuild(): boolean {
   return process.env[NEXT_PHASE_ENV] === NEXT_PRODUCTION_BUILD_PHASE;
+}
+
+function isProductionLocalRuntime(): boolean {
+  const provider = (process.env.STORAGE_PROVIDER || "local").toLowerCase();
+  return process.env.NODE_ENV === "production" && provider === "local" && !isNextProductionBuild();
+}
+
+function getDevelopmentUploadsBasePath(): string {
+  const cwd = process.cwd();
+  const standaloneSegment = `${path.sep}.next${path.sep}standalone`;
+  if (cwd.includes(standaloneSegment)) {
+    return path.resolve(cwd.split(standaloneSegment)[0], "uploads");
+  }
+  return path.resolve(cwd, "uploads");
 }
 
 /**
  * Root directory for local file uploads.
  * Uses UPLOADS_DIR when set (production VPS: /data/uploads). In production
  * local-storage mode this must be explicit so standalone/PM2 cwd changes cannot
- * silently move uploads into .next/standalone/uploads.
+ * move uploads into a build output directory.
  */
 export function getUploadsBasePath(): string {
-  const configured = process.env.UPLOADS_DIR?.trim();
+  const configured = process.env[UPLOADS_DIR_ENV]?.trim();
   if (configured) {
     if (!path.isAbsolute(configured)) {
       throw new Error("UPLOADS_DIR must be an absolute path for local storage.");
@@ -38,14 +53,22 @@ export function getUploadsBasePath(): string {
     return path.resolve(configured);
   }
 
-  const provider = (process.env.STORAGE_PROVIDER || "local").toLowerCase();
-  if (process.env.NODE_ENV === "production" && provider === "local" && !isNextProductionBuild()) {
+  if (isProductionLocalRuntime()) {
     throw new Error(
       "UPLOADS_DIR is required when STORAGE_PROVIDER=local in production. Set it to a persistent absolute path, e.g. /root/secretza/uploads.",
     );
   }
 
-  return path.resolve(process.cwd(), "uploads");
+  return getDevelopmentUploadsBasePath();
+}
+
+export function resolveUploadStoragePath(key: string): string {
+  const base = path.resolve(getUploadsBasePath());
+  const resolved = path.resolve(base, key);
+  if (!resolved.startsWith(base + path.sep) && resolved !== base) {
+    throw new Error(`Path traversal detected: key "${key}" resolves outside uploads directory`);
+  }
+  return resolved;
 }
 
 export interface StorageConfig {
@@ -254,12 +277,7 @@ export class StorageService {
   // ==========================================
 
   private async uploadLocal(key: string, buffer: Buffer, _contentType: string): Promise<UploadResult> {
-    // Prevent path traversal: resolved path must stay within localBasePath
-    const resolved = path.resolve(this.localBasePath, key);
-    const base = path.resolve(this.localBasePath);
-    if (!resolved.startsWith(base + path.sep) && resolved !== base) {
-      throw new Error(`Path traversal detected: key "${key}" resolves outside uploads directory`);
-    }
+    const resolved = resolveUploadStoragePath(key);
 
     // Ensure the parent directory tree exists
     const dir = path.dirname(resolved);
@@ -275,12 +293,7 @@ export class StorageService {
   }
 
   private async deleteLocal(key: string): Promise<void> {
-    // Prevent path traversal: resolved path must stay within localBasePath
-    const resolved = path.resolve(this.localBasePath, key);
-    const base = path.resolve(this.localBasePath);
-    if (!resolved.startsWith(base + path.sep) && resolved !== base) {
-      throw new Error(`Path traversal detected: key "${key}" resolves outside uploads directory`);
-    }
+    const resolved = resolveUploadStoragePath(key);
 
     if (existsSync(resolved)) {
       await unlink(resolved);
@@ -334,7 +347,7 @@ export class StorageService {
  * Supported env vars (prefix depends on provider):
  *
  *   STORAGE_PROVIDER    — "r2" | "s3" | "local" (default: "local")
- *   UPLOADS_DIR         — absolute path for local uploads (default: cwd/uploads)
+ *   UPLOADS_DIR         — absolute path for local uploads (required in production local mode)
  *
  *   R2_ACCOUNT_ID       — Cloudflare account ID
  *   R2_BUCKET           — R2 bucket name

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createStorageService, getUploadsBasePath } from "@/lib/storage";
+import { createStorageService, resolveUploadStoragePath } from "@/lib/storage";
 import { authorizeUploadedFileAccess } from "@/lib/image-moderation";
 
 export async function GET(request: Request) {
@@ -38,14 +38,7 @@ export async function GET(request: Request) {
     }
 
     const { readFile } = await import("fs/promises");
-    const path = await import("path");
-    const basePath = getUploadsBasePath();
-    const filePath = path.resolve(basePath, key);
-
-    if (!filePath.startsWith(basePath + path.sep)) {
-      console.warn("[UploadFile] invalid key", { key });
-      return NextResponse.json({ error: "Invalid file key" }, { status: 400 });
-    }
+    const filePath = resolveUploadStoragePath(key);
 
     const file = await readFile(filePath);
     return new NextResponse(file, {

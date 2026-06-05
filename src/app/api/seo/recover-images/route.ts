@@ -24,7 +24,7 @@ import {
   buildSeoPlaceholderSvg,
   seoImageStorageKey,
 } from "@/lib/seo-images";
-import { createStorageService, getUploadsBasePath } from "@/lib/storage";
+import { createStorageService, resolveUploadStoragePath } from "@/lib/storage";
 import { logError } from "@/lib/monitoring";
 import { existsSync } from "fs";
 import { writeFile, mkdir, stat } from "fs/promises";
@@ -40,11 +40,10 @@ function isLocalStorage(): boolean {
 
 /**
  * Derive the absolute local disk path for a storage key.
- * e.g. "seo/category_city/escorts--mumbai.svg"
- *   → "<cwd>/uploads/seo/category_city/escorts--mumbai.svg"
+ * e.g. "seo/category_city/escorts--mumbai.svg" -> UPLOADS_DIR/seo/category_city/escorts--mumbai.svg
  */
 function localPathForKey(storageKey: string): string {
-  return path.resolve(getUploadsBasePath(), storageKey);
+  return resolveUploadStoragePath(storageKey);
 }
 
 interface RecoverStats {
