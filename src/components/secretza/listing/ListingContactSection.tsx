@@ -9,6 +9,7 @@ import {
   buildWhatsAppUrl,
   hasContactInfo,
 } from "@/lib/listing-contact";
+import { useTrackEvent } from "@/components/providers/AnalyticsProvider";
 
 type ListingContactSectionProps = {
   listingId?: string;
@@ -55,6 +56,7 @@ export default function ListingContactSection({
   const [contact, setContact] = useState<ContactInfo>(initialContact);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const trackEvent = useTrackEvent();
 
   async function revealContact() {
     if (!listingId) return;
@@ -74,6 +76,8 @@ export default function ListingContactSection({
       }
 
       setContact(data.contact || {});
+      // Fire only after a confirmed successful reveal.
+      trackEvent("contact_reveal", { listing_id: listingId });
     } catch {
       setError("Unable to load contact information");
     } finally {

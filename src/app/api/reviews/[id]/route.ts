@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { logError } from "@/lib/monitoring";
+import { validateUserContent } from "@/lib/content-filter";
 
 // GET /api/reviews/[id]
 export async function GET(
@@ -129,6 +130,17 @@ export async function PATCH(
     if (title !== undefined && title.length > 200) {
       return NextResponse.json(
         { error: "Review title must be at most 200 characters" },
+        { status: 400 }
+      );
+    }
+
+    const contentError = validateUserContent([
+      { field: "title", label: "Review title", value: title },
+      { field: "body", label: "Review", value: reviewBody },
+    ]);
+    if (contentError) {
+      return NextResponse.json(
+        { error: contentError.message, field: contentError.field },
         { status: 400 }
       );
     }

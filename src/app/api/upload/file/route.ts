@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createStorageService, resolveUploadStoragePath } from "@/lib/storage";
 import { authorizeUploadedFileAccess } from "@/lib/image-moderation";
+import { verifyUploadAccessToken } from "@/lib/upload-access-token";
 
 export async function GET(request: Request) {
   try {
@@ -13,20 +14,34 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Missing file key" }, { status: 400 });
     }
 
-    const session = await getServerSession(authOptions);
-    const viewer = session?.user
-      ? { id: session.user.id, role: session.user.role as string }
-      : undefined;
+    // Fast path: a freshly uploaded file carries a short-lived signed token
+    // bound to this exact key. This authorizes the preview before any
+    // ListingImage row exists and without depending on the <img> request
+    // resolving a session. Only the server can mint this token.
+    const previewToken = searchParams.get("token");
+    const previewExp = searchParams.get("exp");
+    const hasValidPreviewToken = verifyUploadAccessToken(
+      key,
+      previewToken,
+      previewExp ? Number(previewExp) : null,
+    );
 
-    const allowed = await authorizeUploadedFileAccess(key, viewer);
-    if (!allowed) {
-      const prefix = key.split("/")[0] ?? "unknown";
-      console.warn("[UploadFile] denied access", {
-        prefix,
-        viewerId: viewer?.id ?? null,
-        role: viewer?.role ?? null,
-      });
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!hasValidPreviewToken) {
+      const session = await getServerSession(authOptions);
+      const viewer = session?.user
+        ? { id: session.user.id, role: session.user.role as string }
+        : undefined;
+
+      const allowed = await authorizeUploadedFileAccess(key, viewer);
+      if (!allowed) {
+        const prefix = key.split("/")[0] ?? "unknown";
+        console.warn("[UploadFile] denied access", {
+          prefix,
+          viewerId: viewer?.id ?? null,
+          role: viewer?.role ?? null,
+        });
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     const storage = createStorageService();

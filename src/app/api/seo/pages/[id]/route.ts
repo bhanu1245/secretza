@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
 import { logError } from "@/lib/monitoring";
 import { serializeSeoPageForApi } from "@/lib/seo-helpers";
+import { validateUserContent } from "@/lib/content-filter";
 import {
   enrichSchemaWithFeaturedImage,
   resolveSeoImageUrl,
@@ -101,6 +102,22 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const existing = await db.seoPage.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: "SEO page not found" }, { status: 404 });
+    }
+
+    // Block contact-detail leakage in admin-editable free-text SEO fields.
+    // URL-bearing fields (canonicalUrl, featuredImage, customData) are excluded
+    // by design since they legitimately contain links.
+    const contentError = validateUserContent([
+      { field: "title", label: "Title", value: title },
+      { field: "h1", label: "H1", value: h1 },
+      { field: "metaDescription", label: "Meta description", value: metaDescription },
+      { field: "introContent", label: "Intro content", value: introContent },
+    ]);
+    if (contentError) {
+      return NextResponse.json(
+        { error: contentError.message, field: contentError.field },
+        { status: 400 },
+      );
     }
 
     const updateData: Record<string, unknown> = {};

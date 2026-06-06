@@ -5,6 +5,11 @@ import os from "os";
 import path from "path";
 import { hasHeicRuntimeSupport, processImage, validateImage } from "@/lib/image-processing";
 import { createStorageService, getUploadsBasePath, resolveUploadStoragePath } from "@/lib/storage";
+import {
+  appendUploadAccessToken,
+  createUploadAccessToken,
+  verifyUploadAccessToken,
+} from "@/lib/upload-access-token";
 
 const originalEnv = { ...process.env };
 const tempDirs: string[] = [];
@@ -139,5 +144,45 @@ describe("upload flow storage and processing", () => {
 
   it("reports whether the server runtime can decode HEIC/HEIF", () => {
     expect(typeof hasHeicRuntimeSupport()).toBe("boolean");
+  });
+});
+
+describe("upload preview access tokens", () => {
+  it("authorizes a freshly uploaded file via a signed key-bound token", () => {
+    vi.stubEnv("NEXTAUTH_SECRET", "x".repeat(32));
+    const key = "listings/user-123/abc.thumb.webp";
+    const { token, exp } = createUploadAccessToken(key);
+
+    expect(verifyUploadAccessToken(key, token, exp)).toBe(true);
+  });
+
+  it("rejects a token bound to a different key", () => {
+    vi.stubEnv("NEXTAUTH_SECRET", "x".repeat(32));
+    const { token, exp } = createUploadAccessToken("listings/user-123/abc.webp");
+
+    expect(verifyUploadAccessToken("listings/user-999/abc.webp", token, exp)).toBe(false);
+  });
+
+  it("rejects an expired token", () => {
+    vi.stubEnv("NEXTAUTH_SECRET", "x".repeat(32));
+    const key = "listings/user-123/abc.webp";
+    const { token } = createUploadAccessToken(key);
+    const expiredExp = Math.floor(Date.now() / 1000) - 10;
+
+    expect(verifyUploadAccessToken(key, token, expiredExp)).toBe(false);
+  });
+
+  it("rejects a tampered or missing token", () => {
+    vi.stubEnv("NEXTAUTH_SECRET", "x".repeat(32));
+    const key = "listings/user-123/abc.webp";
+    const { exp } = createUploadAccessToken(key);
+
+    expect(verifyUploadAccessToken(key, null, exp)).toBe(false);
+    expect(verifyUploadAccessToken(key, "deadbeef", exp)).toBe(false);
+  });
+
+  it("appends token and exp to a clean upload URL", () => {
+    const url = appendUploadAccessToken("/api/upload/file?key=listings/u/a.webp", "tok", 123);
+    expect(url).toBe("/api/upload/file?key=listings/u/a.webp&token=tok&exp=123");
   });
 });

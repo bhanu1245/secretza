@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createNotification } from "@/lib/notifications";
 import { logError } from "@/lib/monitoring";
+import { notifyAdminsOfNewPayment } from "@/lib/admin-notifications";
 import { detectMimeType, ALLOWED_MIME_TYPES } from "@/lib/image-processing";
 import { createStorageService } from "@/lib/storage";
 import { getValidAmounts } from "@/lib/payment-settings";
@@ -299,6 +300,12 @@ export async function POST(request: Request) {
       entityType: "ManualPaymentSubmission",
       entityId: submission.id,
     });
+
+    notifyAdminsOfNewPayment({
+      id: submission.id,
+      paymentType: submission.paymentType,
+      amount: submission.amount,
+    }).catch(() => {});
 
     return NextResponse.json(
       {

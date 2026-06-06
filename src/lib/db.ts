@@ -19,8 +19,10 @@ const globalForPrisma = globalThis as unknown as {
 function createPrismaClient(): PrismaClient {
   const isProduction = process.env.NODE_ENV === 'production';
 
+  const enableQueryLog = process.env.PRISMA_LOG_QUERIES === 'true';
+
   return new PrismaClient({
-    log: isProduction
+    log: isProduction || !enableQueryLog
       ? ['error', 'warn']
       : ['query', 'error', 'warn'],
     datasources: {

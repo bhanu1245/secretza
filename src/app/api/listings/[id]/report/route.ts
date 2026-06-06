@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
 import { logError } from "@/lib/monitoring";
+import { notifyAdminsOfNewReport } from "@/lib/admin-notifications";
 
 // POST /api/listings/[id]/report — report a listing
 export async function POST(
@@ -71,6 +72,12 @@ export async function POST(
 
       return [newReport, updated];
     });
+
+    notifyAdminsOfNewReport({
+      id: report.id,
+      listingId: id,
+      reason: reason.trim(),
+    }).catch(() => {});
 
     // Notify listing owner
     if (listing.userId && listing.userId !== session.user.id) {

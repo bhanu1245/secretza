@@ -13,6 +13,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import AiGenerateButton from '@/components/secretza/seo/AiGenerateButton';
+import SeoQualityMeter from '@/components/secretza/seo/SeoQualityMeter';
+import { useSeoQualityScore } from '@/hooks/useSeoQualityScore';
+import { useTrackEvent } from '@/components/providers/AnalyticsProvider';
 import {
   Search,
   Plus,
@@ -176,6 +180,23 @@ export default function SeoManager() {
     imageCaption: '',
   });
   const [saving, setSaving] = useState(false);
+  const trackEvent = useTrackEvent();
+  const { result: editScore, loading: editScoreLoading } = useSeoQualityScore(
+    {
+      title: editForm.title,
+      metaDescription: editForm.metaDescription,
+      h1: editForm.h1,
+      introContent: editForm.introContent,
+      canonicalUrl: editForm.canonicalUrl,
+      featuredImage: editForm.featuredImage,
+    },
+    {
+      fetchUniqueness: Boolean(editPage),
+      pageType: editPage?.pageType,
+      pageSlug: editPage?.pageSlug,
+      debounceMs: 600,
+    },
+  );
   const [uploadingImage, setUploadingImage] = useState(false);
   const [generatingImageId, setGeneratingImageId] = useState<string | null>(null);
   const [generatingImages, setGeneratingImages] = useState(false);
@@ -448,6 +469,38 @@ export default function SeoManager() {
       toast.error('Failed to update SEO page');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const runAiSeo = async (
+    endpoint: 'title' | 'description' | 'improve',
+    apply: (text: string) => void,
+    eventName: string,
+    extraBody?: Record<string, unknown>,
+  ) => {
+    if (!editPage) return;
+    try {
+      const res = await apiFetch(`/api/ai/seo/${endpoint}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          listingTitle: editForm.title || editForm.h1,
+          city: editPage.pageSlug,
+          pageType: editPage.pageType,
+          ...extraBody,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || 'AI generation failed');
+        return;
+      }
+      if (data.text) {
+        apply(data.text);
+        trackEvent(eventName, { surface: 'admin_seo', pageType: editPage.pageType });
+        toast.success('AI content applied');
+      }
+    } catch {
+      toast.error('AI generation failed');
     }
   };
 
@@ -1656,9 +1709,19 @@ export default function SeoManager() {
             )}
           </DialogHeader>
           <div className="space-y-4 py-2">
+            {/* SEO quality score */}
+            <SeoQualityMeter result={editScore} loading={editScoreLoading} />
+
             {/* Title */}
             <div>
-              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Title</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-medium text-[#A1A1AA]">Title</label>
+                <AiGenerateButton
+                  label="Generate"
+                  onGenerate={() => runAiSeo('title', (text) => setEditForm((f) => ({ ...f, title: text })), 'ai_generate_title')}
+                  title="Generate an SEO title"
+                />
+              </div>
               <Input
                 value={editForm.title}
                 onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
@@ -1671,9 +1734,16 @@ export default function SeoManager() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-medium text-[#A1A1AA]">Meta Description</label>
-                <span className={`text-[10px] ${editForm.metaDescription.length > 160 ? 'text-red-400' : 'text-[#52525B]'}`}>
-                  {editForm.metaDescription.length}/160
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] ${editForm.metaDescription.length > 160 ? 'text-red-400' : 'text-[#52525B]'}`}>
+                    {editForm.metaDescription.length}/160
+                  </span>
+                  <AiGenerateButton
+                    label="Generate"
+                    onGenerate={() => runAiSeo('description', (text) => setEditForm((f) => ({ ...f, metaDescription: text.slice(0, 160) })), 'ai_generate_description')}
+                    title="Generate an SEO description"
+                  />
+                </div>
               </div>
               <Textarea
                 value={editForm.metaDescription}
@@ -1697,7 +1767,15 @@ export default function SeoManager() {
 
             {/* Intro Content */}
             <div>
-              <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Intro Content</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-medium text-[#A1A1AA]">Intro Content</label>
+                <AiGenerateButton
+                  label="Improve"
+                  disabled={!editForm.introContent.trim()}
+                  onGenerate={() => runAiSeo('improve', (text) => setEditForm((f) => ({ ...f, introContent: text })), 'ai_improve_content', { content: editForm.introContent })}
+                  title="Improve grammar and readability"
+                />
+              </div>
               <Textarea
                 value={editForm.introContent}
                 onChange={(e) => setEditForm((f) => ({ ...f, introContent: e.target.value }))}

@@ -10,6 +10,9 @@ import {
   sanitizeTelegram,
 } from "@/lib/listing-contact";
 import { persistListingImages } from "@/lib/listing-image-persist";
+import { validateUserContent } from "@/lib/content-filter";
+import { computeListingExpiry } from "@/lib/listing-expiry";
+import { notifyAdminsOfNewListing } from "@/lib/admin-notifications";
 
 const listingSchema = z.object({
   title: z.string().trim().min(5).max(120),
@@ -118,6 +121,17 @@ export async function POST(req: Request) {
 
     const body = parsed.data;
 
+    const contentError = validateUserContent([
+      { field: "title", label: "Title", value: body.title },
+      { field: "description", label: "Description", value: body.description },
+    ]);
+    if (contentError) {
+      return NextResponse.json(
+        { error: contentError.message, field: contentError.field },
+        { status: 400 },
+      );
+    }
+
     const [category, subcategory, country] = await Promise.all([
       db.category.findFirst({ where: { slug: body.categorySlug, isActive: true } }),
       body.subcategorySlug
@@ -205,6 +219,7 @@ export async function POST(req: Request) {
         galleryImages: JSON.stringify(galleryImages),
         images: JSON.stringify(galleryImages.map((url, index) => ({ url, isPrimary: index === 0 }))),
         status: "pending",
+        expiresAt: computeListingExpiry(),
         lastBumpedAt: new Date(),
         priorityScore: 35,
         categoryId: category.id,
@@ -234,6 +249,12 @@ export async function POST(req: Request) {
       id: listing.id,
       userId: listing.userId,
     });
+
+    notifyAdminsOfNewListing({
+      id: listing.id,
+      title: listing.title,
+      slug: listing.slug,
+    }).catch(() => {});
 
     return NextResponse.json(
       {

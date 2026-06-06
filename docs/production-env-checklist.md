@@ -69,8 +69,48 @@ Only set these when `STORAGE_PROVIDER=s3`.
 
 | Variable | Example | Notes |
 |---|---|---|
-| `RESEND_API_KEY` | `re_xxx` | Transactional email via Resend. Without this, email delivery is disabled. |
+| `RESEND_API_KEY` | `re_xxx` | Transactional email via Resend. Without this, email delivery is disabled (provider falls back to console logging). |
 | `EMAIL_FROM` | `no-reply@secretza.com` | Sender address for outbound emails. |
+| `ADMIN_NOTIFICATION_EMAIL` | `admin@secretza.com` or `a@x.com,b@x.com` | Recipient(s) for admin alerts (new listing awaiting approval, new manual payment, new abuse report). Comma-separated for multiple admins. If unset, admin alerts are silently skipped. Requires `RESEND_API_KEY` to actually deliver. |
+
+---
+
+## OPTIONAL — AI SEO tools (Phase 2)
+
+AI features (AI SEO title/description generators, content improver) are disabled
+unless `AI_API_KEY` is set. When unset, the AI endpoints return 503 and the UI
+falls back to manual entry — nothing breaks. The key is read **server-side only**
+and is never exposed to the browser.
+
+Two providers are supported behind a single client (`src/lib/ai/client.ts`),
+selected by `AI_PROVIDER`:
+
+| Variable | Default | Notes |
+|---|---|---|
+| `AI_PROVIDER` | `openai` | `openai` or `gemini`. Selects the provider at runtime. Unknown values disable AI with a clear error. |
+| `AI_API_KEY` | unset | Provider API key (OpenAI key, or Gemini API key sent as `x-goog-api-key`). Enables all AI SEO tools. Server-side only. |
+| `AI_BASE_URL` | provider default | Override base URL. OpenAI default `https://api.openai.com/v1`; Gemini default `https://generativelanguage.googleapis.com/v1beta`. |
+| `AI_MODEL` | provider default | Override model. OpenAI default `gpt-4o-mini`; Gemini default `gemini-2.5-flash`. |
+
+**OpenAI example**
+
+```
+AI_PROVIDER=openai
+AI_API_KEY=sk-...
+AI_MODEL=gpt-4o-mini
+```
+
+**Gemini example**
+
+```
+AI_PROVIDER=gemini
+AI_API_KEY=AIza...
+AI_MODEL=gemini-2.5-flash
+```
+
+> Restart the server after changing any `AI_*` variable — they are read from
+> `process.env` at request time, but a running dev/PM2 process caches the loaded
+> `.env` until restarted.
 
 ---
 
@@ -114,6 +154,14 @@ Plausible clients — configure whichever you use.
 |---|---|---|
 | `SEO_ENGINE` | `v5` | SEO content generation engine version. Leave as `v5` unless directed. |
 | `SEO_REGEN_PEER_LIMIT` | `3` | Max concurrent SEO page regenerations. |
+
+---
+
+## OPTIONAL — Listing lifecycle
+
+| Variable | Default | Notes |
+|---|---|---|
+| `LISTING_EXPIRY_DAYS` | `60` | Days after creation before an approved listing auto-expires. The `refresh-ranking` cron flips expired listings to status `expired` so they drop out of public queries. |
 
 ---
 

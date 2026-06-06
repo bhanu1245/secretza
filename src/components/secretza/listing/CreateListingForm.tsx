@@ -6,6 +6,13 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { useNavigationStore } from "@/store/useAppStore";
 import ImageUploader, { type UploadedImage } from "@/components/secretza/upload/ImageUploader";
+import { apiFetch } from "@/lib/api-client";
+import { useTrackEvent } from "@/components/providers/AnalyticsProvider";
+import AiGenerateButton from "@/components/secretza/seo/AiGenerateButton";
+import SeoQualityMeter from "@/components/secretza/seo/SeoQualityMeter";
+import { useSeoQualityScore } from "@/hooks/useSeoQualityScore";
+import type { SeoQualityResult } from "@/lib/seo-quality";
+import type { ListingQualityResult } from "@/lib/listing-seo/listing-quality";
 
 const AUTOSAVE_INTERVAL_MS = 3000;
 const DRAFT_VERSION = 2;
@@ -125,6 +132,26 @@ function hasDraftContent(values: ListingFormValues) {
   );
 }
 
+function mapListingQualityToMeter(result: ListingQualityResult): SeoQualityResult {
+  return {
+    wordCount: result.wordCount,
+    faqCount: 0,
+    internalLinksCount: 0,
+    uniquenessScore: result.uniquenessScore,
+    duplicateRisk: result.duplicateRisk,
+    seoQualityScore: result.total,
+    duplicateFields: {
+      title: false,
+      metaDescription: false,
+      h1: false,
+      introContent: false,
+      faqContent: false,
+    },
+    contentHash: "",
+    meetsMinWordCount: result.meetsMinWords,
+  };
+}
+
 function splitCsv(value: string) {
   return value
     .split(",")
@@ -208,6 +235,14 @@ export default function CreateListingForm({
   const [hydrated, setHydrated] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [lockedFields, setLockedFields] = useState<Set<"title" | "description">>(new Set());
+  const [aiAuto, setAiAuto] = useState(false);
+  const [enhanceWithAi, setEnhanceWithAi] = useState(false);
+  const [listingScore, setListingScore] = useState<SeoQualityResult | null>(null);
+  const [listingScoreLoading, setListingScoreLoading] = useState(false);
+  const trackEvent = useTrackEvent();
+  const autoDescRanRef = useRef(false);
+  const listingScoreRequest = useRef(0);
   const latestValuesRef = useRef(values);
   const restoredDraftRef = useRef(false);
   const existingImageKeysRef = useRef<Set<string>>(new Set());
@@ -221,6 +256,87 @@ export default function CreateListingForm({
   useEffect(() => {
     latestValuesRef.current = values;
   }, [values]);
+
+  const { result: structuralSeoScore, loading: structuralSeoLoading } = useSeoQualityScore(
+    { title: values.title, h1: values.title, introContent: values.description },
+    { debounceMs: 300 },
+  );
+
+  useEffect(() => {
+    if (!values.categorySlug || !values.citySlug) {
+      setListingScore(null);
+      return;
+    }
+
+    const requestId = ++listingScoreRequest.current;
+    const handle = window.setTimeout(async () => {
+      setListingScoreLoading(true);
+      try {
+        const v = latestValuesRef.current;
+        const res = await apiFetch("/api/listing-seo/quality", {
+          method: "POST",
+          body: JSON.stringify({
+            id: editListingId,
+            title: v.title,
+            description: v.description,
+            keywords: splitCsv(v.tags),
+            categorySlug: v.categorySlug,
+            citySlug: v.citySlug,
+            city: selectedCity?.name || v.citySlug,
+            area: selectedCity?.areas?.find((area) => area.id === v.areaId)?.name || v.area || null,
+            state: selectedState?.name || v.stateSlug || null,
+            imageCount: v.images.filter((image) => image.url && !image.isUploading).length,
+            contactPhone: v.contactPhone,
+            whatsapp: v.whatsapp,
+            telegram: v.telegram,
+            contactEmail: v.contactEmail,
+          }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (listingScoreRequest.current !== requestId || !data?.result) return;
+        setListingScore(mapListingQualityToMeter(data.result as ListingQualityResult));
+      } catch {
+        // Scoring is best-effort; never block the form.
+      } finally {
+        if (listingScoreRequest.current === requestId) setListingScoreLoading(false);
+      }
+    }, 400);
+
+    return () => window.clearTimeout(handle);
+  }, [
+    values.title,
+    values.description,
+    values.categorySlug,
+    values.citySlug,
+    values.stateSlug,
+    values.areaId,
+    values.area,
+    values.tags,
+    values.images,
+    values.contactPhone,
+    values.whatsapp,
+    values.telegram,
+    values.contactEmail,
+    editListingId,
+    selectedCity?.name,
+    selectedState?.name,
+  ]);
+
+  const seoScore = listingScore ?? structuralSeoScore;
+  const seoLoading = listingScoreLoading || structuralSeoLoading;
+
+  useEffect(() => {
+    if (!aiAuto) {
+      autoDescRanRef.current = false;
+      return;
+    }
+    if (lockedFields.has("description") || values.description.trim()) return;
+    if (!values.title.trim() || !values.categorySlug || !values.citySlug) return;
+    if (autoDescRanRef.current) return;
+    autoDescRanRef.current = true;
+    void runAiField("description", "description", "listing_seo_auto_description");
+  }, [aiAuto, values.title, values.categorySlug, values.citySlug, values.description, lockedFields]);
 
   useEffect(() => {
     async function loadOptions() {
@@ -384,6 +500,73 @@ export default function CreateListingForm({
       latestValuesRef.current = next;
       return next;
     });
+  }
+
+  function buildListingSeoPayload() {
+    const v = latestValuesRef.current;
+    const selectedSubcategory = selectedCategory?.children?.find(
+      (sub) => sub.slug === v.subcategorySlug,
+    );
+    const selectedArea = selectedCity?.areas?.find((area) => area.id === v.areaId);
+    return {
+      id: editListingId,
+      slug: v.slug,
+      title: v.title,
+      description: v.description,
+      category: selectedCategory?.name || v.categorySlug,
+      subcategory: selectedSubcategory?.name || v.subcategorySlug || null,
+      city: selectedCity?.name || v.citySlug,
+      area: selectedArea?.name || v.area || null,
+      state: selectedState?.name || v.stateSlug || null,
+      country: selectedCountry?.name || v.countrySlug,
+      keywords: splitCsv(v.tags),
+      services: v.services,
+      tags: splitCsv(v.tags),
+    };
+  }
+
+  function applyAiValue(field: "title" | "description", text: string) {
+    updateField(field, text);
+  }
+
+  async function runAiField(
+    action: "title" | "description" | "improve",
+    field: "title" | "description",
+    eventName: string,
+  ) {
+    const v = latestValuesRef.current;
+    try {
+      const res = await apiFetch("/api/listing-seo/generate", {
+        method: "POST",
+        body: JSON.stringify({
+          action,
+          enhance: enhanceWithAi,
+          currentContent: action === "improve" ? v.description : v[field],
+          ...buildListingSeoPayload(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Generation failed");
+      if (data.text) {
+        applyAiValue(field, data.text);
+        trackEvent(eventName, { field, source: data.source ?? "lite" });
+        toast.success(
+          data.source === "ai" ? "Listing copy enhanced with AI" : "Listing SEO draft applied",
+        );
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Generation failed");
+    }
+  }
+
+  function handleUserEdit(field: "title" | "description", value: string) {
+    setLockedFields((prev) => {
+      if (prev.has(field)) return prev;
+      const next = new Set(prev);
+      next.add(field);
+      return next;
+    });
+    updateField(field, value);
   }
 
   function updateDependentField(updater: (current: ListingFormValues) => ListingFormValues) {
@@ -638,9 +821,51 @@ export default function CreateListingForm({
           </div>
         )}
         <Section title="Basic Info">
-          <Input field="title" label="Title" value={values.title} onChange={(value) => updateField("title", value)} error={errors.title} required />
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#7C3AED]/20 bg-[#7C3AED]/5 p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-[#C4B5FD]">Listing SEO Tools</span>
+              <AiGenerateButton
+                label="Generate title"
+                onGenerate={() => runAiField("title", "title", "listing_seo_generate_title")}
+                title="Generate an SEO title from category, city, and tags"
+              />
+              <AiGenerateButton
+                label="Generate description"
+                onGenerate={() => runAiField("description", "description", "listing_seo_generate_description")}
+                title="Generate a deterministic listing description"
+              />
+              <AiGenerateButton
+                label="Improve description"
+                onGenerate={() => runAiField("improve", "description", "listing_seo_improve_description")}
+                disabled={!values.description.trim()}
+                title="Improve your current description"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
+              <label className="flex items-center gap-2 text-xs text-[#C4B5FD]">
+                <input
+                  type="checkbox"
+                  checked={enhanceWithAi}
+                  onChange={(event) => setEnhanceWithAi(event.target.checked)}
+                  className="rounded border-zinc-600"
+                />
+                Enhance with AI
+              </label>
+              <label className="flex items-center gap-2 text-xs text-[#C4B5FD]">
+                <input
+                  type="checkbox"
+                  checked={aiAuto}
+                  onChange={(event) => setAiAuto(event.target.checked)}
+                  className="rounded border-zinc-600"
+                />
+                Auto SEO mode
+              </label>
+            </div>
+          </div>
+          <SeoQualityMeter result={seoScore} loading={seoLoading} hideTips />
+          <Input field="title" label="Title" value={values.title} onChange={(value) => handleUserEdit("title", value)} error={errors.title} required />
           <Input field="slug" label="Slug" value={values.slug} onChange={(value) => updateField("slug", slugify(value))} error={errors.slug} />
-          <Textarea field="description" label="Description" value={values.description} onChange={(value) => updateField("description", value)} error={errors.description} required />
+          <Textarea field="description" label="Description" value={values.description} onChange={(value) => handleUserEdit("description", value)} error={errors.description} required />
           <div className="grid gap-4 md:grid-cols-2">
             <Input field="age" label="Age" type="number" value={values.age} onChange={(value) => updateField("age", value)} error={errors.age} />
             <Input field="whatsapp" label="WhatsApp" value={values.whatsapp} onChange={(value) => updateField("whatsapp", value)} error={errors.whatsapp} />

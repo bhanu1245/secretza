@@ -243,8 +243,8 @@ export async function processImage(buffer: Buffer): Promise<ProcessedImage> {
   // ---- Medium (800px wide, max 1000px tall, quality 80) ----
   const medium = await pipeline(800, 1000, 80).toBuffer();
 
-  // ---- Original (up to 4000px, quality 85) ----
-  const original = await pipeline(4000, 4000, 85).toBuffer();
+  // ---- Original (max 1600x1600, quality 85) — launch spec ----
+  const original = await pipeline(1600, 1600, 85).toBuffer();
 
   // ---- BlurHash from thumbnail ----
   const blurHash = await generateBlurHash(thumbnail);

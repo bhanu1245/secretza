@@ -22,6 +22,8 @@ export interface UploadedImage {
   url: string;
   thumbnailUrl?: string;
   mediumUrl?: string;
+  /** Short-lived signed URL used only for rendering the local preview. */
+  previewUrl?: string;
   sortOrder?: number;
   isUploading?: boolean;
   error?: string | null;
@@ -61,6 +63,7 @@ const UPLOAD_TIMEOUT_MS = 120_000;
 
 type UploadApiFile = NonNullable<UploadedImage["uploadResult"]> & {
   fileName?: string;
+  previewUrl?: string;
 };
 
 function firstUploadedFile(data: unknown): UploadApiFile | null {
@@ -249,6 +252,7 @@ export default function ImageUploader({
                   url: uploadedFile.url,
                   thumbnailUrl: uploadedFile.thumbnailUrl || uploadedFile.url,
                   mediumUrl: uploadedFile.mediumUrl || uploadedFile.url,
+                  previewUrl: uploadedFile.previewUrl || undefined,
                   sortOrder: prev.length,
                   isUploading: false,
                   error: null,
@@ -381,7 +385,10 @@ export default function ImageUploader({
 
   // ── Helper ────────────────────────────────────────────────
   const getPreviewSrc = (img: UploadedImage) => {
-    const src = img.thumbnailUrl || img.url;
+    // Prefer the signed preview URL: freshly uploaded files have no DB row yet,
+    // so the clean thumbnail/original URLs would be denied (403) until the
+    // listing is created and (for the owner) the session resolves.
+    const src = img.previewUrl || img.thumbnailUrl || img.url;
     if (!src || src.startsWith("blob:") || !img.previewRetryToken) return src;
     try {
       const parsed = new URL(src, window.location.origin);

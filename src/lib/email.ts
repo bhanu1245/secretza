@@ -186,3 +186,68 @@ export async function sendLoginAlert(
     html: loginAlertEmailTemplate(name, ip, new Date().toISOString()),
   });
 }
+
+// ==========================================
+// Admin notifications
+// ==========================================
+
+/**
+ * Resolve admin notification recipients from ADMIN_NOTIFICATION_EMAIL.
+ * Supports a comma-separated list. Returns [] when unconfigured (caller skips).
+ */
+export function getAdminNotificationRecipients(): string[] {
+  const raw = process.env.ADMIN_NOTIFICATION_EMAIL?.trim();
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.includes("@"));
+}
+
+export function adminNotificationTemplate(heading: string, lines: string[]): string {
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const safeLines = lines
+    .map(
+      (line) =>
+        `<p style="color: #A1A1AA; font-size: 15px; line-height: 1.5; margin: 4px 0;">${escapeHtml(line)}</p>`,
+    )
+    .join("");
+
+  return `
+    <div style="max-width: 480px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      <div style="background: #0B0B0F; padding: 40px; border-radius: 16px;">
+        ${emailBrandHeader(escapeHtml(heading))}
+        ${safeLines}
+        <a href="${baseUrl}/admin" style="${EMAIL_BUTTON_STYLE}">
+          Open Admin Panel
+        </a>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Send an admin notification to all configured recipients.
+ * No-op (returns skipped) when ADMIN_NOTIFICATION_EMAIL is unset.
+ */
+export async function sendAdminNotification(
+  subject: string,
+  heading: string,
+  lines: string[],
+): Promise<{ success: boolean; skipped?: boolean; error?: string }> {
+  const recipients = getAdminNotificationRecipients();
+  if (recipients.length === 0) {
+    return { success: true, skipped: true };
+  }
+
+  const provider = getEmailProvider();
+  const html = adminNotificationTemplate(heading, lines);
+  const results = await Promise.all(
+    recipients.map((to) =>
+      provider.send({ to, subject: `[${BRAND_NAME} Admin] ${subject}`, html }),
+    ),
+  );
+
+  const failed = results.find((r) => !r.success);
+  return failed ? { success: false, error: failed.error } : { success: true };
+}

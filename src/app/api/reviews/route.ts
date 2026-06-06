@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 import { rateLimit, RATE_LIMITS, getClientIp, getRateLimitHeaders } from "@/lib/rate-limit";
 import { logError } from "@/lib/monitoring";
+import { validateUserContent } from "@/lib/content-filter";
 
 // GET /api/reviews?listingId=xxx&page=1&limit=10&sort=newest
 export async function GET(request: Request) {
@@ -189,6 +190,17 @@ export async function POST(request: Request) {
     if (title && title.length > 200) {
       return NextResponse.json(
         { error: "Review title must be at most 200 characters" },
+        { status: 400 }
+      );
+    }
+
+    const contentError = validateUserContent([
+      { field: "title", label: "Review title", value: title },
+      { field: "body", label: "Review", value: reviewBody },
+    ]);
+    if (contentError) {
+      return NextResponse.json(
+        { error: contentError.message, field: contentError.field },
         { status: 400 }
       );
     }

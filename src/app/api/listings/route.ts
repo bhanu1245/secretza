@@ -12,6 +12,9 @@ import {
 } from "@/lib/ranking-engine";
 import { rateLimit, RATE_LIMITS, getClientIp, getRateLimitHeaders } from "@/lib/rate-limit";
 import { requireVerifiedEmail } from "@/lib/email-verification-guard";
+import { validateUserContent } from "@/lib/content-filter";
+import { computeListingExpiry } from "@/lib/listing-expiry";
+import { notifyAdminsOfNewListing } from "@/lib/admin-notifications";
 
 function safeJsonParse(str: unknown, fallback: unknown): unknown {
   if (typeof str !== 'string') return fallback;
@@ -455,6 +458,17 @@ export async function POST(request: Request) {
       );
     }
 
+    const contentError = validateUserContent([
+      { field: "title", label: "Title", value: title },
+      { field: "description", label: "Description", value: description },
+    ]);
+    if (contentError) {
+      return NextResponse.json(
+        { error: contentError.message, field: contentError.field },
+        { status: 400 }
+      );
+    }
+
     // Validate tags array
     if (tags !== undefined) {
       if (!Array.isArray(tags) || tags.length > 10) {
@@ -560,6 +574,7 @@ export async function POST(request: Request) {
           contactText,
           images: JSON.stringify(images || []),
           status: "pending",
+          expiresAt: computeListingExpiry(),
           lastBumpedAt: new Date(),
           priorityScore: 35,
           userId: session.user.id,
@@ -602,6 +617,12 @@ export async function POST(request: Request) {
 
       return newListing;
     });
+
+    notifyAdminsOfNewListing({
+      id: listing.id,
+      title: listing.title,
+      slug: listing.slug,
+    }).catch(() => {});
 
     return NextResponse.json(
       { listing: { id: listing.id, slug: listing.slug, status: listing.status } },

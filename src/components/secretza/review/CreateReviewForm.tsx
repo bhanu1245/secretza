@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import StarRating from "@/components/secretza/review/StarRating";
 import { useAuthStore } from "@/store/useAppStore";
 import { apiFetch, fetchCsrfToken } from "@/lib/api-client";
+import { validateUserContent } from "@/lib/content-filter";
 import { toast } from "sonner";
 
 export interface Review {
@@ -84,6 +85,16 @@ export default function CreateReviewForm({
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
+
+    const contentViolation = validateUserContent([
+      { field: "title", label: "Review title", value: title },
+      { field: "body", label: "Review", value: body },
+    ]);
+    if (contentViolation) {
+      setError(contentViolation.message);
+      toast.error("Review blocked", { description: contentViolation.message });
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);

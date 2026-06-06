@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createStorageService } from "@/lib/storage";
 import { processImage, validateImage } from "@/lib/image-processing";
+import { appendUploadAccessToken, createUploadAccessToken } from "@/lib/upload-access-token";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 type UploadedFileResponse = {
@@ -12,6 +13,7 @@ type UploadedFileResponse = {
   url: string;
   thumbnailUrl: string;
   mediumUrl: string;
+  previewUrl: string;
   sizeBytes: number;
   mimeType: string;
   width: number;
@@ -96,6 +98,16 @@ export async function POST(request: Request) {
         storage.upload(mediumKey, processed.medium, processed.mimeType),
       ]);
 
+      // Mint a short-lived signed preview URL for the thumbnail so the uploader
+      // can render it immediately, before any ListingImage row exists and
+      // regardless of session resolution on the <img> subresource request.
+      const previewSignature = createUploadAccessToken(thumbnailResult.key);
+      const previewUrl = appendUploadAccessToken(
+        thumbnailResult.url,
+        previewSignature.token,
+        previewSignature.exp,
+      );
+
       uploaded.push({
         id: key,
         key: originalResult.key,
@@ -103,6 +115,7 @@ export async function POST(request: Request) {
         url: originalResult.url,
         thumbnailUrl: thumbnailResult.url,
         mediumUrl: mediumResult.url,
+        previewUrl,
         sizeBytes: originalResult.sizeBytes,
         mimeType: processed.mimeType,
         width: processed.width,
