@@ -12,6 +12,8 @@ import { computePriorityScore,
 } from "@/lib/ranking-engine";
 import {
   serializeListingContact,
+  redactListingContact,
+  hasListingContact,
   sanitizeEmail,
   sanitizePhone,
   sanitizeTelegram,
@@ -119,29 +121,11 @@ export async function GET(
   const computedScore = computePriorityScore(rankInput);
   const rankLabel = getRankLabel(rankInput, computedScore);
 
-  const requester = session?.user?.id
-    ? await db.user.findUnique({
-        where: { id: session.user.id },
-        select: { isVerified: true, role: true },
-      })
-    : null;
-  const requesterRole = String(requester?.role || "").toLowerCase();
-  const canAccessContact =
-    Boolean(requester?.isVerified) ||
-    requesterRole === "admin" ||
-    requesterRole === "moderator";
-  const contactFields = canAccessContact
+  const isOwner = session?.user?.id === listing.userId;
+  const contactFields = isOwner
     ? serializeListingContact(listing as any)
-    : {
-        contact: {},
-        whatsapp: null,
-        telegram: null,
-        contactEmail: null,
-        contactTelegram: null,
-        contactText: null,
-        contactInstagram: null,
-        contactWebsite: null,
-      };
+    : redactListingContact();
+  const hasContact = hasListingContact(listing as any);
 
   return NextResponse.json({
     id: listing.id,
@@ -160,6 +144,7 @@ export async function GET(
     price: listing.price,
     currency: listing.currency,
     ...contactFields,
+    hasContact,
     images: isOwnerOrStaff ? safeJsonParse(listing.images, []) : [],
     profileImage: isOwnerOrStaff ? (listing as any).profileImage : null,
     galleryImages: isOwnerOrStaff ? safeJsonParse((listing as any).galleryImages, []) : [],
@@ -169,8 +154,6 @@ export async function GET(
       (isOwnerOrStaff ? (listing as any).profileImage : null) ||
       null,
     age: (listing as any).age,
-    whatsapp: contactFields.whatsapp,
-    telegram: contactFields.telegram,
     listingImages: visibleImages.map((img) => ({
       id: img.id,
       url: img.url,

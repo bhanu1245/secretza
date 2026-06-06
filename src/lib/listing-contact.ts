@@ -80,6 +80,23 @@ export function hasContactInfo(contact: ContactInfo): boolean {
   );
 }
 
+export function hasListingContact(source: ListingContactSource): boolean {
+  return hasContactInfo(normalizeListingContact(source));
+}
+
+export function redactListingContact() {
+  return {
+    contact: {} as ContactInfo,
+    whatsapp: null,
+    telegram: null,
+    contactEmail: null,
+    contactTelegram: null,
+    contactText: null,
+    contactInstagram: null,
+    contactWebsite: null,
+  };
+}
+
 export function serializeListingContact(source: ListingContactSource) {
   const contact = normalizeListingContact(source);
   return {
