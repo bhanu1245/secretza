@@ -76,6 +76,22 @@ export async function PATCH(
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, isVerified: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (!user.isVerified) {
+      return NextResponse.json(
+        { error: "Email verification required to submit reviews" },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { rating, title, body: reviewBody } = body as {
@@ -191,6 +207,22 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, isVerified: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (!user.isVerified) {
+      return NextResponse.json(
+        { error: "Email verification required to submit reviews" },
+        { status: 403 }
+      );
     }
 
     const { id } = await params;

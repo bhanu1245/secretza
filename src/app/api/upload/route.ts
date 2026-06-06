@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { createStorageService } from "@/lib/storage";
 import { processImage, validateImage } from "@/lib/image-processing";
 import { appendUploadAccessToken, createUploadAccessToken } from "@/lib/upload-access-token";
@@ -28,6 +29,22 @@ export async function POST(request: Request) {
     if (!session?.user?.id) {
       console.warn("[Upload] rejected unauthenticated upload request");
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, isVerified: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    if (!user.isVerified) {
+      return NextResponse.json(
+        { error: "Email verification required to upload images" },
+        { status: 403 },
+      );
     }
 
     const formData = await request.formData();
