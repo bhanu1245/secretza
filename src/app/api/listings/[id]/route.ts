@@ -16,9 +16,12 @@ import {
   hasListingContact,
   sanitizeEmail,
   sanitizePhone,
-  sanitizeTelegram,
 } from "@/lib/listing-contact";
 import { validateUserContent } from "@/lib/content-filter";
+import {
+  normalizeTelegramValue,
+  validateListingContact,
+} from "@/lib/contact-validation";
 import { persistListingImages } from "@/lib/listing-image-persist";
 import {
   extractStorageKeyFromUrl,
@@ -320,11 +323,20 @@ export async function PUT(
       }
     }
 
-    // Validate contact fields if provided
-    if (contactEmail !== undefined && contactEmail !== null) {
-      if (typeof contactEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
-        return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
-      }
+    const contactValidation = validateListingContact({
+      contactPhone,
+      contactText,
+      whatsapp,
+      telegram,
+      contactTelegram,
+      contactEmail,
+      contactWebsite,
+    });
+    if (!contactValidation.valid) {
+      return NextResponse.json(
+        { error: "Invalid contact information", fields: contactValidation.errors },
+        { status: 400 },
+      );
     }
 
     // Validate location fields only if they are provided (partial update support)
@@ -458,14 +470,16 @@ export async function PUT(
         whatsapp:
           whatsapp !== undefined ? sanitizePhone(whatsapp) ?? null : (existing as any).whatsapp,
         telegram:
-          telegram !== undefined ? sanitizeTelegram(telegram) ?? null : (existing as any).telegram,
+          telegram !== undefined
+            ? normalizeTelegramValue(telegram)
+            : (existing as any).telegram,
         contactEmail:
           contactEmail !== undefined ? sanitizeEmail(contactEmail) ?? null : existing.contactEmail,
         contactTelegram:
           telegram !== undefined
-            ? sanitizeTelegram(telegram) ?? null
+            ? normalizeTelegramValue(telegram)
             : contactTelegram !== undefined
-              ? sanitizeTelegram(contactTelegram) ?? null
+              ? normalizeTelegramValue(contactTelegram)
               : existing.contactTelegram,
         contactInstagram: contactInstagram !== undefined ? contactInstagram : existing.contactInstagram,
         contactWebsite: contactWebsite !== undefined ? contactWebsite : existing.contactWebsite,

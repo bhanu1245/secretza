@@ -13,6 +13,10 @@ import {
 import { rateLimit, RATE_LIMITS, getClientIp, getRateLimitHeaders } from "@/lib/rate-limit";
 import { requireVerifiedEmail } from "@/lib/email-verification-guard";
 import { validateUserContent } from "@/lib/content-filter";
+import {
+  normalizeTelegramValue,
+  validateListingContact,
+} from "@/lib/contact-validation";
 import { computeListingExpiry } from "@/lib/listing-expiry";
 import { notifyAdminsOfNewListing } from "@/lib/admin-notifications";
 
@@ -485,30 +489,22 @@ export async function POST(request: Request) {
       }
     }
 
-    // Validate contact field lengths
-    if (contactEmail !== undefined && contactEmail !== null) {
-      if (typeof contactEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
-        return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
-      }
+    const contactValidation = validateListingContact({
+      contactEmail,
+      contactTelegram,
+      contactWebsite,
+      contactText,
+    });
+    if (!contactValidation.valid) {
+      return NextResponse.json(
+        { error: "Invalid contact information", fields: contactValidation.errors },
+        { status: 400 },
+      );
     }
-    if (contactTelegram !== undefined && contactTelegram !== null) {
-      if (typeof contactTelegram !== "string" || contactTelegram.length > 100) {
-        return NextResponse.json({ error: "Telegram handle must be at most 100 characters" }, { status: 400 });
-      }
-    }
+
     if (contactInstagram !== undefined && contactInstagram !== null) {
       if (typeof contactInstagram !== "string" || contactInstagram.length > 100) {
         return NextResponse.json({ error: "Instagram handle must be at most 100 characters" }, { status: 400 });
-      }
-    }
-    if (contactWebsite !== undefined && contactWebsite !== null) {
-      if (typeof contactWebsite !== "string" || contactWebsite.length > 500) {
-        return NextResponse.json({ error: "Website URL must be at most 500 characters" }, { status: 400 });
-      }
-    }
-    if (contactText !== undefined && contactText !== null) {
-      if (typeof contactText !== "string" || contactText.length > 500) {
-        return NextResponse.json({ error: "Contact text must be at most 500 characters" }, { status: 400 });
       }
     }
 
@@ -571,11 +567,13 @@ export async function POST(request: Request) {
           tags: JSON.stringify(tags || []),
           price,
           currency: currency || "USD",
-          contactEmail,
-          contactTelegram,
+          contactEmail: contactEmail ?? null,
+          contactTelegram: contactTelegram
+            ? normalizeTelegramValue(contactTelegram)
+            : null,
           contactInstagram,
-          contactWebsite,
-          contactText,
+          contactWebsite: contactWebsite ?? null,
+          contactText: contactText ?? null,
           images: JSON.stringify(images || []),
           status: "pending",
           expiresAt: computeListingExpiry(),

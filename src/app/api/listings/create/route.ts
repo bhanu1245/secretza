@@ -4,13 +4,13 @@ import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
-import {
-  sanitizeEmail,
-  sanitizePhone,
-  sanitizeTelegram,
-} from "@/lib/listing-contact";
+import { sanitizeEmail, sanitizePhone } from "@/lib/listing-contact";
 import { persistListingImages } from "@/lib/listing-image-persist";
 import { validateUserContent } from "@/lib/content-filter";
+import {
+  normalizeTelegramValue,
+  validateListingContact,
+} from "@/lib/contact-validation";
 import { computeListingExpiry } from "@/lib/listing-expiry";
 import { notifyAdminsOfNewListing } from "@/lib/admin-notifications";
 
@@ -136,6 +136,19 @@ export async function POST(req: Request) {
       );
     }
 
+    const contactValidation = validateListingContact({
+      contactPhone: body.contactPhone,
+      whatsapp: body.whatsapp,
+      telegram: body.telegram,
+      contactEmail: body.contactEmail,
+    });
+    if (!contactValidation.valid) {
+      return NextResponse.json(
+        { error: "Invalid contact information", fields: contactValidation.errors },
+        { status: 400 },
+      );
+    }
+
     const [category, subcategory, country] = await Promise.all([
       db.category.findFirst({ where: { slug: body.categorySlug, isActive: true } }),
       body.subcategorySlug
@@ -194,7 +207,7 @@ export async function POST(req: Request) {
           .filter(Boolean);
     const profileImage = body.profileImage || galleryImages[0] || null;
     const whatsapp = sanitizePhone(body.whatsapp) ?? null;
-    const telegram = sanitizeTelegram(body.telegram) ?? null;
+    const telegram = body.telegram ? normalizeTelegramValue(body.telegram) : null;
     const contactEmail = sanitizeEmail(body.contactEmail) ?? null;
     const contactText = sanitizePhone(body.contactPhone) ?? null;
 
