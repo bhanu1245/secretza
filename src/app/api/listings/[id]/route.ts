@@ -18,6 +18,7 @@ import {
   sanitizePhone,
   sanitizeTelegram,
 } from "@/lib/listing-contact";
+import { validateUserContent } from "@/lib/content-filter";
 import { persistListingImages } from "@/lib/listing-image-persist";
 import {
   extractStorageKeyFromUrl,
@@ -255,6 +256,8 @@ export async function PUT(
       images,
       imageIds,
       uploadResults,
+      seoTitle,
+      seoDescription,
     } = body;
 
     // Validate content fields if provided
@@ -285,6 +288,19 @@ export async function PUT(
           return NextResponse.json({ error: "Each tag must be a non-empty string of at most 30 characters" }, { status: 400 });
         }
       }
+    }
+
+    const contentError = validateUserContent([
+      { field: "title", label: "Title", value: title },
+      { field: "description", label: "Description", value: description },
+      { field: "seoTitle", label: "SEO title", value: seoTitle },
+      { field: "seoDescription", label: "SEO description", value: seoDescription },
+    ]);
+    if (contentError) {
+      return NextResponse.json(
+        { error: contentError.message, field: contentError.field },
+        { status: 400 },
+      );
     }
 
     if (price !== undefined) {

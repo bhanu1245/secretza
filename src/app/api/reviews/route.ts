@@ -155,12 +155,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { listingId, rating, title, body: reviewBody } = body as {
+    const { listingId, rating, title, body: reviewBody, content, comment } = body as {
       listingId?: string;
       rating?: number;
       title?: string;
       body?: string;
+      content?: string;
+      comment?: string;
     };
+    const reviewText = reviewBody ?? content ?? comment;
 
     // Validate required fields
     if (!listingId || !rating) {
@@ -179,7 +182,7 @@ export async function POST(request: Request) {
     }
 
     // Validate body length
-    if (reviewBody && reviewBody.length > 2000) {
+    if (reviewText && reviewText.length > 2000) {
       return NextResponse.json(
         { error: "Review body must be at most 2000 characters" },
         { status: 400 }
@@ -196,7 +199,9 @@ export async function POST(request: Request) {
 
     const contentError = validateUserContent([
       { field: "title", label: "Review title", value: title },
-      { field: "body", label: "Review", value: reviewBody },
+      { field: "body", label: "Review", value: reviewText },
+      { field: "content", label: "Review", value: content },
+      { field: "comment", label: "Review", value: comment },
     ]);
     if (contentError) {
       return NextResponse.json(
@@ -277,7 +282,7 @@ export async function POST(request: Request) {
         userId: session.user.id,
         rating,
         title: title || null,
-        body: reviewBody || null,
+        body: reviewText || null,
         isVerified: user.isVerified,
         status: "pending",
       },

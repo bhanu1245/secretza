@@ -421,6 +421,8 @@ export async function POST(request: Request) {
       images,
       imageIds,
       uploadResults,
+      seoTitle,
+      seoDescription,
     } = body;
 
     // Input validation: require essential fields
@@ -461,6 +463,8 @@ export async function POST(request: Request) {
     const contentError = validateUserContent([
       { field: "title", label: "Title", value: title },
       { field: "description", label: "Description", value: description },
+      { field: "seoTitle", label: "SEO title", value: seoTitle },
+      { field: "seoDescription", label: "SEO description", value: seoDescription },
     ]);
     if (contentError) {
       return NextResponse.json(

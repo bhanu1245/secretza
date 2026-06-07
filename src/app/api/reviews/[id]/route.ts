@@ -94,11 +94,14 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { rating, title, body: reviewBody } = body as {
+    const { rating, title, body: reviewBody, content, comment } = body as {
       rating?: number;
       title?: string;
       body?: string;
+      content?: string;
+      comment?: string;
     };
+    const reviewText = reviewBody ?? content ?? comment;
 
     const existingReview = await db.review.findUnique({
       where: { id },
@@ -135,7 +138,7 @@ export async function PATCH(
     }
 
     // Validate body length if provided
-    if (reviewBody !== undefined && reviewBody.length > 2000) {
+    if (reviewText !== undefined && reviewText.length > 2000) {
       return NextResponse.json(
         { error: "Review body must be at most 2000 characters" },
         { status: 400 }
@@ -152,7 +155,9 @@ export async function PATCH(
 
     const contentError = validateUserContent([
       { field: "title", label: "Review title", value: title },
-      { field: "body", label: "Review", value: reviewBody },
+      { field: "body", label: "Review", value: reviewText },
+      { field: "content", label: "Review", value: content },
+      { field: "comment", label: "Review", value: comment },
     ]);
     if (contentError) {
       return NextResponse.json(
@@ -164,7 +169,9 @@ export async function PATCH(
     const updateData: Record<string, unknown> = {};
     if (rating !== undefined) updateData.rating = rating;
     if (title !== undefined) updateData.title = title || null;
-    if (reviewBody !== undefined) updateData.body = reviewBody || null;
+    if (reviewBody !== undefined || content !== undefined || comment !== undefined) {
+      updateData.body = reviewText || null;
+    }
 
     const updatedReview = await db.review.update({
       where: { id },

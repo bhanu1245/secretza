@@ -37,6 +37,8 @@ const listingSchema = z.object({
   profileImage: z.string().trim().optional().nullable(),
   galleryImages: z.array(z.string().trim().url().or(z.string().trim().startsWith("/"))).max(20).default([]),
   uploadResults: z.array(z.record(z.string(), z.unknown())).max(20).default([]),
+  seoTitle: z.string().trim().max(200).optional().nullable(),
+  seoDescription: z.string().trim().max(500).optional().nullable(),
 });
 
 function makeSlug(title: string) {
@@ -124,6 +126,8 @@ export async function POST(req: Request) {
     const contentError = validateUserContent([
       { field: "title", label: "Title", value: body.title },
       { field: "description", label: "Description", value: body.description },
+      { field: "seoTitle", label: "SEO title", value: body.seoTitle },
+      { field: "seoDescription", label: "SEO description", value: body.seoDescription },
     ]);
     if (contentError) {
       return NextResponse.json(

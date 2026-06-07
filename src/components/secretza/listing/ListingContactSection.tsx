@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Globe, Instagram, Mail, MessageSquare, Phone, Send } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { ContactInfo } from "@/lib/types";
 import {
@@ -10,6 +11,9 @@ import {
   hasContactInfo,
 } from "@/lib/listing-contact";
 import { useTrackEvent } from "@/components/providers/AnalyticsProvider";
+import { useAuthStore } from "@/store/useAppStore";
+
+type ContactAccessBlock = "guest" | "unverified" | null;
 
 type ListingContactSectionProps = {
   listingId?: string;
@@ -56,13 +60,43 @@ export default function ListingContactSection({
   const [contact, setContact] = useState<ContactInfo>(initialContact);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accessBlock, setAccessBlock] = useState<ContactAccessBlock>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verifySent, setVerifySent] = useState(false);
   const trackEvent = useTrackEvent();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isVerified = useAuthStore((s) => s.user?.isVerified ?? false);
+
+  function openLogin() {
+    const { setAuthModalOpen, setAuthModalTab } = useAuthStore.getState();
+    setAuthModalTab("login");
+    setAuthModalOpen(true);
+  }
+
+  async function handleVerifyEmail() {
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/auth/resend-verification", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Verification email sent!", { description: data.message });
+        setVerifySent(true);
+      } else {
+        toast.error("Failed to send", { description: data.error || "Please try again." });
+      }
+    } catch {
+      toast.error("Failed to send", { description: "Network error." });
+    } finally {
+      setVerifying(false);
+    }
+  }
 
   async function revealContact() {
     if (!listingId) return;
 
     setLoading(true);
     setError(null);
+    setAccessBlock(null);
 
     try {
       const response = await fetch(`/api/listings/${encodeURIComponent(listingId)}/contact`, {
@@ -71,7 +105,25 @@ export default function ListingContactSection({
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setError(data.error || "Unable to load contact information");
+        if (response.status === 401) {
+          setAccessBlock("guest");
+          setError("Login to view contact information");
+          return;
+        }
+
+        const apiError = typeof data.error === "string" ? data.error : "";
+        const isVerificationError =
+          response.status === 403 &&
+          (apiError.toLowerCase().includes("verification") ||
+            (!isVerified && isAuthenticated));
+
+        if (isVerificationError) {
+          setAccessBlock("unverified");
+          setError("Verify your email to view contact information");
+          return;
+        }
+
+        setError(apiError || "Unable to load contact information");
         return;
       }
 
@@ -98,7 +150,28 @@ export default function ListingContactSection({
         >
           {loading ? "Loading contact..." : "Show Contact Information"}
         </Button>
-        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        {error && (
+          <div className="mt-3 space-y-3">
+            <p className="text-sm text-amber-400">{error}</p>
+            {accessBlock === "guest" && (
+              <Button
+                className="w-full bg-violet text-white hover:bg-violet/90"
+                onClick={openLogin}
+              >
+                Login
+              </Button>
+            )}
+            {accessBlock === "unverified" && (
+              <Button
+                className="w-full border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:text-amber-200"
+                onClick={handleVerifyEmail}
+                disabled={verifying || verifySent}
+              >
+                {verifying ? "Sending..." : verifySent ? "Email sent" : "Verify Email"}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     );
   }

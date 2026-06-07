@@ -3,10 +3,16 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { serializeListingContact } from "@/lib/listing-contact";
+import {
+  getRevealCounts,
+  isRevealRateLimited,
+  logContactReveal,
+} from "@/lib/contact-reveal";
+import { getClientIp } from "@/lib/rate-limit";
 import { logError } from "@/lib/monitoring";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -22,15 +28,6 @@ export async function GET(
 
     if (!user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
-
-    const role = String(user.role || "").toLowerCase();
-    const isStaff = role === "admin" || role === "moderator";
-    if (!user.isVerified && !isStaff) {
-      return NextResponse.json(
-        { error: "Email verification required to access contact information" },
-        { status: 403 },
-      );
     }
 
     const { id } = await params;
@@ -54,10 +51,33 @@ export async function GET(
       return NextResponse.json({ error: "Listing not found" }, { status: 404 });
     }
 
+    const role = String(user.role || "").toLowerCase();
+    const isStaff = role === "admin" || role === "moderator";
     const isOwner = listing.userId === session.user.id;
+
+    if (!user.isVerified && !isStaff && !isOwner) {
+      return NextResponse.json(
+        { error: "Email verification required to access contact information" },
+        { status: 403 },
+      );
+    }
+
     if (!isOwner && !isStaff && listing.status !== "approved") {
       return NextResponse.json({ error: "Listing not found" }, { status: 404 });
     }
+
+    const revealCounts = await getRevealCounts(session.user.id);
+    if (isRevealRateLimited(revealCounts)) {
+      return NextResponse.json({ error: "Reveal limit reached" }, { status: 429 });
+    }
+
+    await logContactReveal({
+      listingId: listing.id,
+      userId: session.user.id,
+      role,
+      ipAddress: getClientIp(request),
+      userAgent: request.headers.get("user-agent"),
+    });
 
     return NextResponse.json(serializeListingContact(listing));
   } catch (error) {

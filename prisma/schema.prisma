@@ -94,6 +94,7 @@ model User {
   listingReports         ListingReport[]
   fraudEvents            FraudEvent[]
   paymentAuditLogs       PaymentAuditLog[]         @relation("PaymentAuditActor")
+  contactReveals         ContactReveal[]
 
   @@index([role, isSuspended])
   @@index([isPremium, premiumExpiry])
@@ -305,6 +306,7 @@ model Listing {
   reports          Report[]          // Legacy (deprecated — use ListingReport)
   listingReports   ListingReport[]
   reviews          Review[]
+  contactReveals   ContactReveal[]
 
   @@index([userId, status])
   @@index([userId, createdAt(sort: Desc)])
@@ -330,6 +332,27 @@ model Listing {
   @@index([isBoosted, boostUntil])
   @@index([expiresAt])
   @@index([riskScore(sort: Desc)])
+}
+
+// ============================================================================
+// Contact Reveal Audit
+// ============================================================================
+
+model ContactReveal {
+  id         String   @id @default(cuid())
+  listingId  String
+  userId     String
+  role       String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 // ============================================================================
