@@ -134,6 +134,18 @@ export const DEFAULT_PAYMENT_SETTINGS = {
 // Database Access
 // ==========================================
 
+/** Admin revenue display currency. PaymentSettings prices are UPI/INR. */
+export const DEFAULT_ADMIN_REVENUE_CURRENCY = "INR";
+
+/**
+ * Resolve the currency used for admin revenue display.
+ * PaymentSettings has no currency column; the platform bills in INR via UPI.
+ */
+export async function getAdminRevenueCurrency(): Promise<string> {
+  const settings = await db.paymentSettings.findFirst({ select: { id: true } });
+  return settings ? DEFAULT_ADMIN_REVENUE_CURRENCY : DEFAULT_ADMIN_REVENUE_CURRENCY;
+}
+
 /**
  * Get the PaymentSettings singleton, creating with defaults if none exists.
  * This is the single source of truth for all payment config reads.

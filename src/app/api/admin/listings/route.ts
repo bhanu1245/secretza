@@ -92,13 +92,13 @@ export async function GET(request: Request) {
             },
           },
           listingImages: {
-            where: { moderationStatus: "approved" },
             orderBy: { sortOrder: "asc" },
             take: 1,
             select: {
               id: true,
               url: true,
               thumbnailUrl: true,
+              moderationStatus: true,
             },
           },
         },
@@ -136,6 +136,7 @@ export async function GET(request: Request) {
         city: l.city,
         area: (l as any).area,
         areaRelation: (l as any).areaRelation,
+        profileImage: (l as any).profileImage,
         listingImages: l.listingImages,
       })),
       total,

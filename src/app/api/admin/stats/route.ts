@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
 import { logError } from "@/lib/monitoring";
+import { getAdminRevenueCurrency } from "@/lib/payment-settings";
 
 export async function GET() {
   try {
@@ -20,6 +21,7 @@ export async function GET() {
       featuredListings,
       premiumUsers,
       recentPayments,
+      revenueCurrency,
     ] = await Promise.all([
       db.user.count(),
       db.listing.count(),
@@ -56,6 +58,7 @@ export async function GET() {
           orderBy: { createdAt: "asc" },
         });
       })(),
+      getAdminRevenueCurrency(),
     ]);
 
     // Group payments by month for the revenue chart
@@ -88,6 +91,7 @@ export async function GET() {
       pendingReview,
       pendingPayments,
       totalRevenue: revenueResult._sum.amount ?? 0,
+      revenueCurrency,
       featuredListings,
       premiumUsers,
       monthlyRevenue,

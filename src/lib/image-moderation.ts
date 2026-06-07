@@ -257,6 +257,21 @@ export async function canAccessPaymentScreenshot(
   return submission.userId === viewer.id;
 }
 
+const LISTING_IMAGE_DERIVATIVE_SUFFIXES = ["-thumb.webp", "-medium.webp"] as const;
+
+/**
+ * Map derivative listing image keys (-thumb, -medium) to the parent storageKey
+ * stored on ListingImage rows (the processed original .webp).
+ */
+export function resolveListingImageParentStorageKey(key: string): string {
+  for (const suffix of LISTING_IMAGE_DERIVATIVE_SUFFIXES) {
+    if (key.endsWith(suffix)) {
+      return `${key.slice(0, -suffix.length)}.webp`;
+    }
+  }
+  return key;
+}
+
 /**
  * Whether a listing-image storage key may be served to the current viewer.
  * Listing-scoped only — callers should route non-listing keys elsewhere.
@@ -271,8 +286,10 @@ export async function canAccessListingImageFile(
     return false;
   }
 
+  const lookupKey = resolveListingImageParentStorageKey(key);
+
   const image = await db.listingImage.findFirst({
-    where: { storageKey: key },
+    where: { storageKey: lookupKey },
     select: {
       moderationStatus: true,
       listing: { select: { userId: true } },

@@ -32,7 +32,7 @@ import {
   Search,
   ChevronDown,
   TrendingUp,
-  DollarSign,
+  IndianRupee,
   AlertTriangle,
   UserCheck,
   UserX,
@@ -78,6 +78,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/store/useAppStore";
 import { formatNumber } from "@/lib/utils";
+import {
+  formatRevenueAmount,
+  formatRevenueAxisTick,
+  formatRevenueCompact,
+} from "@/lib/currency-format";
+import { DEFAULT_ADMIN_REVENUE_CURRENCY } from "@/lib/payment-settings";
 import { DEFAULT_GA_MEASUREMENT_ID } from "@/lib/analytics-constants";
 import type { ListingStatus, User, ModerationItem } from "@/lib/types";
 import { toast } from "sonner";
@@ -88,7 +94,7 @@ import SeoAuditPanel from "@/components/secretza/admin/SeoAuditPanel";
 import SeoRegenerationPanel from "@/components/secretza/admin/SeoRegenerationPanel";
 import { AdminReviewQueue, AdminReviewAnalytics } from "@/components/secretza/admin/AdminReviewPanel";
 import CategoryManager from "@/components/secretza/admin/CategoryManager";
-import { getListingCoverImageWithPlaceholder } from "@/lib/listing-images";
+import { resolveAdminListingThumbnail } from "@/lib/listing-images";
 import AdminPricingPlans from "@/components/secretza/admin/AdminPricingPlans";
 import AdminCmsPages from "@/components/secretza/admin/AdminCmsPages";
 import AdminReportsPage from "@/components/secretza/admin/AdminReportsPage";
@@ -99,19 +105,22 @@ interface AdminStatsData {
   activeListings: number;
   pendingReview: number;
   totalRevenue: number;
+  revenueCurrency?: string;
   featuredListings: number;
   premiumUsers: number;
   monthlyRevenue: Array<{ month: string; revenue: number; listings: number }>;
 }
 
-function CustomTooltip({
+function RevenueChartTooltip({
   active,
   payload,
   label,
+  currency,
 }: {
   active?: boolean;
   payload?: Array<{ value: number; name: string; color: string }>;
   label?: string;
+  currency: string;
 }) {
   if (active && payload && payload.length) {
     return (
@@ -119,7 +128,7 @@ function CustomTooltip({
         <p className="text-xs font-medium text-[#A1A1AA] mb-1">{label}</p>
         {payload.map((entry, i) => (
           <p key={i} className="text-sm font-semibold" style={{ color: entry.color }}>
-            {entry.name}: ${entry.value.toLocaleString()}
+            {entry.name}: {formatRevenueAmount(entry.value, currency)}
           </p>
         ))}
       </div>
@@ -187,6 +196,7 @@ export function AdminDashboardPage() {
   }, []);
 
   const recentListings = listings.slice(0, 5);
+  const revenueCurrency = stats?.revenueCurrency ?? DEFAULT_ADMIN_REVENUE_CURRENCY;
 
   const statsCards = stats
     ? [
@@ -194,7 +204,13 @@ export function AdminDashboardPage() {
         { label: "Total Listings", value: formatNumber(stats.totalListings), icon: FileText, color: "#3B82F6", bg: "rgba(59,130,246,0.1)" },
         { label: "Active Listings", value: formatNumber(stats.activeListings), icon: TrendingUp, color: "#10B981", bg: "rgba(16,185,129,0.1)" },
         { label: "Pending Review", value: stats.pendingReview.toString(), icon: Clock, color: "#F59E0B", bg: "rgba(245,158,11,0.1)" },
-        { label: "Total Revenue", value: `$${formatNumber(stats.totalRevenue)}`, icon: DollarSign, color: "#10B981", bg: "rgba(16,185,129,0.1)" },
+        {
+          label: "Total Revenue",
+          value: formatRevenueCompact(stats.totalRevenue, revenueCurrency),
+          icon: IndianRupee,
+          color: "#10B981",
+          bg: "rgba(16,185,129,0.1)",
+        },
       ]
     : [];
 
@@ -245,7 +261,9 @@ export function AdminDashboardPage() {
         <Card className="lg:col-span-2 bg-[#15151D] border-[rgba(255,255,255,0.08)]">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-[#F5F5F7]">Revenue Overview</CardTitle>
-            <CardDescription className="text-xs text-[#A1A1AA]">Monthly revenue for the past 8 months</CardDescription>
+            <CardDescription className="text-xs text-[#A1A1AA]">
+              Monthly revenue for the past 8 months ({revenueCurrency})
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
             <div className="h-[280px]">
@@ -253,9 +271,17 @@ export function AdminDashboardPage() {
                 <BarChart data={revenueData} barSize={32}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                   <XAxis dataKey="month" tick={{ fill: "#A1A1AA", fontSize: 11 }} axisLine={{ stroke: "rgba(255,255,255,0.08)" }} tickLine={false} />
-                  <YAxis tick={{ fill: "#A1A1AA", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(124,58,237,0.05)" }} />
-                  <Bar dataKey="revenue" fill="#7C3AED" radius={[6, 6, 0, 0]} name="Revenue" />
+                  <YAxis
+                    tick={{ fill: "#A1A1AA", fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => formatRevenueAxisTick(v, revenueCurrency)}
+                  />
+                  <Tooltip
+                    content={<RevenueChartTooltip currency={revenueCurrency} />}
+                    cursor={{ fill: "rgba(124,58,237,0.05)" }}
+                  />
+                  <Bar dataKey="revenue" fill="#7C3AED" radius={[6, 6, 0, 0]} name={`Revenue (${revenueCurrency})`} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -330,7 +356,7 @@ export function AdminDashboardPage() {
                   <tr key={listing.id} className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)] transition-colors">
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <img src={listing.listingImages?.[0]?.url} alt="" className="w-8 h-8 rounded-md object-cover" />
+                        <img src={resolveAdminListingThumbnail(listing)} alt="" className="w-8 h-8 rounded-md object-cover" />
                         <span className="text-sm text-[#F5F5F7] truncate max-w-[200px]">{listing.title}</span>
                       </div>
                     </td>
@@ -791,7 +817,7 @@ export function AdminListingsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <img src={listing.listingImages?.[0]?.url} alt="" className="w-8 h-8 rounded-md object-cover flex-shrink-0" />
+                        <img src={resolveAdminListingThumbnail(listing)} alt="" className="w-8 h-8 rounded-md object-cover flex-shrink-0" />
                         <span className="text-sm text-[#F5F5F7] truncate max-w-[200px]">{listing.title}</span>
                       </div>
                     </td>
@@ -1328,7 +1354,7 @@ export function AdminModerationPage() {
             <div className="space-y-4">
               {items.map((item) => {
                 const risk = getRiskBadge(item.riskScore);
-                const coverImage = getListingCoverImageWithPlaceholder(item.listing);
+                const thumbnail = resolveAdminListingThumbnail(item.listing);
                 return (
                   <Card key={item.listing.id} className="bg-[#15151D] border-[rgba(255,255,255,0.08)] hover:border-[rgba(124,58,237,0.2)] transition-all">
                     <CardContent className="p-4">
@@ -1336,8 +1362,8 @@ export function AdminModerationPage() {
                         {/* Listing Preview */}
                         <div className="flex items-start gap-4 flex-1 min-w-0">
                           <img
-                            src={coverImage.thumbnailUrl || coverImage.url}
-                            alt={coverImage.alt || item.listing.title}
+                            src={thumbnail}
+                            alt={item.listing.title}
                             className="w-20 h-24 rounded-lg object-cover flex-shrink-0"
                           />
                           <div className="flex-1 min-w-0">

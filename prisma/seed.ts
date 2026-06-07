@@ -16,6 +16,7 @@ import { UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { seedGeoData } from "../src/lib/seed-geo";
+import { seedSubcategories } from "../src/lib/seed-subcategories";
 
 const db = new PrismaClient();
 
@@ -293,6 +294,15 @@ async function main() {
 
   // 2. Seed categories
   await seedCategories();
+
+  // 2b. Expand categories with SEO subcategories (idempotent)
+  const subResult = await seedSubcategories(db);
+  console.log(
+    `   ✅ Subcategories: ${subResult.subcategoriesCreated} created, ${subResult.subcategoriesUpdated} updated`,
+  );
+  if (subResult.parentsMissing.length > 0) {
+    console.warn(`   ⚠️  Missing parent slugs: ${subResult.parentsMissing.join(", ")}`);
+  }
 
   // 3. Seed pricing and CMS defaults
   await seedPricingPlans();

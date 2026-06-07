@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
@@ -117,6 +117,11 @@ function sRGBToLinear(color: string): string {
   return color;
 }
 
+/** True when the browser has already fetched/decoded this img (cache / hydration). */
+export function isImageAlreadyLoaded(img: HTMLImageElement | null): boolean {
+  return Boolean(img?.complete && img.naturalWidth > 0);
+}
+
 // ==========================================
 // OptimizedImage Component
 // ==========================================
@@ -140,6 +145,50 @@ function OptimizedImage({
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   const [displaySrc, setDisplaySrc] = useState(thumbnailSrc || src);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const fullPreloadStartedRef = useRef(false);
+
+  useEffect(() => {
+    fullPreloadStartedRef.current = false;
+  }, [src, thumbnailSrc]);
+
+  const startFullPreload = useCallback(() => {
+    if (fullPreloadStartedRef.current) return;
+    if (!thumbnailSrc || thumbnailSrc === src) return;
+    fullPreloadStartedRef.current = true;
+    const fullImg = new Image();
+    fullImg.src = src;
+    fullImg.onload = () => {
+      setDisplaySrc(src);
+    };
+  }, [thumbnailSrc, src]);
+
+  const markLoaded = useCallback(() => {
+    setLoaded(true);
+    if (thumbnailSrc && thumbnailSrc !== src && displaySrc === thumbnailSrc) {
+      startFullPreload();
+    }
+  }, [thumbnailSrc, src, displaySrc, startFullPreload]);
+
+  const attachImgRef = useCallback(
+    (node: HTMLImageElement | null) => {
+      imgRef.current = node;
+      if (!node || error) return;
+      if (isImageAlreadyLoaded(node)) {
+        markLoaded();
+      }
+    },
+    [error, markLoaded],
+  );
+
+  // Sync cached/hydrated images when displaySrc changes (e.g. thumb → full swap).
+  useLayoutEffect(() => {
+    if (error) return;
+    if (!isImageAlreadyLoaded(imgRef.current)) return;
+    // Intentional: recover from missed onLoad when the browser already decoded the image.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration/cache safety for <img>
+    markLoaded();
+  }, [displaySrc, error, markLoaded]);
 
   return (
     <div className={cn("relative overflow-hidden", className)}>
@@ -155,21 +204,14 @@ function OptimizedImage({
 
       {/* Actual image */}
       <img
+        ref={attachImgRef}
         src={displaySrc}
         alt={alt}
         loading="lazy"
         decoding="async"
         onLoad={() => {
-          if (!loaded && thumbnailSrc && thumbnailSrc !== src) {
-            setLoaded(true);
-            const fullImg = new Image();
-            fullImg.src = src;
-            fullImg.onload = () => {
-              setDisplaySrc(src);
-            };
-          } else {
-            setLoaded(true);
-          }
+          if (error) return;
+          markLoaded();
         }}
         onError={() => setError(true)}
         className={cn(

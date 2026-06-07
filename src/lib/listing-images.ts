@@ -32,6 +32,23 @@ export type ResolvedListingImage = {
 /** Shown when a listing has no resolvable image URL. */
 export const LISTING_IMAGE_PLACEHOLDER = "/brand/logo-icon-dark.svg";
 
+/** Admin-only fallback when no listing image is available. */
+export const ADMIN_LISTING_PLACEHOLDER = "/placeholder-image.svg";
+
+export type AdminListingThumbnailSource = {
+  listingImages?: Array<{ url?: string | null; thumbnailUrl?: string | null }> | null;
+  profileImage?: string | null;
+};
+
+/** Resolve admin thumbnail URL including pending ListingImage rows. */
+export function resolveAdminListingThumbnail(listing: AdminListingThumbnailSource): string {
+  const first = listing.listingImages?.[0];
+  const thumbnail = resolveListingImageUrl(first?.thumbnailUrl);
+  const url = resolveListingImageUrl(first?.url);
+  const profile = resolveListingImageUrl(listing.profileImage);
+  return thumbnail || url || profile || ADMIN_LISTING_PLACEHOLDER;
+}
+
 function parseJsonArray(value: unknown): unknown[] {
   if (Array.isArray(value)) return value;
   if (typeof value !== "string" || !value.trim()) return [];
