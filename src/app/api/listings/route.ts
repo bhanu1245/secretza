@@ -568,9 +568,7 @@ export async function POST(request: Request) {
           price,
           currency: currency || "USD",
           contactEmail: contactEmail ?? null,
-          contactTelegram: contactTelegram
-            ? normalizeTelegramValue(contactTelegram)
-            : null,
+          contactTelegram: normalizeTelegramValue(contactTelegram),
           contactInstagram,
           contactWebsite: contactWebsite ?? null,
           contactText: contactText ?? null,

@@ -36,6 +36,10 @@ type ListingFormValues = {
   telegram: string;
   contactEmail: string;
   contactPhone: string;
+  contactWebsite: string;
+  seoTitle: string;
+  seoDescription: string;
+  seoKeywords: string;
   categorySlug: string;
   subcategorySlug: string;
   countrySlug: string;
@@ -94,6 +98,10 @@ const emptyValues: ListingFormValues = {
   telegram: "",
   contactEmail: "",
   contactPhone: "",
+  contactWebsite: "",
+  seoTitle: "",
+  seoDescription: "",
+  seoKeywords: "",
   categorySlug: "",
   subcategorySlug: "",
   countrySlug: "",
@@ -279,7 +287,7 @@ export default function CreateListingForm({
             id: editListingId,
             title: v.title,
             description: v.description,
-            keywords: splitCsv(v.tags),
+            keywords: splitCsv(v.seoKeywords || v.tags),
             categorySlug: v.categorySlug,
             citySlug: v.citySlug,
             city: selectedCity?.name || v.citySlug,
@@ -313,6 +321,7 @@ export default function CreateListingForm({
     values.areaId,
     values.area,
     values.tags,
+    values.seoKeywords,
     values.images,
     values.contactPhone,
     values.whatsapp,
@@ -325,6 +334,23 @@ export default function CreateListingForm({
 
   const seoScore = listingScore ?? structuralSeoScore;
   const seoLoading = listingScoreLoading || structuralSeoLoading;
+
+  const seoGuidanceTips = useMemo(() => {
+    const tips: string[] = [];
+    if (!values.title.trim()) tips.push("Add a title");
+    if (!values.description.trim()) tips.push("Add a detailed description");
+    if (!values.seoKeywords.trim()) tips.push("Add SEO keywords");
+    if (!values.countrySlug || !values.citySlug) tips.push("Add location information");
+    return tips.slice(0, 4);
+  }, [
+    values.title,
+    values.description,
+    values.seoKeywords,
+    values.countrySlug,
+    values.citySlug,
+  ]);
+
+  const hasDescription = Boolean(values.description.trim());
 
   useEffect(() => {
     if (!aiAuto) {
@@ -414,6 +440,12 @@ export default function CreateListingForm({
           telegram: listing.contact?.telegram || listing.telegram || "",
           contactEmail: listing.contact?.email || listing.contactEmail || "",
           contactPhone: listing.contact?.phone || listing.contactText || "",
+          contactWebsite: listing.contact?.website || listing.contactWebsite || "",
+          seoTitle: listing.seoTitle || "",
+          seoDescription: listing.seoDescription || "",
+          seoKeywords: Array.isArray(listing.seoKeywords)
+            ? listing.seoKeywords.join(", ")
+            : listing.seoKeywords || "",
           categorySlug: listing.category?.slug || "",
           subcategorySlug: listing.subcategory?.slug || "",
           countrySlug: listing.country?.slug || "",
@@ -821,57 +853,196 @@ export default function CreateListingForm({
           </div>
         )}
         <Section title="Basic Info">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#7C3AED]/20 bg-[#7C3AED]/5 p-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-medium text-[#C4B5FD]">Listing SEO Tools</span>
-              <AiGenerateButton
-                label="Generate title"
-                onGenerate={() => runAiField("title", "title", "listing_seo_generate_title")}
-                title="Generate an SEO title from category, city, and tags"
-              />
-              <AiGenerateButton
-                label="Generate description"
-                onGenerate={() => runAiField("description", "description", "listing_seo_generate_description")}
-                title="Generate a deterministic listing description"
-              />
-              <AiGenerateButton
-                label="Improve description"
-                onGenerate={() => runAiField("improve", "description", "listing_seo_improve_description")}
-                disabled={!values.description.trim()}
-                title="Improve your current description"
-              />
+          <div className="mb-4 rounded-lg border border-[#7C3AED]/20 bg-[#7C3AED]/5 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-[#C4B5FD]">Listing SEO Tools</span>
+                <AiGenerateButton
+                  label="Generate title"
+                  onGenerate={() => runAiField("title", "title", "listing_seo_generate_title")}
+                  title="Generate an SEO-friendly title"
+                />
+                <AiGenerateButton
+                  label="Generate description"
+                  onGenerate={() => runAiField("description", "description", "listing_seo_generate_description")}
+                  title="Generate an SEO-friendly description"
+                />
+                {!hasDescription ? (
+                  <span title="Enter a description first." className="inline-flex">
+                    <AiGenerateButton
+                      label="Improve description"
+                      onGenerate={() => runAiField("improve", "description", "listing_seo_improve_description")}
+                      disabled
+                    />
+                  </span>
+                ) : (
+                  <AiGenerateButton
+                    label="Improve description"
+                    onGenerate={() => runAiField("improve", "description", "listing_seo_improve_description")}
+                    title="Improve and optimize your description"
+                  />
+                )}
+              </div>
+              <div className="flex flex-wrap items-start gap-4">
+                <label className="flex items-center gap-2 text-xs text-[#C4B5FD]">
+                  <input
+                    type="checkbox"
+                    checked={enhanceWithAi}
+                    onChange={(event) => setEnhanceWithAi(event.target.checked)}
+                    className="rounded border-zinc-600"
+                  />
+                  Enhance with AI
+                </label>
+                <div>
+                  <label className="flex items-center gap-2 text-xs text-[#C4B5FD]">
+                    <input
+                      type="checkbox"
+                      checked={aiAuto}
+                      onChange={(event) => setAiAuto(event.target.checked)}
+                      className="rounded border-zinc-600"
+                    />
+                    Auto SEO mode
+                  </label>
+                  <p className="mt-1 max-w-xs text-[10px] leading-relaxed text-zinc-500">
+                    Automatically generates SEO content while you complete your listing.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-4">
-              <label className="flex items-center gap-2 text-xs text-[#C4B5FD]">
-                <input
-                  type="checkbox"
-                  checked={enhanceWithAi}
-                  onChange={(event) => setEnhanceWithAi(event.target.checked)}
-                  className="rounded border-zinc-600"
-                />
-                Enhance with AI
-              </label>
-              <label className="flex items-center gap-2 text-xs text-[#C4B5FD]">
-                <input
-                  type="checkbox"
-                  checked={aiAuto}
-                  onChange={(event) => setAiAuto(event.target.checked)}
-                  className="rounded border-zinc-600"
-                />
-                Auto SEO mode
-              </label>
+            <div className="mt-3 space-y-1.5 border-t border-[#7C3AED]/15 pt-3 text-[11px] leading-relaxed text-zinc-400">
+              <p>
+                <span className="font-medium text-[#C4B5FD]">Generate Title:</span>{" "}
+                Creates an SEO-friendly title based on your listing information.
+              </p>
+              <p>
+                <span className="font-medium text-[#C4B5FD]">Generate Description:</span>{" "}
+                Creates an SEO-optimized description using title, category, location, and listing details.
+              </p>
+              <p>
+                <span className="font-medium text-[#C4B5FD]">Improve Description:</span>{" "}
+                Improves an existing description with better SEO keywords, readability, and content quality.
+              </p>
+              <p>
+                <span className="font-medium text-[#C4B5FD]">Auto SEO Mode:</span>{" "}
+                Automatically generates SEO content while completing the form.
+              </p>
             </div>
           </div>
           <SeoQualityMeter result={seoScore} loading={seoLoading} hideTips />
-          <Input field="title" label="Title" value={values.title} onChange={(value) => handleUserEdit("title", value)} error={errors.title} required />
+          {seoGuidanceTips.length > 0 && (
+            <div className="rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#1E1E2A] px-3 py-2">
+              <p className="text-[10px] font-medium text-[#A1A1AA]">SEO suggestions</p>
+              <ul className="mt-1 space-y-0.5">
+                {seoGuidanceTips.map((tip) => (
+                  <li key={tip} className="text-[10px] text-[#8B8B96]">
+                    • {tip}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <Input
+            field="title"
+            label="Title"
+            value={values.title}
+            onChange={(value) => handleUserEdit("title", value)}
+            error={errors.title}
+            required
+            maxLength={70}
+            showCount
+          />
           <Input field="slug" label="Slug" value={values.slug} onChange={(value) => updateField("slug", slugify(value))} error={errors.slug} />
-          <Textarea field="description" label="Description" value={values.description} onChange={(value) => handleUserEdit("description", value)} error={errors.description} required />
+          <Textarea
+            field="description"
+            label="Description"
+            value={values.description}
+            onChange={(value) => handleUserEdit("description", value)}
+            error={errors.description}
+            required
+            maxLength={2000}
+            showCount
+          />
+          <Input field="age" label="Age" type="number" value={values.age} onChange={(value) => updateField("age", value)} error={errors.age} />
+        </Section>
+
+        <Section title="SEO Details">
+          <Input
+            field="seoTitle"
+            label="SEO Title"
+            value={values.seoTitle}
+            onChange={(value) => updateField("seoTitle", value)}
+            error={errors.seoTitle}
+            placeholder="Premium companion in South Delhi"
+            maxLength={60}
+            showCount
+          />
+          <Textarea
+            field="seoDescription"
+            label="SEO Description"
+            value={values.seoDescription}
+            onChange={(value) => updateField("seoDescription", value)}
+            error={errors.seoDescription}
+            placeholder="Short meta description for search results"
+            maxLength={160}
+            showCount
+          />
+          <Input
+            field="seoKeywords"
+            label="SEO Keywords"
+            value={values.seoKeywords}
+            onChange={(value) => updateField("seoKeywords", value)}
+            error={errors.seoKeywords}
+            placeholder="Delhi Escorts, Independent Escort Delhi, VIP Escort Delhi"
+            hint="Comma-separated keywords for search relevance."
+          />
+        </Section>
+
+        <Section
+          title="Contact Information"
+          description="Contact information is hidden from visitors and only revealed to verified users."
+        >
           <div className="grid gap-4 md:grid-cols-2">
-            <Input field="age" label="Age" type="number" value={values.age} onChange={(value) => updateField("age", value)} error={errors.age} />
-            <Input field="whatsapp" label="WhatsApp" value={values.whatsapp} onChange={(value) => updateField("whatsapp", value)} error={errors.whatsapp} />
-            <Input field="telegram" label="Telegram" value={values.telegram} onChange={(value) => updateField("telegram", value)} error={errors.telegram} />
-            <Input field="contactPhone" label="Mobile Phone" value={values.contactPhone} onChange={(value) => updateField("contactPhone", value)} error={errors.contactPhone} />
-            <Input field="contactEmail" label="Email" type="email" value={values.contactEmail} onChange={(value) => updateField("contactEmail", value)} error={errors.contactEmail} />
+            <Input
+              field="contactPhone"
+              label="Mobile Phone"
+              value={values.contactPhone}
+              onChange={(value) => updateField("contactPhone", value)}
+              error={errors.contactPhone}
+              placeholder="+919876543210"
+            />
+            <Input
+              field="whatsapp"
+              label="WhatsApp"
+              value={values.whatsapp}
+              onChange={(value) => updateField("whatsapp", value)}
+              error={errors.whatsapp}
+              placeholder="+919876543210"
+            />
+            <Input
+              field="telegram"
+              label="Telegram"
+              value={values.telegram}
+              onChange={(value) => updateField("telegram", value)}
+              error={errors.telegram}
+              placeholder="@escortdelhi"
+            />
+            <Input
+              field="contactEmail"
+              label="Email"
+              type="email"
+              value={values.contactEmail}
+              onChange={(value) => updateField("contactEmail", value)}
+              error={errors.contactEmail}
+              placeholder="example@email.com"
+            />
+            <Input
+              field="contactWebsite"
+              label="Website"
+              value={values.contactWebsite}
+              onChange={(value) => updateField("contactWebsite", value)}
+              error={errors.contactWebsite}
+              placeholder="https://example.com"
+            />
           </div>
         </Section>
 
@@ -930,7 +1101,14 @@ export default function CreateListingForm({
         </Section>
 
         <Section title="Services">
-          <Input field="tags" label="Tags (comma separated)" value={values.tags} onChange={(value) => updateField("tags", value)} error={errors.tags} />
+          <Input
+            field="tags"
+            label="Tags (comma separated)"
+            value={values.tags}
+            onChange={(value) => updateField("tags", value)}
+            error={errors.tags}
+            placeholder="GFE, Massage, Travel, Dinner Date"
+          />
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {serviceOptions.map((service) => (
               <button
@@ -1012,10 +1190,21 @@ export default function CreateListingForm({
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
   return (
     <section className="rounded-2xl border border-white/10 bg-[#15151D] p-5 space-y-4">
-      <h2 className="text-lg font-semibold">{title}</h2>
+      <div>
+        <h2 className="text-lg font-semibold">{title}</h2>
+        {description && <p className="mt-1 text-sm text-zinc-400">{description}</p>}
+      </div>
       {children}
     </section>
   );
@@ -1029,6 +1218,10 @@ function Input({
   type = "text",
   required,
   error,
+  placeholder,
+  hint,
+  maxLength,
+  showCount,
 }: {
   field: keyof ListingFormValues;
   label: string;
@@ -1037,20 +1230,43 @@ function Input({
   type?: string;
   required?: boolean;
   error?: string;
+  placeholder?: string;
+  hint?: string;
+  maxLength?: number;
+  showCount?: boolean;
 }) {
+  const countId = `${field}-count`;
+  const hintId = hint ? `${field}-hint` : undefined;
+  const describedBy = [error ? `${field}-error` : null, hintId, showCount && maxLength ? countId : null]
+    .filter(Boolean)
+    .join(" ") || undefined;
+
   return (
     <label data-field={field} className="block">
-      <span className="mb-2 block text-sm text-zinc-300">{label}{required && " *"}</span>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="text-sm text-zinc-300">{label}{required && " *"}</span>
+        {showCount && maxLength !== undefined && (
+          <span
+            id={countId}
+            className={`text-xs ${value.length > maxLength ? "text-amber-400" : "text-zinc-500"}`}
+          >
+            {value.length}/{maxLength}
+          </span>
+        )}
+      </div>
       <input
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        maxLength={maxLength}
         aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${field}-error` : undefined}
-        className={`w-full rounded-xl border bg-zinc-900 p-4 outline-none focus:border-violet-500 ${
+        aria-describedby={describedBy}
+        className={`w-full rounded-xl border bg-zinc-900 p-4 outline-none placeholder:text-zinc-600 focus:border-violet-500 ${
           error ? "border-red-500" : "border-zinc-700"
         }`}
       />
+      {hint && <p id={hintId} className="mt-2 text-xs text-zinc-500">{hint}</p>}
       {error && <p id={`${field}-error`} className="mt-2 text-sm text-red-400">{error}</p>}
     </label>
   );
@@ -1063,6 +1279,10 @@ function Textarea({
   onChange,
   required,
   error,
+  placeholder,
+  hint,
+  maxLength,
+  showCount,
 }: {
   field: keyof ListingFormValues;
   label: string;
@@ -1070,19 +1290,42 @@ function Textarea({
   onChange: (value: string) => void;
   required?: boolean;
   error?: string;
+  placeholder?: string;
+  hint?: string;
+  maxLength?: number;
+  showCount?: boolean;
 }) {
+  const countId = `${field}-count`;
+  const hintId = hint ? `${field}-hint` : undefined;
+  const describedBy = [error ? `${field}-error` : null, hintId, showCount && maxLength ? countId : null]
+    .filter(Boolean)
+    .join(" ") || undefined;
+
   return (
     <label data-field={field} className="block">
-      <span className="mb-2 block text-sm text-zinc-300">{label}{required && " *"}</span>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="text-sm text-zinc-300">{label}{required && " *"}</span>
+        {showCount && maxLength !== undefined && (
+          <span
+            id={countId}
+            className={`text-xs ${value.length > maxLength ? "text-amber-400" : "text-zinc-500"}`}
+          >
+            {value.length}/{maxLength}
+          </span>
+        )}
+      </div>
       <textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        maxLength={maxLength}
         aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${field}-error` : undefined}
-        className={`min-h-[180px] w-full rounded-xl border bg-zinc-900 p-4 outline-none focus:border-violet-500 ${
+        aria-describedby={describedBy}
+        className={`min-h-[180px] w-full rounded-xl border bg-zinc-900 p-4 outline-none placeholder:text-zinc-600 focus:border-violet-500 ${
           error ? "border-red-500" : "border-zinc-700"
         }`}
       />
+      {hint && <p id={hintId} className="mt-2 text-xs text-zinc-500">{hint}</p>}
       {error && <p id={`${field}-error`} className="mt-2 text-sm text-red-400">{error}</p>}
     </label>
   );

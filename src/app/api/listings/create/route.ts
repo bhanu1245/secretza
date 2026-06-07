@@ -207,7 +207,7 @@ export async function POST(req: Request) {
           .filter(Boolean);
     const profileImage = body.profileImage || galleryImages[0] || null;
     const whatsapp = sanitizePhone(body.whatsapp) ?? null;
-    const telegram = body.telegram ? normalizeTelegramValue(body.telegram) : null;
+    const telegram = normalizeTelegramValue(body.telegram);
     const contactEmail = sanitizeEmail(body.contactEmail) ?? null;
     const contactText = sanitizePhone(body.contactPhone) ?? null;
 

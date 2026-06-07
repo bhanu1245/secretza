@@ -41,6 +41,28 @@ describe("validateWhatsapp", () => {
   });
 });
 
+describe("normalizeTelegramValue", () => {
+  it("returns null for null", () => {
+    expect(normalizeTelegramValue(null)).toBeNull();
+  });
+
+  it("returns null for undefined", () => {
+    expect(normalizeTelegramValue(undefined)).toBeNull();
+  });
+
+  it("returns empty string for empty input", () => {
+    expect(normalizeTelegramValue("")).toBe("");
+  });
+
+  it("strips leading @ from usernames", () => {
+    expect(normalizeTelegramValue("@escortdelhi")).toBe("escortdelhi");
+  });
+
+  it("strips t.me links", () => {
+    expect(normalizeTelegramValue("https://t.me/escortdelhi")).toBe("escortdelhi");
+  });
+});
+
 describe("validateTelegram", () => {
   it("accepts plain usernames", () => {
     expect(validateTelegram("escortdelhi")).toBeNull();
@@ -48,10 +70,6 @@ describe("validateTelegram", () => {
 
   it("accepts @ prefixed usernames", () => {
     expect(validateTelegram("@escortdelhi")).toBeNull();
-  });
-
-  it("normalizes leading @", () => {
-    expect(normalizeTelegramValue("@escortdelhi")).toBe("escortdelhi");
   });
 
   it("rejects usernames with spaces", () => {

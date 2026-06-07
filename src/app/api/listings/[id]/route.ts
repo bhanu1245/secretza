@@ -27,6 +27,7 @@ import {
   extractStorageKeyFromUrl,
   resolveListingImageUrl,
 } from "@/lib/listing-images";
+import { resolveListingUpdateSlug } from "@/lib/listing-slug";
 
 function safeJsonParse(str: unknown, fallback: unknown): unknown {
   if (typeof str !== 'string') return fallback;
@@ -234,6 +235,7 @@ export async function PUT(
 
     const {
       title,
+      slug,
       description,
       categorySlug,
       countrySlug,
@@ -439,11 +441,30 @@ export async function PUT(
       }
     }
 
-    // Only regenerate slug if title actually changed
-    const titleChanged = title !== undefined && title !== existing.title;
-    const slug = titleChanged
-      ? title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now()
-      : existing.slug;
+    const slugResolution = await resolveListingUpdateSlug(
+      {
+        listingId: id,
+        bodySlug: slug,
+        existingSlug: existing.slug,
+        title: title !== undefined ? title : existing.title,
+      },
+      async (candidate, excludeListingId) => {
+        const taken = await db.listing.findUnique({
+          where: { slug: candidate },
+          select: { id: true },
+        });
+        return Boolean(taken && taken.id !== excludeListingId);
+      },
+    );
+
+    if (!slugResolution.ok) {
+      return NextResponse.json(
+        { error: slugResolution.error, field: slugResolution.field },
+        { status: slugResolution.status },
+      );
+    }
+
+    const resolvedSlug = slugResolution.slug;
 
     // Detect city change on an approved listing so we can sync both cities
     const oldCityId = existing.cityId;
@@ -455,7 +476,7 @@ export async function PUT(
       where: { id },
       data: {
         title: title !== undefined ? title : existing.title,
-        slug,
+        slug: resolvedSlug,
         description: description !== undefined ? description : existing.description,
         price: price !== undefined ? Number(price).toString() : existing.price,
         categorySlug: categorySlug !== undefined ? categorySlug : existing.categorySlug,

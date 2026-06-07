@@ -74,7 +74,11 @@ export function validateWhatsapp(value: string | null | undefined): string | nul
 }
 
 /** Normalize Telegram username by removing @ prefix and t.me links. */
-export function normalizeTelegramValue(value: string): string {
+export function normalizeTelegramValue(
+  value: string | null | undefined,
+): string | null {
+  if (value == null) return null;
+
   return value
     .trim()
     .replace(/^@+/, "")
