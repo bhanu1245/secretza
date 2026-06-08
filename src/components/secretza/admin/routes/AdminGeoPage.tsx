@@ -1,8 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Edit2, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  buildGeoCascadeUrl,
+  geoSubmitLabel,
+  validateGeoForm,
+  type GeoFormValues,
+} from "@/lib/admin-geo-form";
 
 type GeoType = "countries" | "states" | "cities" | "areas";
 
@@ -16,8 +22,13 @@ type GeoItem = {
   stateId?: string;
   cityId?: string;
   country?: { id: string; name: string };
-  state?: { id: string; name: string; country?: { id: string; name: string } };
-  city?: { id: string; name: string; state?: { id: string; name: string; country?: { id: string; name: string } } };
+  state?: { id: string; name: string; country?: { id: string; name: string }; countryId?: string };
+  city?: {
+    id: string;
+    name: string;
+    stateId?: string;
+    state?: { id: string; name: string; country?: { id: string; name: string } };
+  };
   _count?: Record<string, number>;
 };
 
@@ -37,15 +48,43 @@ const tabs: Array<{ id: GeoType; label: string; singular: string }> = [
 
 const emptyPagination: Pagination = { page: 1, limit: 10, total: 0, totalPages: 1 };
 
+const emptyForm: GeoFormValues = {
+  name: "",
+  slug: "",
+  code: "",
+  countryId: "",
+  stateId: "",
+  cityId: "",
+};
+
 function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
 function parentLabel(item: GeoItem, type: GeoType) {
   if (type === "states") return item.country?.name || "No country";
-  if (type === "cities") return item.state?.name || "No state";
-  if (type === "areas") return item.city?.name || "No city";
+  if (type === "cities") {
+    const country = item.state?.country?.name;
+    const state = item.state?.name;
+    return country && state ? `${state}, ${country}` : state || "No state";
+  }
+  if (type === "areas") {
+    const city = item.city?.name;
+    const state = item.city?.state?.name;
+    const country = item.city?.state?.country?.name;
+    return [city, state, country].filter(Boolean).join(", ") || "No city";
+  }
   return item.code || "";
+}
+
+function fieldClass(disabled = false) {
+  return `rounded-xl border border-white/10 bg-[#0B0B0F] px-3 py-2 text-sm outline-none ${
+    disabled ? "cursor-not-allowed opacity-50" : ""
+  }`;
+}
+
+function labelClass() {
+  return "mb-1 block text-xs font-medium text-[#A1A1AA]";
 }
 
 export default function AdminGeoPage() {
@@ -54,47 +93,68 @@ export default function AdminGeoPage() {
   const [countries, setCountries] = useState<GeoItem[]>([]);
   const [states, setStates] = useState<GeoItem[]>([]);
   const [cities, setCities] = useState<GeoItem[]>([]);
+  const [loadingStates, setLoadingStates] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
   const [pagination, setPagination] = useState<Pagination>(emptyPagination);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<GeoItem | null>(null);
-  const [form, setForm] = useState({
-    name: "",
-    slug: "",
-    code: "",
-    countryId: "",
-    stateId: "",
-    cityId: "",
-  });
+  const [form, setForm] = useState<GeoFormValues>(emptyForm);
 
   const currentTab = tabs.find((tab) => tab.id === activeType) || tabs[0];
-  const parentOptions = useMemo(() => {
-    if (activeType === "states") return countries;
-    if (activeType === "cities") return states;
-    if (activeType === "areas") return cities;
-    return [];
-  }, [activeType, cities, countries, states]);
 
   const resetForm = useCallback(() => {
     setEditing(null);
-    setForm({ name: "", slug: "", code: "", countryId: "", stateId: "", cityId: "" });
+    setForm(emptyForm);
   }, []);
 
-  const loadReferenceData = useCallback(async () => {
-    const [countryRes, stateRes, cityRes] = await Promise.all([
-      fetch("/api/admin/geo/countries?limit=100"),
-      fetch("/api/admin/geo/states?limit=100"),
-      fetch("/api/admin/geo/cities?limit=100"),
-    ]);
-    const [countryData, stateData, cityData] = await Promise.all([
-      countryRes.json(),
-      stateRes.json(),
-      cityRes.json(),
-    ]);
+  const loadCountries = useCallback(async () => {
+    const countryRes = await fetch("/api/admin/geo/countries?limit=100");
+    const countryData = await countryRes.json();
     setCountries(countryData.items || []);
-    setStates(stateData.items || []);
-    setCities(cityData.items || []);
+  }, []);
+
+  const loadStatesForCountry = useCallback(async (countryId: string) => {
+    const url = buildGeoCascadeUrl("states", { countryId });
+    if (!url) {
+      setStates([]);
+      return;
+    }
+
+    setLoadingStates(true);
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to load states");
+      setStates(data.items || []);
+    } catch (error) {
+      setStates([]);
+      toast.error(error instanceof Error ? error.message : "Failed to load states");
+    } finally {
+      setLoadingStates(false);
+    }
+  }, []);
+
+  const loadCitiesForState = useCallback(async (stateId: string) => {
+    const url = buildGeoCascadeUrl("cities", { stateId });
+    if (!url) {
+      setCities([]);
+      return;
+    }
+
+    setLoadingCities(true);
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to load cities");
+      setCities(data.items || []);
+    } catch (error) {
+      setCities([]);
+      toast.error(error instanceof Error ? error.message : "Failed to load cities");
+    } finally {
+      setLoadingCities(false);
+    }
   }, []);
 
   const loadItems = useCallback(async (page = pagination.page) => {
@@ -118,8 +178,32 @@ export default function AdminGeoPage() {
   }, [activeType, pagination.limit, pagination.page, search]);
 
   useEffect(() => {
-    loadReferenceData().catch(() => toast.error("Failed to load geo references"));
-  }, [loadReferenceData]);
+    loadCountries().catch(() => toast.error("Failed to load countries"));
+  }, [loadCountries]);
+
+  useEffect(() => {
+    if (activeType !== "cities" && activeType !== "areas") {
+      setStates([]);
+      return;
+    }
+    if (!form.countryId) {
+      setStates([]);
+      return;
+    }
+    loadStatesForCountry(form.countryId);
+  }, [activeType, form.countryId, loadStatesForCountry]);
+
+  useEffect(() => {
+    if (activeType !== "cities" && activeType !== "areas") {
+      setCities([]);
+      return;
+    }
+    if (!form.stateId) {
+      setCities([]);
+      return;
+    }
+    loadCitiesForState(form.stateId);
+  }, [activeType, form.stateId, loadCitiesForState]);
 
   useEffect(() => {
     resetForm();
@@ -132,19 +216,52 @@ export default function AdminGeoPage() {
   }, [search]);
 
   function startEdit(item: GeoItem) {
+    const countryId =
+      item.countryId ||
+      item.country?.id ||
+      item.state?.country?.id ||
+      item.city?.state?.country?.id ||
+      "";
+
+    const stateId = item.stateId || item.state?.id || item.city?.state?.id || "";
+
     setEditing(item);
     setForm({
       name: item.name,
       slug: item.slug,
       code: item.code || "",
-      countryId: item.countryId || item.country?.id || "",
-      stateId: item.stateId || item.state?.id || "",
+      countryId,
+      stateId,
       cityId: item.cityId || item.city?.id || "",
     });
   }
 
+  function updateCountry(countryId: string) {
+    setForm((current) => ({
+      ...current,
+      countryId,
+      stateId: "",
+      cityId: "",
+    }));
+  }
+
+  function updateState(stateId: string) {
+    setForm((current) => ({
+      ...current,
+      stateId,
+      cityId: "",
+    }));
+  }
+
   async function submitForm(event: React.FormEvent) {
     event.preventDefault();
+
+    const validationError = validateGeoForm(activeType, form);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
     const name = form.name.trim();
     const payload: Record<string, string | boolean> = {
       name,
@@ -167,7 +284,12 @@ export default function AdminGeoPage() {
       if (!response.ok) throw new Error(data.error || "Failed to save geo record");
       toast.success(`${currentTab.singular} ${editing ? "updated" : "created"}`);
       resetForm();
-      await Promise.all([loadReferenceData(), loadItems(editing ? pagination.page : 1)]);
+      await Promise.all([
+        loadCountries(),
+        form.countryId ? loadStatesForCountry(form.countryId) : Promise.resolve(),
+        form.stateId ? loadCitiesForState(form.stateId) : Promise.resolve(),
+        loadItems(editing ? pagination.page : 1),
+      ]);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save geo record");
     } finally {
@@ -186,7 +308,12 @@ export default function AdminGeoPage() {
       toast.error(data.error || "Failed to update status");
       return;
     }
-    await Promise.all([loadReferenceData(), loadItems()]);
+    await Promise.all([
+      loadCountries(),
+      form.countryId ? loadStatesForCountry(form.countryId) : Promise.resolve(),
+      form.stateId ? loadCitiesForState(form.stateId) : Promise.resolve(),
+      loadItems(),
+    ]);
   }
 
   async function deleteItem(item: GeoItem) {
@@ -198,8 +325,10 @@ export default function AdminGeoPage() {
       return;
     }
     toast.success(`${currentTab.singular} deleted`);
-    await Promise.all([loadReferenceData(), loadItems(1)]);
+    await Promise.all([loadCountries(), loadItems(1)]);
   }
+
+  const submitLabel = geoSubmitLabel(activeType, Boolean(editing));
 
   return (
     <div className="space-y-6">
@@ -224,57 +353,164 @@ export default function AdminGeoPage() {
         ))}
       </div>
 
-      <form onSubmit={submitForm} className="grid gap-3 rounded-2xl border border-white/10 bg-[#15151D] p-4 lg:grid-cols-[1fr_1fr_180px_220px_auto]">
-        <input
-          value={form.name}
-          onChange={(event) => setForm((current) => ({ ...current, name: event.target.value, slug: editing ? current.slug : slugify(event.target.value) }))}
-          placeholder={`${currentTab.singular} name`}
-          required
-          className="rounded-xl border border-white/10 bg-[#0B0B0F] px-3 py-2 text-sm outline-none"
-        />
-        <input
-          value={form.slug}
-          onChange={(event) => setForm((current) => ({ ...current, slug: slugify(event.target.value) }))}
-          placeholder="slug"
-          required
-          className="rounded-xl border border-white/10 bg-[#0B0B0F] px-3 py-2 text-sm outline-none"
-        />
-        {activeType === "countries" ? (
-          <input
-            value={form.code}
-            onChange={(event) => setForm((current) => ({ ...current, code: event.target.value.toUpperCase() }))}
-            placeholder="Code"
-            className="rounded-xl border border-white/10 bg-[#0B0B0F] px-3 py-2 text-sm outline-none"
-          />
-        ) : (
-          <div className="hidden lg:block" />
-        )}
-        {parentOptions.length > 0 ? (
-          <select
-            value={activeType === "states" ? form.countryId : activeType === "cities" ? form.stateId : form.cityId}
-            onChange={(event) => {
-              const key = activeType === "states" ? "countryId" : activeType === "cities" ? "stateId" : "cityId";
-              setForm((current) => ({ ...current, [key]: event.target.value }));
-            }}
-            required
-            className="rounded-xl border border-white/10 bg-[#0B0B0F] px-3 py-2 text-sm outline-none"
+      <form
+        onSubmit={submitForm}
+        className="space-y-4 rounded-2xl border border-white/10 bg-[#15151D] p-4"
+      >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label className={labelClass()}>
+              {activeType === "countries"
+                ? "Country Name"
+                : activeType === "states"
+                  ? "State Name"
+                  : activeType === "cities"
+                    ? "City Name"
+                    : "Area Name"}
+            </label>
+            <input
+              value={form.name}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  name: event.target.value,
+                  slug: editing ? current.slug : slugify(event.target.value),
+                }))
+              }
+              placeholder="Name"
+              required
+              className={fieldClass()}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass()}>Slug</label>
+            <input
+              value={form.slug}
+              onChange={(event) => setForm((current) => ({ ...current, slug: slugify(event.target.value) }))}
+              placeholder="slug"
+              required
+              className={fieldClass()}
+            />
+          </div>
+
+          {activeType === "countries" && (
+            <div>
+              <label className={labelClass()}>Code</label>
+              <input
+                value={form.code}
+                onChange={(event) => setForm((current) => ({ ...current, code: event.target.value.toUpperCase() }))}
+                placeholder="IN"
+                className={fieldClass()}
+              />
+            </div>
+          )}
+
+          {activeType === "states" && (
+            <div>
+              <label className={labelClass()}>Country</label>
+              <select
+                value={form.countryId}
+                onChange={(event) => updateCountry(event.target.value)}
+                required
+                className={fieldClass()}
+              >
+                <option value="">Select country</option>
+                {countries.map((country) => (
+                  <option key={country.id} value={country.id}>
+                    {country.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {(activeType === "cities" || activeType === "areas") && (
+            <div>
+              <label className={labelClass()}>Country</label>
+              <select
+                value={form.countryId}
+                onChange={(event) => updateCountry(event.target.value)}
+                required
+                className={fieldClass()}
+              >
+                <option value="">Select country</option>
+                {countries.map((country) => (
+                  <option key={country.id} value={country.id}>
+                    {country.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {(activeType === "cities" || activeType === "areas") && (
+            <div>
+              <label className={labelClass()}>State</label>
+              <select
+                value={form.stateId}
+                onChange={(event) => updateState(event.target.value)}
+                required
+                disabled={!form.countryId || loadingStates}
+                className={fieldClass(!form.countryId || loadingStates)}
+              >
+                <option value="">
+                  {!form.countryId
+                    ? "Select country first"
+                    : loadingStates
+                      ? "Loading states..."
+                      : "Select state"}
+                </option>
+                {states.map((state) => (
+                  <option key={state.id} value={state.id}>
+                    {state.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {activeType === "areas" && (
+            <div>
+              <label className={labelClass()}>City</label>
+              <select
+                value={form.cityId}
+                onChange={(event) => setForm((current) => ({ ...current, cityId: event.target.value }))}
+                required
+                disabled={!form.stateId || loadingCities}
+                className={fieldClass(!form.stateId || loadingCities)}
+              >
+                <option value="">
+                  {!form.stateId
+                    ? "Select state first"
+                    : loadingCities
+                      ? "Loading cities..."
+                      : "Select city"}
+                </option>
+                {cities.map((city) => (
+                  <option key={city.id} value={city.id}>
+                    {city.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-xl bg-[#7C3AED] px-4 py-2 text-sm font-semibold disabled:opacity-60"
           >
-            <option value="">Select parent</option>
-            {parentOptions.map((parent) => (
-              <option key={parent.id} value={parent.id}>
-                {parent.name}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <div className="hidden lg:block" />
-        )}
-        <div className="flex gap-2">
-          <button disabled={saving} className="rounded-xl bg-[#7C3AED] px-4 py-2 text-sm font-semibold disabled:opacity-60">
-            {saving ? "Saving..." : editing ? "Update" : "Add"}
+            {saving ? "Saving..." : submitLabel}
           </button>
           {editing && (
-            <button type="button" onClick={resetForm} className="rounded-xl border border-white/10 px-4 py-2 text-sm">
+            <button
+              type="button"
+              onClick={resetForm}
+              className="rounded-xl border border-white/10 px-4 py-2 text-sm"
+            >
               Cancel
             </button>
           )}
@@ -308,7 +544,11 @@ export default function AdminGeoPage() {
                   <p className="text-xs text-[#A1A1AA]">{item.slug}</p>
                 </div>
                 <p className="text-sm text-[#A1A1AA]">{parentLabel(item, activeType)}</p>
-                <span className={`w-fit rounded-full px-2 py-1 text-xs ${item.isActive ? "bg-emerald-500/10 text-emerald-300" : "bg-red-500/10 text-red-300"}`}>
+                <span
+                  className={`w-fit rounded-full px-2 py-1 text-xs ${
+                    item.isActive ? "bg-emerald-500/10 text-emerald-300" : "bg-red-500/10 text-red-300"
+                  }`}
+                >
                   {item.isActive ? "Active" : "Inactive"}
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -318,7 +558,10 @@ export default function AdminGeoPage() {
                   <button onClick={() => toggleItem(item)} className="rounded-lg border border-white/10 px-3 py-2 text-xs">
                     {item.isActive ? "Deactivate" : "Activate"}
                   </button>
-                  <button onClick={() => deleteItem(item)} className="rounded-lg border border-red-500/20 px-3 py-2 text-xs text-red-300">
+                  <button
+                    onClick={() => deleteItem(item)}
+                    className="rounded-lg border border-red-500/20 px-3 py-2 text-xs text-red-300"
+                  >
                     <Trash2 className="mr-1 inline size-3" /> Delete
                   </button>
                 </div>
@@ -335,7 +578,9 @@ export default function AdminGeoPage() {
           >
             Previous
           </button>
-          <span>Page {pagination.page} of {pagination.totalPages}</span>
+          <span>
+            Page {pagination.page} of {pagination.totalPages}
+          </span>
           <button
             disabled={pagination.page >= pagination.totalPages}
             onClick={() => loadItems(pagination.page + 1)}

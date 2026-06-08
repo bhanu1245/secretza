@@ -91,7 +91,8 @@ export const indiaCities: IndiaCity[] = [
   { name: "Vasai-Virar", slug: "vasai-virar", stateSlug: "maharashtra", lat: 19.385, lng: 72.8577, population: 1223361, tier: 2, aliases: ["vasai", "virar"], isMetro: false },
 
   // === DELHI ===
-  { name: "New Delhi", slug: "new-delhi", stateSlug: "delhi", lat: 28.6139, lng: 77.209, population: 16775209, tier: 1, aliases: ["delhi", "dilli"], isMetro: true },
+  { name: "Delhi", slug: "delhi", stateSlug: "delhi", lat: 28.7041, lng: 77.1025, population: 16775209, tier: 1, aliases: ["dilli", "ncr"], isMetro: true },
+  { name: "New Delhi", slug: "new-delhi", stateSlug: "delhi", lat: 28.6139, lng: 77.209, population: 11000000, tier: 1, aliases: ["central-delhi"], isMetro: true },
   { name: "Dwarka", slug: "dwarka-delhi", stateSlug: "delhi", lat: 28.5733, lng: 77.042, population: 1100000, tier: 2, aliases: ["dwarka"], isMetro: false },
   { name: "Rohini", slug: "rohini", stateSlug: "delhi", lat: 28.7168, lng: 77.119, population: 900000, tier: 2, aliases: [], isMetro: false },
   { name: "Saket", slug: "saket", stateSlug: "delhi", lat: 28.5244, lng: 77.2066, population: 400000, tier: 3, aliases: [], isMetro: false },
@@ -99,7 +100,9 @@ export const indiaCities: IndiaCity[] = [
   { name: "Connaught Place", slug: "connaught-place", stateSlug: "delhi", lat: 28.6315, lng: 77.2167, population: 200000, tier: 3, aliases: ["cp", "rajiv-chowk"], isMetro: false },
 
   // === KARNATAKA ===
+  { name: "Bengaluru", slug: "bengaluru", stateSlug: "karnataka", lat: 12.9716, lng: 77.5946, population: 8443675, tier: 1, aliases: ["bangalore", "bangaluru"], isMetro: true },
   { name: "Bangalore", slug: "bangalore", stateSlug: "karnataka", lat: 12.9716, lng: 77.5946, population: 8443675, tier: 1, aliases: ["bengaluru", "bangaluru"], isMetro: true },
+  { name: "Mysuru", slug: "mysuru", stateSlug: "karnataka", lat: 12.2958, lng: 76.6394, population: 920550, tier: 2, aliases: ["mysore"], isMetro: false },
   { name: "Mysore", slug: "mysore", stateSlug: "karnataka", lat: 12.2958, lng: 76.6394, population: 920550, tier: 2, aliases: ["mysuru"], isMetro: false },
   { name: "Hubli", slug: "hubli", stateSlug: "karnataka", lat: 15.3647, lng: 75.124, population: 543778, tier: 3, aliases: ["hubballi"], isMetro: false },
   { name: "Mangalore", slug: "mangalore", stateSlug: "karnataka", lat: 12.9141, lng: 74.856, population: 623341, tier: 2, aliases: ["mangaluru"], isMetro: false },
@@ -135,6 +138,7 @@ export const indiaCities: IndiaCity[] = [
   { name: "Kanpur", slug: "kanpur", stateSlug: "uttar-pradesh", lat: 26.4499, lng: 80.3319, population: 2765348, tier: 1, aliases: [], isMetro: true },
   { name: "Agra", slug: "agra", stateSlug: "uttar-pradesh", lat: 27.1767, lng: 78.0081, population: 1758210, tier: 2, aliases: [], isMetro: false },
   { name: "Varanasi", slug: "varanasi", stateSlug: "uttar-pradesh", lat: 25.3176, lng: 82.9739, population: 1198515, tier: 2, aliases: ["benares", "kashi"], isMetro: false },
+  { name: "Prayagraj", slug: "prayagraj", stateSlug: "uttar-pradesh", lat: 25.4358, lng: 81.8463, population: 1122570, tier: 2, aliases: ["allahabad"], isMetro: false },
   { name: "Allahabad", slug: "allahabad", stateSlug: "uttar-pradesh", lat: 25.4316, lng: 81.8463, population: 1122570, tier: 2, aliases: ["prayagraj"], isMetro: false },
   { name: "Meerut", slug: "meerut", stateSlug: "uttar-pradesh", lat: 28.9845, lng: 77.7064, population: 1305429, tier: 2, aliases: [], isMetro: false },
   { name: "Noida", slug: "noida", stateSlug: "uttar-pradesh", lat: 28.5355, lng: 77.391, population: 637272, tier: 2, aliases: ["noida-greater-noida"], isMetro: false },
@@ -242,6 +246,7 @@ export const indiaCities: IndiaCity[] = [
   // === ANDHRA PRADESH ===
   { name: "Visakhapatnam", slug: "visakhapatnam", stateSlug: "andhra-pradesh", lat: 17.6868, lng: 83.2185, population: 2035922, tier: 2, aliases: ["vizag", "vizagapatam"], isMetro: false },
   { name: "Vijayawada", slug: "vijayawada", stateSlug: "andhra-pradesh", lat: 16.5074, lng: 80.6466, population: 1034000, tier: 2, aliases: ["bezawada"], isMetro: false },
+  { name: "Amaravati", slug: "amaravati", stateSlug: "andhra-pradesh", lat: 16.5136, lng: 80.5165, population: 150000, tier: 2, aliases: ["amaravathi"], isMetro: false },
   { name: "Guntur", slug: "guntur", stateSlug: "andhra-pradesh", lat: 16.3067, lng: 80.4365, population: 743354, tier: 2, aliases: [], isMetro: false },
   { name: "Nellore", slug: "nellore", stateSlug: "andhra-pradesh", lat: 14.4503, lng: 79.9868, population: 616000, tier: 3, aliases: [], isMetro: false },
   { name: "Kurnool", slug: "kurnool", stateSlug: "andhra-pradesh", lat: 15.8281, lng: 78.0373, population: 484327, tier: 3, aliases: [], isMetro: false },
@@ -249,6 +254,7 @@ export const indiaCities: IndiaCity[] = [
   { name: "Tirupati", slug: "tirupati", stateSlug: "andhra-pradesh", lat: 13.6288, lng: 79.4192, population: 475000, tier: 3, aliases: [], isMetro: false },
   { name: "Eluru", slug: "eluru", stateSlug: "andhra-pradesh", lat: 16.6584, lng: 81.1052, population: 290000, tier: 3, aliases: [], isMetro: false },
   { name: "Ongole", slug: "ongole", stateSlug: "andhra-pradesh", lat: 15.5053, lng: 80.0487, population: 270000, tier: 3, aliases: [], isMetro: false },
+  { name: "Chirala", slug: "chirala", stateSlug: "andhra-pradesh", lat: 15.8239, lng: 80.3522, population: 120000, tier: 3, aliases: [], isMetro: false },
   { name: "Anantapur", slug: "anantapur", stateSlug: "andhra-pradesh", lat: 14.6799, lng: 77.6013, population: 310000, tier: 3, aliases: [], isMetro: false },
 
   // === TELANGANA (more cities) ===

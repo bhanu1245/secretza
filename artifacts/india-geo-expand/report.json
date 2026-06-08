@@ -1,0 +1,51 @@
+{
+  "generatedAt": "2026-06-08T05:51:36.461Z",
+  "before": {
+    "states": 28,
+    "unionTerritories": 8,
+    "cities": 327,
+    "areas": 360
+  },
+  "after": {
+    "states": 28,
+    "unionTerritories": 8,
+    "cities": 327,
+    "areas": 360
+  },
+  "recordsAdded": {
+    "states": 0,
+    "cities": 0
+  },
+  "statesAdded": [],
+  "citiesAdded": [],
+  "duplicatesFound": [
+    {
+      "type": "city_name",
+      "key": "cmppnh93m00020s78rvtd61xu:amravati",
+      "count": 2
+    },
+    {
+      "type": "city_name",
+      "key": "cmppnh93m00020s78rvtd61xu:akola",
+      "count": 2
+    },
+    {
+      "type": "city_name",
+      "key": "cmppnh93m00020s78rvtd61xu:chandrapur",
+      "count": 2
+    },
+    {
+      "type": "city_name",
+      "key": "cmppnh93m00020s78rvtd61xu:wardha",
+      "count": 2
+    },
+    {
+      "type": "city_name",
+      "key": "cmppo90jg00510se8024pn6as:thrissur",
+      "count": 2
+    }
+  ],
+  "missingStates": [],
+  "missingCities": [],
+  "missingMajorCities": []
+}
