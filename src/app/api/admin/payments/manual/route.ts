@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
 import { Prisma } from "@prisma/client";
 import { logError } from "@/lib/monitoring";
+import { buildManualPaymentSearchOr } from "@/lib/admin-payments-search";
 
 /**
  * GET /api/admin/payments/manual
@@ -17,6 +18,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || undefined;
+    const search = (searchParams.get("search") || "").trim();
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
 
@@ -25,6 +27,18 @@ export async function GET(request: Request) {
 
     if (status) {
       where.status = status;
+    }
+
+    if (search) {
+      const listingMatches = await db.listing.findMany({
+        where: { title: { contains: search } },
+        select: { id: true },
+        take: 100,
+      });
+      where.OR = buildManualPaymentSearchOr(
+        search,
+        listingMatches.map((listing) => listing.id),
+      );
     }
 
     // Validate status value if provided

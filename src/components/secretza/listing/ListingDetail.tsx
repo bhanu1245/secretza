@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import {
   MapPin,
   Shield,
-  Star,
   Eye,
   Flag,
   ChevronLeft,
@@ -13,6 +12,7 @@ import {
   BadgeCheck,
   ImageIcon,
 } from "lucide-react";
+import ListingTierBadge from "@/components/secretza/listing/ListingTierBadge";
 import {
   Sheet,
   SheetContent,
@@ -247,12 +247,7 @@ export default function ListingDetail({
             <div className="flex flex-col gap-4 p-4">
               {/* Status Badges */}
               <div className="flex flex-wrap gap-2">
-                {listing.isFeatured && (
-                  <Badge className="gap-1 bg-violet text-white border-0 pulse-violet">
-                    <Star className="size-3 fill-current" />
-                    Featured
-                  </Badge>
-                )}
+                <ListingTierBadge listing={listing} variant="inline" />
                 {(listing.user as any)?.isVerified && (
                   <Badge className="gap-1 bg-emerald-500/90 text-white border-0">
                     <Shield className="size-3" />

@@ -11,11 +11,11 @@ import AdminPricingPlans from "@/components/secretza/admin/AdminPricingPlans";
 import AdminCmsPages from "@/components/secretza/admin/AdminCmsPages";
 import AdminCoupons from "@/components/secretza/admin/AdminCoupons";
 import AdminReportsPage from "@/components/secretza/admin/AdminReportsPage";
+import AdminListingsPage from "@/components/secretza/admin/AdminListingsPage";
+import AdminModerationPage from "@/components/secretza/admin/AdminModerationPage";
 import {
   AdminDashboardPage,
   AdminUsersPage,
-  AdminListingsPage,
-  AdminModerationPage,
   AdminSettingsPage,
   ManualPaymentQueue,
   PlaceholderPage,

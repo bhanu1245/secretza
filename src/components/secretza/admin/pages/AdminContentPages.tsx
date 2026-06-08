@@ -98,6 +98,8 @@ import { resolveAdminListingThumbnail } from "@/lib/listing-images";
 import AdminPricingPlans from "@/components/secretza/admin/AdminPricingPlans";
 import AdminCmsPages from "@/components/secretza/admin/AdminCmsPages";
 import AdminReportsPage from "@/components/secretza/admin/AdminReportsPage";
+import AdminPaginationBar from "@/components/secretza/admin/AdminPaginationBar";
+import { buildAdminPaymentsUrl } from "@/lib/admin-payments-query";
 
 interface AdminStatsData {
   totalUsers: number;
@@ -627,828 +629,9 @@ export function AdminUsersPage() {
   );
 }
 
-// ==========================================
-// Admin Listings Page
-// ==========================================
-export function AdminListingsPage() {
-  const [statusFilter, setStatusFilter] = useState<ListingStatus | "all">("all");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
-
-  const [listings, setListings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const statuses: (ListingStatus | "all")[] = ["all", "approved", "pending", "rejected", "expired"];
-
-  useEffect(() => {
-  const loadListings = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch("/api/admin/listings");
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.error || `Failed to load listings (${response.status})`);
-      }
-
-      setListings(data.listings || []);
-    } catch (error) {
-      logError(error, { component: "AdminPanel" });
-      setError(error instanceof Error ? error.message : "Failed to load listings");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  loadListings();
-}, []);
-
-  const handleListingAction = async (listingId: string, action: "approve" | "reject" | "feature" | "unfeature" | "delete") => {
-    try {
-      const res = await fetch(`/api/admin/listings/${listingId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
-      });
-      if (res.ok) {
-        setListings((prev) => {
-          if (action === "delete") return prev.filter((l) => l.id !== listingId);
-          return prev.map((l) => {
-            if (l.id !== listingId) return l;
-            switch (action) {
-              case "approve": return { ...l, status: "approved" };
-              case "reject": return { ...l, status: "rejected" };
-              case "feature": return { ...l, isFeatured: true };
-              case "unfeature": return { ...l, isFeatured: false };
-              default: return l;
-            }
-          });
-        });
-        toast.success(`Listing ${action === "delete" ? "deleted" : `${action}d`}`);
-      } else {
-        const data = await res.json();
-        toast.error(data.error || `Failed to ${action} listing`);
-      }
-    } catch {
-      toast.error(`Network error while trying to ${action} listing`);
-    }
-  };
-
-  const handleBulkAction = async (action: "approve" | "reject" | "feature") => {
-    const count = selected.size;
-    for (const id of selected) {
-      await handleListingAction(id, action);
-    }
-    setSelected(new Set());
-    toast.success(`${count} listings ${action}d`);
-  };
-
-  const filteredListings = listings.filter(
-    (l) => statusFilter === "all" || l.status === statusFilter
-  );
-
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAll = () => {
-    if (selected.size === filteredListings.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(filteredListings.map((l) => l.id)));
-    }
-  };
-
-  if (loading) {
-  return (
-    <div className="p-6">
-      Loading listings...
-    </div>
-  );
-}
-  
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-[#F5F5F7]">Listings</h2>
-        <p className="text-sm text-[#A1A1AA] mt-1">
-          Manage all listings on the platform.
-        </p>
-      </div>
-
-      {error && (
-        <Card className="bg-red-500/10 border-red-500/20">
-          <CardContent className="p-4 text-sm text-red-300">
-            {error}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Filters & Bulk Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex gap-2 flex-wrap">
-          {statuses.map((status) => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                statusFilter === status
-                  ? "bg-[#7C3AED]/15 text-[#8B5CF6] border border-[#7C3AED]/30"
-                  : "text-[#A1A1AA] border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)]"
-              }`}
-            >
-              {status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
-            </button>
-          ))}
-        </div>
-        {selected.size > 0 && (
-          <div className="flex items-center gap-2 sm:ml-auto">
-            <span className="text-xs text-[#A1A1AA]">{selected.size} selected</span>
-            <Button size="sm" onClick={() => handleBulkAction("approve")} className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">
-              <CheckCircle className="size-3 mr-1" /> Approve
-            </Button>
-            <Button size="sm" onClick={() => handleBulkAction("reject")} className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg">
-              <XCircle className="size-3 mr-1" /> Reject
-            </Button>
-            <Button size="sm" onClick={() => handleBulkAction("feature")} className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-lg">
-              <Star className="size-3 mr-1" /> Feature
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Table */}
-      <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
-        <CardContent className="p-0">
-          <div className="overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[rgba(255,255,255,0.06)]">
-                  <th className="px-4 py-3 w-10">
-                    <Checkbox
-                      checked={selected.size === filteredListings.length && filteredListings.length > 0}
-                      onCheckedChange={toggleAll}
-                      className="border-[rgba(255,255,255,0.15)] data-[state=checked]:bg-[#7C3AED] data-[state=checked]:border-[#7C3AED]"
-                    />
-                  </th>
-                  {["Title", "Category", "Location", "Status", "Views", "Featured", "Date", "Actions"].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-wider">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredListings.slice(0, 10).map((listing) => (
-                  <tr key={listing.id} className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)] transition-colors">
-                    <td className="px-4 py-3">
-                      <Checkbox
-                        checked={selected.has(listing.id)}
-                        onCheckedChange={() => toggleSelect(listing.id)}
-                        className="border-[rgba(255,255,255,0.15)] data-[state=checked]:bg-[#7C3AED] data-[state=checked]:border-[#7C3AED]"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <img src={resolveAdminListingThumbnail(listing)} alt="" className="w-8 h-8 rounded-md object-cover flex-shrink-0" />
-                        <span className="text-sm text-[#F5F5F7] truncate max-w-[200px]">{listing.title}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[#A1A1AA]">{listing.category.name}</td>
-                    <td className="px-4 py-3 text-sm text-[#A1A1AA]">{listing.city.name}, {listing.country.code}</td>
-                    <td className="px-4 py-3">
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                          listing.status === "approved"
-                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                            : listing.status === "pending"
-                            ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                            : listing.status === "rejected"
-                            ? "bg-red-500/15 text-red-400 border-red-500/30"
-                            : "bg-zinc-500/15 text-zinc-400 border-zinc-500/30"
-                        }`}
-                      >
-                        {listing.status}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[#A1A1AA]">{listing.viewCount.toLocaleString()}</td>
-                    <td className="px-4 py-3">
-                      {listing.isFeatured ? (
-                        <Star className="size-4 text-amber-400 fill-amber-400" />
-                      ) : (
-                        <span className="text-[10px] text-[#52525B]">No</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-[#52525B]">
-                      {new Date(listing.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => setSelectedListingId(listing.id)}
-                          className="p-1.5 rounded-md hover:bg-[rgba(255,255,255,0.05)] text-[#A1A1AA] hover:text-[#F5F5F7] transition-colors"
-                          title="View"
-                        >
-                          <Eye className="size-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleListingAction(listing.id, "approve")}
-                          className="p-1.5 rounded-md hover:bg-emerald-500/10 text-[#A1A1AA] hover:text-emerald-400 transition-colors"
-                          title="Approve"
-                        >
-                          <CheckCircle className="size-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleListingAction(listing.id, "reject")}
-                          className="p-1.5 rounded-md hover:bg-red-500/10 text-[#A1A1AA] hover:text-red-400 transition-colors"
-                          title="Reject"
-                        >
-                          <XCircle className="size-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleListingAction(listing.id, "delete")}
-                          className="p-1.5 rounded-md hover:bg-red-500/10 text-[#A1A1AA] hover:text-red-400 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Listing Detail Dialog */}
-      <Dialog
-        open={!!selectedListingId}
-        onOpenChange={(open) => !open && setSelectedListingId(null)}
-      >
-        <DialogContent className="bg-[#15151D] border-[rgba(255,255,255,0.08)] max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-[#F5F5F7]">
-              {listings.find((l) => l.id === selectedListingId)?.title || "Listing Details"}
-            </DialogTitle>
-            <DialogDescription className="text-[#A1A1AA]">
-              Listing ID: {selectedListingId}
-            </DialogDescription>
-          </DialogHeader>
-          {(() => {
-            const listing = listings.find((l) => l.id === selectedListingId);
-            if (!listing) return null;
-            return (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-lg bg-[#1E1E2A] p-3">
-                    <span className="text-[10px] text-[#52525B] uppercase">Status</span>
-                    <p className="text-[#F5F5F7] font-medium capitalize">{listing.status}</p>
-                  </div>
-                  <div className="rounded-lg bg-[#1E1E2A] p-3">
-                    <span className="text-[10px] text-[#52525B] uppercase">Views</span>
-                    <p className="text-[#F5F5F7] font-medium">{listing.viewCount?.toLocaleString()}</p>
-                  </div>
-                  <div className="rounded-lg bg-[#1E1E2A] p-3">
-                    <span className="text-[10px] text-[#52525B] uppercase">Category</span>
-                    <p className="text-[#F5F5F7] font-medium">{listing.category?.name}</p>
-                  </div>
-                  <div className="rounded-lg bg-[#1E1E2A] p-3">
-                    <span className="text-[10px] text-[#52525B] uppercase">Location</span>
-                    <p className="text-[#F5F5F7] font-medium">{listing.city?.name}, {listing.country?.code}</p>
-                  </div>
-                </div>
-                <div className="rounded-lg bg-[#1E1E2A] p-3">
-                  <span className="text-[10px] text-[#52525B] uppercase">Description</span>
-                  <p className="text-sm text-[#A1A1AA] mt-1 line-clamp-4">{listing.description || "No description"}</p>
-                </div>
-                <DialogFooter className="gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      handleListingAction(listing.id, "approve");
-                      setSelectedListingId(null);
-                    }}
-                    className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
-                  >
-                    <CheckCircle className="size-3 mr-1" /> Approve
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      handleListingAction(listing.id, "reject");
-                      setSelectedListingId(null);
-                    }}
-                    className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg"
-                  >
-                    <XCircle className="size-3 mr-1" /> Reject
-                  </Button>
-                </DialogFooter>
-              </div>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-// ==========================================
-// Image Moderation Sub-component
-// ==========================================
-export function ImageModerationPanel() {
-  const [images, setImages] = useState<Array<{
-    id: string;
-    url: string;
-    thumbnailUrl: string;
-    mediumUrl: string;
-    width: number;
-    height: number;
-    moderationStatus: string;
-    moderationReason?: string;
-    isFlagged: boolean;
-    createdAt: string;
-    listing?: { id: string; title: string; status: string; userId: string };
-  }>>([]);
-  const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0, flagged: 0 });
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("pending");
-  const [processingId, setProcessingId] = useState<string | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchImages = useCallback(async (status: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/upload/moderate?status=${status}&limit=50`);
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Failed to load queue (${res.status})`);
-      }
-      const data = await res.json();
-      setImages(data.images || []);
-      if (data.stats) setStats(data.stats);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load moderation queue");
-      setImages([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchImages(statusFilter);
-  }, [statusFilter, fetchImages]);
-
-  const handleModerate = async (imageId: string, action: "approve" | "reject" | "flag") => {
-    setProcessingId(imageId);
-    try {
-      const res = await fetch("/api/upload/moderate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageId, action }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.stats) setStats(data.stats);
-        setImages((prev) => prev.filter((img) => img.id !== imageId));
-        setSelectedIds((prev) => {
-          const next = new Set(prev);
-          next.delete(imageId);
-          return next;
-        });
-        toast.success(`Image ${action}d`);
-      } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error(data.error || "Failed to moderate image");
-      }
-    } catch {
-      toast.error("Failed to moderate image. Please try again.");
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleBulkModerate = async (action: "approve" | "reject") => {
-    if (selectedIds.size === 0) return;
-    setProcessingId("bulk");
-    try {
-      const res = await fetch("/api/upload/moderate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageIds: [...selectedIds], action }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        if (data.stats) setStats(data.stats);
-        setImages((prev) => prev.filter((img) => !selectedIds.has(img.id)));
-        setSelectedIds(new Set());
-        toast.success(`Bulk ${action}: ${data.results?.filter((r: { success: boolean }) => r.success).length ?? 0} images`);
-        await fetchImages(statusFilter);
-      } else {
-        toast.error(data.error || "Bulk moderation failed");
-      }
-    } catch {
-      toast.error("Bulk moderation failed");
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const statusCounts = stats;
-
-  return (
-    <div className="space-y-4">
-      {/* Filter Tabs */}
-      <div className="flex gap-2 flex-wrap">
-        {(["pending", "flagged", "rejected"] as const).map((status) => (
-          <button
-            key={status}
-            onClick={() => setStatusFilter(status)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-              statusFilter === status
-                ? "bg-[#7C3AED]/15 text-[#8B5CF6] border border-[#7C3AED]/30"
-                : "text-[#A1A1AA] border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)]"
-            }`}
-          >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-            {statusCounts[status as keyof typeof statusCounts] > 0 && (
-              <span className="ml-1.5 text-[10px] opacity-60">{statusCounts[status as keyof typeof statusCounts]}</span>
-            )}
-          </button>
-        ))}
-        <button
-          onClick={() => fetchImages(statusFilter)}
-          className="px-3 py-1.5 text-xs text-[#A1A1AA] border border-[rgba(255,255,255,0.08)] rounded-lg hover:bg-[rgba(255,255,255,0.04)] flex items-center gap-1"
-        >
-          <RefreshCw className="size-3" />
-          Refresh
-        </button>
-        {selectedIds.size > 0 && (
-          <>
-            <Button size="sm" onClick={() => handleBulkModerate("approve")} className="h-7 text-xs bg-emerald-600">
-              Approve {selectedIds.size}
-            </Button>
-            <Button size="sm" onClick={() => handleBulkModerate("reject")} className="h-7 text-xs bg-red-600">
-              Reject {selectedIds.size}
-            </Button>
-          </>
-        )}
-      </div>
-
-      {error && (
-        <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">{error}</div>
-      )}
-
-      {/* Image Grid */}
-      {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="size-8 animate-spin text-[#7C3AED]" />
-        </div>
-      ) : images.length === 0 ? (
-        <div className="text-center py-12">
-          <ShieldCheck className="size-12 text-emerald-400 mx-auto mb-4" />
-          <p className="text-[#F5F5F7] font-medium">No images to review</p>
-          <p className="text-sm text-[#A1A1AA] mt-1">
-            {statusFilter === "pending"
-              ? "All images have been reviewed."
-              : `No ${statusFilter} images found.`}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {images.map((image) => (
-            <Card key={image.id} className="bg-[#15151D] border-[rgba(255,255,255,0.08)] overflow-hidden group">
-              <div className="relative aspect-[3/4] overflow-hidden">
-                <label className="absolute top-2 right-2 z-10">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(image.id)}
-                    onChange={(e) => {
-                      setSelectedIds((prev) => {
-                        const next = new Set(prev);
-                        if (e.target.checked) next.add(image.id);
-                        else next.delete(image.id);
-                        return next;
-                      });
-                    }}
-                    className="size-4"
-                  />
-                </label>
-                <img
-                  src={image.mediumUrl || image.thumbnailUrl || image.url}
-                  alt=""
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-                {image.isFlagged && (
-                  <Badge className="absolute top-2 left-2 bg-red-500/90 text-white border-0 text-[9px] px-1.5 py-0">
-                    <Flag className="size-2.5 mr-0.5" />
-                    Flagged
-                  </Badge>
-                )}
-                {image.moderationReason && (
-                  <Badge className="absolute top-2 right-2 bg-amber-500/90 text-white border-0 text-[9px] px-1.5 py-0 max-w-[100px] truncate">
-                    {image.moderationReason}
-                  </Badge>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                  <p className="text-[10px] text-white/80 truncate">
-                    {image.listing?.title || "No listing"}
-                  </p>
-                  <p className="text-[9px] text-white/50">
-                    {image.width}×{image.height}
-                  </p>
-                </div>
-              </div>
-              <div className="p-3 flex gap-2">
-                <Button
-                  size="sm"
-                  disabled={processingId === image.id}
-                  onClick={() => handleModerate(image.id, "approve")}
-                  className="flex-1 h-7 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
-                >
-                  {processingId === image.id ? (
-                    <Loader2 className="size-3 animate-spin" />
-                  ) : (
-                    <CheckCircle className="size-3 mr-0.5" />
-                  )}
-                  Approve
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={processingId === image.id}
-                  onClick={() => handleModerate(image.id, "reject")}
-                  className="h-7 px-2.5 text-[10px] bg-red-600 hover:bg-red-700 text-white rounded-lg"
-                >
-                  <XCircle className="size-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={processingId === image.id}
-                  onClick={() => handleModerate(image.id, "flag")}
-                  className="h-7 px-2.5 text-[10px] bg-amber-600 hover:bg-amber-700 text-white rounded-lg"
-                >
-                  <Flag className="size-3" />
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ==========================================
-// Admin Moderation Page
-// ==========================================
-export function AdminModerationPage() {
-  const [tab, setTab] = useState("listings");
-  const [items, setItems] = useState<any[]>([]);
-
-  useEffect(() => {
-  const loadItems = async () => {
-    try {
-      const response = await fetch("/api/admin/listings?status=pending");
-      const data = await response.json();
-
-      const moderationItems = (data.listings || []).map((listing: any) => ({
-        listing,
-        riskScore: listing.riskScore || 0,
-        issues: [],
-      }));
-
-      setItems(moderationItems);
-    } catch (error) {
-      logError(error, { component: "AdminPanel" });
-    }
-  };
-
-  loadItems();
-}, []);
-
-  const approveItem = async (id: string) => {
-    try {
-      const res = await fetch(`/api/admin/listings/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "approve" }),
-      });
-      if (res.ok) {
-        setItems((prev) => prev.filter((i) => i.listing.id !== id));
-        toast.success("Listing approved");
-      } else {
-        const data = await res.json();
-        toast.error(data.error || "Failed to approve listing");
-      }
-    } catch {
-      toast.error("Network error while approving listing");
-    }
-  };
-
-  const rejectItem = async (id: string) => {
-    try {
-      const res = await fetch(`/api/admin/listings/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reject" }),
-      });
-      if (res.ok) {
-        setItems((prev) => prev.filter((i) => i.listing.id !== id));
-        toast.success("Listing rejected");
-      } else {
-        const data = await res.json();
-        toast.error(data.error || "Failed to reject listing");
-      }
-    } catch {
-      toast.error("Network error while rejecting listing");
-    }
-  };
-
-  const getRiskBadge = (score: number) => {
-    if (score < 30) return { label: "Low Risk", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", bar: "#10B981" };
-    if (score < 70) return { label: "Medium Risk", color: "bg-amber-500/15 text-amber-400 border-amber-500/30", bar: "#F59E0B" };
-    return { label: "High Risk", color: "bg-red-500/15 text-red-400 border-red-500/30", bar: "#EF4444" };
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-[#F5F5F7]">Moderation</h2>
-        <p className="text-sm text-[#A1A1AA] mt-1">
-          Review and moderate pending listings and images. AI-powered risk analysis helps prioritize reviews.
-        </p>
-      </div>
-
-      {/* Tab Switcher */}
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="bg-[#1E1E2A] border border-[rgba(255,255,255,0.08)]">
-          <TabsTrigger value="listings" className="text-xs data-[state=active]:bg-[#7C3AED]/15 data-[state=active]:text-[#8B5CF6]">
-            <FileText className="size-3.5 mr-1.5" />
-            Listings
-          </TabsTrigger>
-          <TabsTrigger value="images" className="text-xs data-[state=active]:bg-[#7C3AED]/15 data-[state=active]:text-[#8B5CF6]">
-            <ImageIcon className="size-3.5 mr-1.5" />
-            Images
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="listings" className="mt-6 space-y-6">
-          {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-emerald-500/10">
-                  <CheckCircle className="size-4 text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-[#F5F5F7]">{items.filter((i) => i.riskScore < 30).length}</p>
-                  <p className="text-[10px] text-[#A1A1AA]">Low Risk (Auto-approve)</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-amber-500/10">
-                  <AlertTriangle className="size-4 text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-[#F5F5F7]">{items.filter((i) => i.riskScore >= 30 && i.riskScore < 70).length}</p>
-                  <p className="text-[10px] text-[#A1A1AA]">Medium Risk (Review needed)</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-red-500/10">
-                  <Shield className="size-4 text-red-400" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-[#F5F5F7]">{items.filter((i) => i.riskScore >= 70).length}</p>
-                  <p className="text-[10px] text-[#A1A1AA]">High Risk (Urgent review)</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Moderation Queue */}
-          {items.length === 0 ? (
-            <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
-              <CardContent className="py-16 text-center">
-                <ShieldCheck className="size-12 text-emerald-400 mx-auto mb-4" />
-                <p className="text-[#F5F5F7] font-medium">All caught up!</p>
-                <p className="text-sm text-[#A1A1AA] mt-1">No pending items to review.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {items.map((item) => {
-                const risk = getRiskBadge(item.riskScore);
-                const thumbnail = resolveAdminListingThumbnail(item.listing);
-                return (
-                  <Card key={item.listing.id} className="bg-[#15151D] border-[rgba(255,255,255,0.08)] hover:border-[rgba(124,58,237,0.2)] transition-all">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col lg:flex-row gap-4">
-                        {/* Listing Preview */}
-                        <div className="flex items-start gap-4 flex-1 min-w-0">
-                          <img
-                            src={thumbnail}
-                            alt={item.listing.title}
-                            className="w-20 h-24 rounded-lg object-cover flex-shrink-0"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <h3 className="text-sm font-semibold text-[#F5F5F7] truncate">{item.listing.title}</h3>
-                                <p className="text-xs text-[#A1A1AA] mt-0.5">
-                                  {item.listing.category.name} &middot; {item.listing.city.name},{" "}
-                                  {item.listing.country.name}
-                                </p>
-                                <p className="text-xs text-[#A1A1AA] mt-0.5">
-                                  By {item.listing.user.name}
-                                </p>
-                              </div>
-                              <Badge variant="outline" className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${risk.color}`}>
-                                {risk.label} ({item.riskScore})
-                              </Badge>
-                            </div>
-
-                            {/* Risk Score Bar */}
-                            <div className="mt-3 space-y-1">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] text-[#A1A1AA]">AI Risk Score</span>
-                                <span className="text-[10px] font-bold" style={{ color: risk.bar }}>{item.riskScore}/100</span>
-                              </div>
-                              <div className="h-1.5 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all duration-500"
-                                  style={{ width: `${item.riskScore}%`, backgroundColor: risk.bar }}
-                                />
-                              </div>
-                            </div>
-
-                            {/* Issues */}
-                            {item.issues.length > 0 && (
-                              <div className="mt-3 flex flex-wrap gap-1.5">
-                                {item.issues.map((issue, idx) => (
-                                  <Badge
-                                    key={idx}
-                                    variant="outline"
-                                    className="bg-red-500/10 text-red-400 border-red-500/20 text-[10px] px-2 py-0.5 rounded-full"
-                                  >
-                                    {issue}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex lg:flex-col gap-2 lg:items-end flex-shrink-0">
-                          <Button
-                            size="sm"
-                            onClick={() => approveItem(item.listing.id)}
-                            className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-lg"
-                          >
-                            <CheckCircle className="size-3.5 mr-1" />
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => rejectItem(item.listing.id)}
-                            className="h-9 px-4 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg"
-                          >
-                            <XCircle className="size-3.5 mr-1" />
-                            Reject
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="images" className="mt-6">
-          <ImageModerationPanel />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
+// Listings & Moderation pages moved to dedicated modules — re-export for compatibility
+export { default as AdminListingsPage } from "@/components/secretza/admin/AdminListingsPage";
+export { default as AdminModerationPage } from "@/components/secretza/admin/AdminModerationPage";
 
 // ==========================================
 // Admin Settings Page
@@ -2107,12 +1290,35 @@ interface ManualPaymentSubmission {
   };
 }
 
+const PAYMENT_STATUS_TABS = [
+  "all",
+  "pending",
+  "approved",
+  "rejected",
+  "proof_requested",
+  "duplicate",
+] as const;
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  all: "All",
+  pending: "Pending",
+  approved: "Approved",
+  rejected: "Rejected",
+  proof_requested: "Proof Requested",
+  duplicate: "Duplicate",
+};
+
 export function ManualPaymentQueue() {
   const [submissions, setSubmissions] = useState<ManualPaymentSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Dialogs
@@ -2125,18 +1331,36 @@ export function ManualPaymentQueue() {
   // Admin notes input
   const [adminNotes, setAdminNotes] = useState("");
 
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => window.clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, debouncedSearch, limit]);
+
   const fetchSubmissions = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
-      params.set("page", page.toString());
-      params.set("limit", "20");
-      const res = await fetch(`/api/admin/payments/manual?${params}`);
+      const url = buildAdminPaymentsUrl({
+        page,
+        limit,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        search: debouncedSearch || undefined,
+      });
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
+        const nextTotal = data.total ?? 0;
+        const nextTotalPages = Math.max(1, data.totalPages ?? 1);
         setSubmissions(data.submissions || []);
-        setTotalPages(data.totalPages || 1);
+        setTotal(nextTotal);
+        setTotalPages(nextTotalPages);
+        setStatusCounts(data.statusCounts || {});
+        if (page > nextTotalPages) {
+          setPage(nextTotalPages);
+        }
       } else {
         toast.error("Failed to fetch payment submissions");
       }
@@ -2145,11 +1369,21 @@ export function ManualPaymentQueue() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, page]);
+  }, [statusFilter, page, limit, debouncedSearch]);
 
   useEffect(() => {
     fetchSubmissions();
   }, [fetchSubmissions]);
+
+  const formatStatusTabLabel = (status: string) => {
+    const base = PAYMENT_STATUS_LABELS[status] || status;
+    if (status === "all") {
+      const allCount = Object.values(statusCounts).reduce((sum, n) => sum + n, 0);
+      return allCount > 0 ? `${base} (${allCount})` : base;
+    }
+    const count = statusCounts[status] ?? 0;
+    return count > 0 ? `${base} (${count})` : base;
+  };
 
   const handleAction = async (submissionId: string, action: string, notes?: string) => {
     setActionLoading(submissionId);
@@ -2228,8 +1462,6 @@ export function ManualPaymentQueue() {
     );
   };
 
-  const filterTabs = ["all", "pending", "approved", "rejected", "proof_requested", "duplicate"];
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -2246,19 +1478,29 @@ export function ManualPaymentQueue() {
         </button>
       </div>
 
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#52525B]" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search UTR, email, payment type, listing title..."
+          className="h-10 rounded-lg border-[rgba(255,255,255,0.08)] bg-[#15151D] pl-10 text-sm text-[#F5F5F7] placeholder:text-[#52525B]"
+        />
+      </div>
+
       {/* Status Filter Tabs */}
       <div className="flex gap-2 flex-wrap">
-        {filterTabs.map((status) => (
+        {PAYMENT_STATUS_TABS.map((status) => (
           <button
             key={status}
-            onClick={() => { setStatusFilter(status); setPage(1); }}
+            onClick={() => setStatusFilter(status)}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
               statusFilter === status
                 ? "bg-[#7C3AED]/15 text-[#8B5CF6] border border-[#7C3AED]/30"
                 : "text-[#A1A1AA] border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)]"
             }`}
           >
-            {status === "all" ? "All" : status === "proof_requested" ? "Proof Req." : status.charAt(0).toUpperCase() + status.slice(1)}
+            {formatStatusTabLabel(status)}
           </button>
         ))}
       </div>
@@ -2403,35 +1645,19 @@ export function ManualPaymentQueue() {
               </table>
             </div>
           )}
+          {!loading && total > 0 && (
+            <AdminPaginationBar
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              limit={limit}
+              onPageChange={setPage}
+              onLimitChange={setLimit}
+              disabled={loading}
+            />
+          )}
         </CardContent>
       </Card>
-
-      {/* Pagination */}
-      {!loading && submissions.length > 0 && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page <= 1}
-            className="h-8 text-xs bg-[#15151D] border-[rgba(255,255,255,0.08)] text-[#A1A1AA] hover:text-[#F5F5F7] rounded-lg"
-          >
-            Previous
-          </Button>
-          <span className="text-xs text-[#A1A1AA]">
-            Page {page} of {totalPages}
-          </span>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page >= totalPages}
-            className="h-8 text-xs bg-[#15151D] border-[rgba(255,255,255,0.08)] text-[#A1A1AA] hover:text-[#F5F5F7] rounded-lg"
-          >
-            Next
-          </Button>
-        </div>
-      )}
 
       {/* Approve Confirmation Dialog */}
       <Dialog open={!!approveDialog} onOpenChange={() => setApproveDialog(null)}>

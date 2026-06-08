@@ -4,8 +4,9 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { MapPin, Shield, Star, Eye, Clock } from "lucide-react";
+import { MapPin, Shield, Eye, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import ListingTierBadge, { resolveListingTier } from "@/components/secretza/listing/ListingTierBadge";
 import type { Listing } from "@/lib/types";
 import TimeAgo from "@/components/secretza/shared/TimeAgo";
 import { useNavigationStore, useUIStore } from "@/store/useAppStore";
@@ -287,13 +288,10 @@ export default function ListingCard({ listing }: ListingCardProps) {
         </div>
         )}
 
-        {/* Featured Badge */}
-        {listing.isFeatured && (
+        {/* Tier Badge (Boosted > Premium > Featured) */}
+        {resolveListingTier(listing) && (
           <div className="absolute top-2.5 right-2.5 z-10">
-            <Badge className="gap-1 bg-violet/90 text-[10px] font-semibold text-white border-0 backdrop-blur-sm pulse-violet">
-              <Star className="size-3 fill-current" />
-              Featured
-            </Badge>
+            <ListingTierBadge listing={listing} variant="overlay" />
           </div>
         )}
 

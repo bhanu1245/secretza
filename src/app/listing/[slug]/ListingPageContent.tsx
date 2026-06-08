@@ -17,6 +17,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import ListingTierBadge from "@/components/secretza/listing/ListingTierBadge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -46,6 +47,9 @@ interface SerializedListing {
   status: string;
   isFeatured: boolean;
   isBoosted: boolean;
+  isPremium: boolean;
+  featuredUntil: string | null;
+  boostUntil: string | null;
   viewCount: number;
   createdAt: string;
   updatedAt: string;
@@ -205,12 +209,7 @@ export default function ListingPageContent({ listing }: ListingPageContentProps)
 
         {/* Badges */}
         <div className="flex flex-wrap gap-2">
-          {listing.isFeatured && (
-            <Badge className="gap-1 bg-violet text-white border-0 pulse-violet">
-              <Star className="size-3 fill-current" />
-              Featured
-            </Badge>
-          )}
+          <ListingTierBadge listing={listing} variant="inline" />
           {listing.user.isVerified && (
             <Badge className="gap-1 bg-emerald-500/90 text-white border-0">
               <Shield className="size-3" />

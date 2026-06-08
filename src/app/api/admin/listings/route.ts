@@ -14,6 +14,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || undefined;
     const filter = searchParams.get("filter") || status || undefined;
+    const search = (searchParams.get("search") || "").trim();
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
 
@@ -23,8 +24,17 @@ export async function GET(request: Request) {
       where.isFeatured = true;
     } else if (filter === "boosted") {
       where.isBoosted = true;
-    } else if (filter) {
+    } else if (filter && filter !== "all") {
       where.status = filter;
+    }
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search } },
+        { slug: { contains: search } },
+        { user: { email: { contains: search } } },
+        { city: { name: { contains: search } } },
+      ];
     }
 
     const [listings, total] = await Promise.all([

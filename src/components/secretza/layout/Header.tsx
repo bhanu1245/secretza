@@ -165,13 +165,13 @@ export default function Header() {
 
               {/* Categories mega-dropdown */}
               <div
-                className={`absolute top-full left-1/2 -translate-x-1/2 pt-2 transition-all duration-200 ${
+                className={`absolute top-full left-1/2 z-50 w-[22rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 pt-2 transition-all duration-200 ${
                   isCategoryOpen
                     ? "opacity-100 visible translate-y-0"
                     : "opacity-0 invisible -translate-y-1"
                 }`}
               >
-                <div className="w-full max-w-md rounded-xl border border-border bg-surface p-4 shadow-xl shadow-black/30">
+                <div className="w-full rounded-xl border border-border bg-surface p-4 shadow-xl shadow-black/30">
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 px-2">
                     All Categories
                   </p>
@@ -182,14 +182,14 @@ export default function Header() {
                         <button
                           key={cat.id}
                           onClick={() => goCategory(cat.slug)}
-                          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-light transition-colors text-left"
+                          className="flex w-full min-w-0 items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-foreground hover:bg-surface-light transition-colors text-left"
                         >
                           <div
                             className="w-2 h-2 rounded-full shrink-0"
                             style={{ backgroundColor: cat.color }}
                           />
-                          <span className="truncate">{cat.name}</span>
-                          <span className="ml-auto text-xs text-muted-foreground/60">
+                          <span className="min-w-0 flex-1 truncate">{cat.name}</span>
+                          <span className="shrink-0 tabular-nums text-xs text-muted-foreground">
                             {cat.listingCount.toLocaleString()}
                           </span>
                         </button>

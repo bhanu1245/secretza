@@ -21,7 +21,6 @@ import {
   Bell,
   AlertTriangle,
   Loader2,
-  Rocket,
   Clock,
   ArrowUpCircle,
   Mail,
@@ -35,6 +34,7 @@ import { toast } from "sonner";
 import { signOut } from "next-auth/react";
 import { logError } from "@/lib/logger";
 import { getListingCoverImageWithPlaceholder } from "@/lib/listing-images";
+import ListingTierBadge from "@/components/secretza/listing/ListingTierBadge";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -479,47 +479,6 @@ function OverviewPage({
 }
 
 // ==========================================
-// Ranking Badge Component (four-tier v2)
-// ==========================================
-function RankingBadge({ listing }: { listing: Listing }) {
-  const now = Date.now();
-  const boostActive =
-    listing.isBoosted &&
-    listing.boostUntil &&
-    new Date(listing.boostUntil).getTime() > now;
-  const featuredActive =
-    listing.isFeatured &&
-    listing.featuredUntil &&
-    new Date(listing.featuredUntil).getTime() > now;
-
-  if (boostActive) {
-    return (
-      <Badge className="bg-violet-500/20 text-violet-400 border-violet-500/30 text-[10px] px-1.5 py-0 gap-1">
-        <Rocket className="size-3" />
-        Boosted
-      </Badge>
-    );
-  }
-  if (listing.isPremium) {
-    return (
-      <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-[10px] px-1.5 py-0 gap-1">
-        <Crown className="size-3" />
-        Premium
-      </Badge>
-    );
-  }
-  if (featuredActive) {
-    return (
-      <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px] px-1.5 py-0 gap-1">
-        <Star className="size-3 fill-amber-400" />
-        Featured
-      </Badge>
-    );
-  }
-  return null;
-}
-
-// ==========================================
 // Priority Score Bar (four-tier v2)
 // ==========================================
 function PriorityScoreBar({ score }: { score: number }) {
@@ -720,7 +679,7 @@ const handleDelete = async (id: string) => {
                   <StatusBadge status={listing.status} />
                 </div>
                 <div className="absolute top-3 right-3">
-                  <RankingBadge listing={listing} />
+                  <ListingTierBadge listing={listing} variant="inline" />
                 </div>
               </div>
               <CardContent className="p-4 space-y-3">
