@@ -28,6 +28,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import StarRating from "@/components/secretza/review/StarRating";
+import ReviewViewModal from "@/components/secretza/admin/ReviewViewModal";
+import ReviewRejectDialog from "@/components/secretza/admin/ReviewRejectDialog";
+import type { ReviewRejectionReasonId } from "@/lib/review-moderation";
 
 // ==========================================
 // Types
@@ -205,12 +208,15 @@ function AnalyticsSkeleton() {
 export function AdminReviewQueue() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [total, setTotal] = useState(0);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<ReviewFilter>("pending");
   const [page, setPage] = useState(1);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [expandedReview, setExpandedReview] = useState<string | null>(null);
   const [adminNote, setAdminNote] = useState("");
+  const [viewReview, setViewReview] = useState<Review | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<Review | null>(null);
   const limit = 20;
 
   const fetchReviews = useCallback(async (reset = true) => {
@@ -232,6 +238,7 @@ export function AdminReviewQueue() {
         setReviews((prev) => [...prev, ...(data.reviews || [])]);
       }
       setTotal(data.total || 0);
+      setStatusCounts(data.statusCounts || {});
     } catch (error) {
       logError(error, { component: "AdminReviewPanel" });
     } finally {
@@ -259,6 +266,7 @@ export function AdminReviewQueue() {
 
       setReviews((prev) => [...prev, ...(data.reviews || [])]);
       setTotal(data.total || 0);
+      setStatusCounts(data.statusCounts || {});
     } catch (error) {
       logError(error, { component: "AdminReviewPanel" });
       toast.error("Failed to load more reviews");
@@ -269,12 +277,18 @@ export function AdminReviewQueue() {
   const handleModerate = async (
     reviewId: string,
     action: ModerateAction,
-    note?: string
+    note?: string,
+    rejectionReason?: ReviewRejectionReasonId,
   ) => {
     setActionLoading(reviewId);
     try {
-      const body: { action: ModerateAction; adminNote?: string } = { action };
+      const body: {
+        action: ModerateAction;
+        adminNote?: string;
+        rejectionReason?: ReviewRejectionReasonId;
+      } = { action };
       if (note?.trim()) body.adminNote = note.trim();
+      if (rejectionReason) body.rejectionReason = rejectionReason;
 
       const res = await fetch(`/api/admin/reviews/${reviewId}/moderate`, {
         method: "POST",
@@ -329,6 +343,15 @@ export function AdminReviewQueue() {
     { key: "flagged", label: "Flagged" },
   ];
 
+  const formatFilterLabel = (key: ReviewFilter, label: string) => {
+    if (key === "all") {
+      const allCount = Object.values(statusCounts).reduce((sum, n) => sum + n, 0);
+      return allCount > 0 ? `${label} (${allCount})` : label;
+    }
+    const count = statusCounts[key] ?? 0;
+    return count > 0 ? `${label} (${count})` : label;
+  };
+
   const hasMore = reviews.length < total;
 
   return (
@@ -364,7 +387,7 @@ export function AdminReviewQueue() {
                 : "text-[#A1A1AA] border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)]"
             }`}
           >
-            {f.label}
+            {formatFilterLabel(f.key, f.label)}
           </button>
         ))}
         <button
@@ -547,7 +570,14 @@ export function AdminReviewQueue() {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-1 w-32 flex-shrink-0 justify-end">
+                      <div className="flex items-center gap-1 w-36 flex-shrink-0 justify-end">
+                        <button
+                          onClick={() => setViewReview(review)}
+                          title="View Review"
+                          className="p-1.5 rounded-md hover:bg-sky-500/10 text-[#A1A1AA] hover:text-sky-400 transition-colors"
+                        >
+                          <Eye className="size-3.5" />
+                        </button>
                         <button
                           onClick={() =>
                             handleModerate(review.id, "approve", adminNote)
@@ -563,9 +593,7 @@ export function AdminReviewQueue() {
                           )}
                         </button>
                         <button
-                          onClick={() =>
-                            handleModerate(review.id, "reject", adminNote)
-                          }
+                          onClick={() => setRejectTarget(review)}
                           disabled={isActioning}
                           title="Reject"
                           className="p-1.5 rounded-md hover:bg-red-500/10 text-[#A1A1AA] hover:text-red-400 transition-colors disabled:opacity-50"
@@ -658,13 +686,7 @@ export function AdminReviewQueue() {
                               <Button
                                 size="sm"
                                 className="h-7 text-[10px] bg-red-600 hover:bg-red-700 text-white rounded-lg"
-                                onClick={() =>
-                                  handleModerate(
-                                    review.id,
-                                    "reject",
-                                    adminNote
-                                  )
-                                }
+                                onClick={() => setRejectTarget(review)}
                                 disabled={isActioning}
                               >
                                 <XCircle className="size-3 mr-1" />
@@ -719,6 +741,28 @@ export function AdminReviewQueue() {
           </div>
         )}
       </Card>
+
+      <ReviewViewModal
+        review={viewReview}
+        open={!!viewReview}
+        onOpenChange={(open) => !open && setViewReview(null)}
+      />
+
+      <ReviewRejectDialog
+        open={!!rejectTarget}
+        onOpenChange={(open) => !open && setRejectTarget(null)}
+        reviewerName={rejectTarget?.user.name}
+        loading={actionLoading === rejectTarget?.id}
+        onConfirm={({ rejectionReason, rejectionNote }) => {
+          if (!rejectTarget) return;
+          handleModerate(
+            rejectTarget.id,
+            "reject",
+            rejectionNote,
+            rejectionReason,
+          ).finally(() => setRejectTarget(null));
+        }}
+      />
     </div>
   );
 }

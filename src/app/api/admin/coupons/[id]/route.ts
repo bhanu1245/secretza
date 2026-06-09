@@ -70,6 +70,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
         discountValue: input.discountValue,
         maxUses: input.maxUses,
         maxUsesPerUser: input.maxUsesPerUser,
+        appliesTo: input.appliesTo,
         isActive: input.isActive,
         expiresAt: input.expiresAt,
       },

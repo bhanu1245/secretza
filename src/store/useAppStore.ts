@@ -10,9 +10,9 @@ interface NavigationStore {
   goBack: () => void;
   history: NavigationState[];
 
-  dashboardPage: "overview" | "listings" | "settings";
+  dashboardPage: "overview" | "listings" | "reviews" | "settings";
   setDashboardPage: (
-    page: "overview" | "listings" | "settings"
+    page: "overview" | "listings" | "reviews" | "settings"
   ) => void;
 }
 
@@ -20,7 +20,7 @@ export const useNavigationStore = create<NavigationStore>((set, get) => ({
   nav: { view: "home", params: {} },
   history: [],
 
-  dashboardPage: "overview" as "overview" | "listings" | "settings",
+  dashboardPage: "overview" as "overview" | "listings" | "reviews" | "settings",
 
 setDashboardPage: (page) => {
   localStorage.setItem("dashboardPage", page);

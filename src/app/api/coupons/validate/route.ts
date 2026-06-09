@@ -31,6 +31,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const code = String(body.code || "");
     const originalAmount = Number(body.originalAmount);
+    const paymentType = body.paymentType ? String(body.paymentType) : undefined;
 
     if (!Number.isFinite(originalAmount) || originalAmount <= 0) {
       return NextResponse.json({ error: "Invalid original amount", field: "originalAmount" }, { status: 400 });
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
       code,
       userId: session.user.id,
       originalAmount,
+      paymentType,
     });
 
     if (!result.valid) {

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Plus } from "lucide-react";
+import { ArrowRight, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useListings } from "@/hooks/useApiData";
-import { useNavigationStore } from "@/store/useAppStore";
+import { useNavigationStore, useSearchStore } from "@/store/useAppStore";
+import type { Listing } from "@/lib/types";
 import ListingCard from "../listing/ListingCard";
 
 const containerVariants = {
@@ -30,15 +31,55 @@ const cardVariants = {
 
 const PAGE_SIZE = 8;
 
+function mergeListings(base: Listing[], extra: Listing[]): Listing[] {
+  const seen = new Set(base.map((listing) => listing.id));
+  const appended = extra.filter((listing) => !seen.has(listing.id));
+  return appended.length > 0 ? [...base, ...appended] : base;
+}
+
 export default function LatestListings() {
   const navigate = useNavigationStore((s) => s.navigate);
-  const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
-  const { listings: allVisible, total, loading } = useListings({ limit: visibleLimit, sortBy: "newest" });
-  const hasMore = allVisible.length < total;
+  const setFilters = useSearchStore((s) => s.setFilters);
+  const [extraListings, setExtraListings] = useState<Listing[]>([]);
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const handleLoadMore = () => {
-    setVisibleLimit((prev) => prev + 4);
-  };
+  const { listings, total, loading } = useListings({
+    page: 1,
+    limit: PAGE_SIZE,
+    sortBy: "newest",
+  });
+
+  const allListings = useMemo(
+    () => mergeListings(listings, extraListings),
+    [listings, extraListings],
+  );
+
+  const hasMore = allListings.length < total;
+
+  const handleLoadMore = useCallback(async () => {
+    if (!hasMore || loading || loadingMore) return;
+
+    const nextPage = page + 1;
+    setLoadingMore(true);
+    try {
+      const params = new URLSearchParams({
+        sortBy: "newest",
+        limit: String(PAGE_SIZE),
+        page: String(nextPage),
+      });
+      const res = await fetch(`/api/listings?${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const batch = (data.listings || []) as Listing[];
+      setExtraListings((prev) => mergeListings(prev, batch));
+      setPage(nextPage);
+    } catch {
+      // Keep existing listings visible if pagination fetch fails.
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasMore, loading, loadingMore, page]);
 
   return (
     <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -53,7 +94,10 @@ export default function LatestListings() {
           </p>
         </div>
         <Button
-          onClick={() => navigate("search")}
+          onClick={() => {
+            setFilters({ sortBy: "newest", page: 1 });
+            navigate("search");
+          }}
           variant="ghost"
           className="text-violet hover:text-violet-hover hover:bg-violet/10 font-medium"
         >
@@ -63,9 +107,9 @@ export default function LatestListings() {
       </div>
 
       {/* Grid */}
-      {loading && allVisible.length === 0 ? (
+      {loading && allListings.length === 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-          {Array.from({ length: 8 }).map((_, i) => (
+          {Array.from({ length: PAGE_SIZE }).map((_, i) => (
             <div key={i} className="animate-pulse">
               <div className="rounded-xl bg-surface border border-border overflow-hidden">
                 <div className="aspect-[3/4] bg-muted" />
@@ -78,19 +122,22 @@ export default function LatestListings() {
           ))}
         </div>
       ) : (
-      <motion.div
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5"
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-50px" }}
-      >
-        {allVisible.map((listing) => (
-          <motion.div key={listing.id} variants={cardVariants}>
-            <ListingCard listing={listing} />
-          </motion.div>
-        ))}
-      </motion.div>
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {allListings.map((listing) => (
+            <motion.div
+              key={listing.id}
+              variants={cardVariants}
+              initial={false}
+            >
+              <ListingCard listing={listing} />
+            </motion.div>
+          ))}
+        </motion.div>
       )}
 
       {/* Load More */}
@@ -98,12 +145,17 @@ export default function LatestListings() {
         <div className="flex justify-center mt-10">
           <Button
             onClick={handleLoadMore}
+            disabled={loadingMore}
             variant="outline"
             size="lg"
             className="border-violet/30 text-violet hover:bg-violet/10 hover:text-violet-hover hover:border-violet/50 font-medium px-8 rounded-lg"
           >
-            <Plus className="size-4" />
-            Load More
+            {loadingMore ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Plus className="size-4" />
+            )}
+            {loadingMore ? "Loading..." : "Load More"}
           </Button>
         </div>
       )}

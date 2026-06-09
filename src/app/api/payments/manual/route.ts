@@ -131,6 +131,7 @@ export async function POST(request: Request) {
         code: couponCode,
         userId,
         originalAmount: tierOriginalAmount,
+        paymentType,
       });
 
       if (!couponResult.valid) {

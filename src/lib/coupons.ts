@@ -1,13 +1,23 @@
 import { db } from "@/lib/db";
 import type { Coupon, Prisma } from "@prisma/client";
+import { couponAppliesToPurchase, isValidCouponAppliesTo } from "@/lib/coupon-scope";
 
 export type DiscountType = "percentage" | "fixed";
+
+export {
+  COUPON_APPLIES_TO_VALUES,
+  COUPON_APPLIES_TO_LABELS,
+  couponAppliesToPurchase,
+  isValidCouponAppliesTo,
+  normalizePaymentTypeForCoupon,
+  type CouponAppliesTo,
+} from "@/lib/coupon-scope";
 
 export interface CouponDiscountResult {
   originalAmount: number;
   discountAmount: number;
   finalAmount: number;
-  coupon: Pick<Coupon, "id" | "code" | "discountType" | "discountValue">;
+  coupon: Pick<Coupon, "id" | "code" | "discountType" | "discountValue" | "appliesTo">;
 }
 
 export interface CouponValidationError {
@@ -72,8 +82,9 @@ export async function validateCouponForCheckout(params: {
   code: string;
   userId: string;
   originalAmount: number;
+  paymentType?: string;
 }): Promise<CouponValidationResult> {
-  const { code, userId, originalAmount } = params;
+  const { code, userId, originalAmount, paymentType } = params;
   const normalized = normalizeCouponCode(code);
 
   if (!normalized) {
@@ -95,6 +106,14 @@ export async function validateCouponForCheckout(params: {
 
   if (coupon.expiresAt && coupon.expiresAt.getTime() < Date.now()) {
     return { valid: false, error: "This coupon has expired", code: "EXPIRED" };
+  }
+
+  if (!couponAppliesToPurchase(coupon.appliesTo, paymentType)) {
+    return {
+      valid: false,
+      error: "This coupon does not apply to this purchase type.",
+      code: "WRONG_PURCHASE_TYPE",
+    };
   }
 
   if (coupon.discountType === "percentage") {
@@ -168,6 +187,7 @@ export async function validateCouponForCheckout(params: {
       code: coupon.code,
       discountType: coupon.discountType,
       discountValue: coupon.discountValue,
+      appliesTo: coupon.appliesTo,
     },
   };
 }
@@ -176,6 +196,7 @@ export async function redeemCouponOnApproval(params: {
   couponId: string;
   userId: string;
   submissionId: string;
+  paymentType?: string;
   tx?: Prisma.TransactionClient;
 }) {
   const client = params.tx ?? db;
@@ -202,6 +223,16 @@ export async function redeemCouponOnApproval(params: {
   });
   if (existingRedemption) {
     return existingRedemption;
+  }
+
+  if (!couponAppliesToPurchase(coupon.appliesTo, params.paymentType)) {
+    console.warn("[redeemCouponOnApproval] coupon does not apply to submission payment type — skipping redemption", {
+      couponId: params.couponId,
+      appliesTo: coupon.appliesTo,
+      paymentType: params.paymentType,
+      submissionId: params.submissionId,
+    });
+    return null;
   }
 
   if (!coupon.isActive) {
@@ -271,6 +302,7 @@ export function serializeCoupon(coupon: Coupon) {
     maxUses: coupon.maxUses,
     maxUsesPerUser: coupon.maxUsesPerUser,
     usedCount: coupon.usedCount,
+    appliesTo: coupon.appliesTo,
     isActive: coupon.isActive,
     expiresAt: coupon.expiresAt?.toISOString() ?? null,
     createdAt: coupon.createdAt.toISOString(),
@@ -288,6 +320,8 @@ export function parseCouponInput(body: Record<string, unknown>) {
   const description = body.description ? String(body.description).trim() : null;
   const expiresAtRaw = body.expiresAt ? String(body.expiresAt) : null;
   const expiresAt = expiresAtRaw ? new Date(expiresAtRaw) : null;
+  const appliesToRaw = String(body.appliesTo || "all").toLowerCase();
+  const appliesTo = isValidCouponAppliesTo(appliesToRaw) ? appliesToRaw : "all";
 
   return {
     code,
@@ -298,6 +332,7 @@ export function parseCouponInput(body: Record<string, unknown>) {
     isActive,
     description,
     expiresAt: expiresAt && !Number.isNaN(expiresAt.getTime()) ? expiresAt : null,
+    appliesTo,
   };
 }
 
@@ -316,6 +351,9 @@ export function validateCouponInput(input: ReturnType<typeof parseCouponInput>):
   }
   if (input.discountType === "percentage" && input.discountValue > 100) {
     return "Percentage discount cannot exceed 100";
+  }
+  if (!isValidCouponAppliesTo(input.appliesTo)) {
+    return "appliesTo must be premium, featured, boost, renewal, or all";
   }
   if (input.expiresAt && input.expiresAt.getTime() <= Date.now()) {
     return "Expiry date must be in the future";
@@ -340,6 +378,9 @@ export function validateCouponInputForUpdate(
   }
   if (input.discountType === "percentage" && input.discountValue > 100) {
     return "Percentage discount cannot exceed 100";
+  }
+  if (!isValidCouponAppliesTo(input.appliesTo)) {
+    return "appliesTo must be premium, featured, boost, renewal, or all";
   }
   return null;
 }

@@ -226,6 +226,7 @@ export async function POST(
             couponId: submission.couponId,
             userId: submission.userId,
             submissionId: submission.id,
+            paymentType: submission.paymentType,
             tx,
           });
         }

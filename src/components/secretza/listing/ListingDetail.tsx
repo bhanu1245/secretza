@@ -377,7 +377,7 @@ export default function ListingDetail({
               </Button>
 
               {/* Reviews Section */}
-              <ReviewList listingId={listing.id} />
+              <ReviewList listingId={listing.id} listingTitle={listing.title} />
 
               {/* Bottom spacing for mobile close handle */}
               {isMobile && <div className="h-6" />}

@@ -458,6 +458,7 @@ model Coupon {
   maxUses         Int       @default(0) // 0 = unlimited global uses
   maxUsesPerUser  Int       @default(0) // 0 = unlimited per user; 1 = one-time per user
   usedCount       Int       @default(0)
+  appliesTo       String    @default("all") // premium | featured | boost | renewal | all
   isActive        Boolean   @default(true)
   expiresAt       DateTime?
   createdAt       DateTime  @default(now())

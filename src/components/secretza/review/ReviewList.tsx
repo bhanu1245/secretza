@@ -7,7 +7,12 @@ import {
   Loader2,
   MessageSquareOff,
   ArrowUpDown,
+  Clock,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { parseRejectionAdminNote, getReviewStatusLabel } from "@/lib/review-moderation";
 import { Button } from "@/components/ui/button";
 import { logError } from "@/lib/logger";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,8 +23,19 @@ import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/store/useAppStore";
 import type { Review } from "@/components/secretza/review/CreateReviewForm";
 
+type UserListingReview = {
+  id: string;
+  status: string;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  adminNote: string | null;
+  createdAt: string;
+};
+
 interface ReviewListProps {
   listingId: string;
+  listingTitle?: string;
 }
 
 type SortOption = "newest" | "highest" | "lowest" | "helpful";
@@ -33,10 +49,12 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 
 const PAGE_SIZE = 20;
 
-export default function ReviewList({ listingId }: ReviewListProps) {
+export default function ReviewList({ listingId, listingTitle = "" }: ReviewListProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [userReview, setUserReview] = useState<UserListingReview | null>(null);
+  const [loadingUserReview, setLoadingUserReview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,10 +120,35 @@ export default function ReviewList({ listingId }: ReviewListProps) {
     [listingId, sortBy, reviews.length]
   );
 
+  const fetchUserReview = useCallback(async () => {
+    if (!isAuthenticated) {
+      setUserReview(null);
+      return;
+    }
+    setLoadingUserReview(true);
+    try {
+      const res = await fetch(`/api/reviews/mine?listingId=${listingId}`, {
+        credentials: "include",
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const mine = (data.reviews || [])[0] as UserListingReview | undefined;
+      setUserReview(mine ?? null);
+    } catch (err) {
+      logError(err, { component: "ReviewList", step: "fetchUserReview" });
+    } finally {
+      setLoadingUserReview(false);
+    }
+  }, [isAuthenticated, listingId]);
+
   // Initial fetch
   useEffect(() => {
     fetchReviews(false);
   }, [listingId, sortBy]);
+
+  useEffect(() => {
+    fetchUserReview();
+  }, [fetchUserReview]);
 
   const handleLoadMore = () => {
     fetchReviews(true);
@@ -113,9 +156,13 @@ export default function ReviewList({ listingId }: ReviewListProps) {
 
   const handleReviewSubmitted = useCallback(() => {
     setShowForm(false);
-    // Re-fetch from scratch to get updated stats
+    fetchUserReview();
     fetchReviews(false);
-  }, [listingId]);
+  }, [fetchUserReview, fetchReviews]);
+
+  const hasSubmittedReview = Boolean(userReview);
+  const rejection = parseRejectionAdminNote(userReview?.adminNote);
+  const canWriteReview = isAuthenticated && !hasSubmittedReview && !loadingUserReview;
 
   const handleHelpful = useCallback(async (reviewId: string) => {
     try {
@@ -151,7 +198,7 @@ export default function ReviewList({ listingId }: ReviewListProps) {
         <h2 className="text-xl font-bold text-[#F5F5F7]">
           Reviews & Ratings
         </h2>
-        {!showForm && (
+        {canWriteReview && !showForm && (
           <Button
             onClick={() => {
               if (isAuthenticated) {
@@ -171,12 +218,67 @@ export default function ReviewList({ listingId }: ReviewListProps) {
         )}
       </div>
 
+      {/* User review status */}
+      {userReview && (
+        <div
+          className={`mb-6 rounded-xl border p-4 ${
+            userReview.status === "pending"
+              ? "border-amber-500/25 bg-amber-500/10"
+              : userReview.status === "approved"
+                ? "border-emerald-500/25 bg-emerald-500/10"
+                : userReview.status === "rejected"
+                  ? "border-red-500/25 bg-red-500/10"
+                  : "border-orange-500/25 bg-orange-500/10"
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            {userReview.status === "pending" ? (
+              <Clock className="size-5 text-amber-400 shrink-0 mt-0.5" />
+            ) : userReview.status === "approved" ? (
+              <CheckCircle2 className="size-5 text-emerald-400 shrink-0 mt-0.5" />
+            ) : (
+              <XCircle className="size-5 text-red-400 shrink-0 mt-0.5" />
+            )}
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-[#F5F5F7]">
+                  {userReview.status === "pending"
+                    ? "Review Pending Approval"
+                    : `Your review is ${getReviewStatusLabel(userReview.status).toLowerCase()}`}
+                </p>
+                <Badge variant="outline" className="text-[10px]">
+                  {getReviewStatusLabel(userReview.status)}
+                </Badge>
+              </div>
+              <StarRating rating={userReview.rating} size="sm" />
+              {userReview.title && (
+                <p className="text-sm font-medium text-[#F5F5F7]">{userReview.title}</p>
+              )}
+              {userReview.body && (
+                <p className="text-sm text-[#A1A1AA]">{userReview.body}</p>
+              )}
+              {userReview.status === "pending" && (
+                <p className="text-xs text-amber-300/90">
+                  Your review has been submitted and will appear publicly once approved by moderation.
+                </p>
+              )}
+              {userReview.status === "rejected" && rejection.reasonLabel && (
+                <p className="text-xs text-red-300">
+                  Reason: {rejection.reasonLabel}
+                  {rejection.note ? ` — ${rejection.note}` : ""}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Create Review Form */}
-      {showForm && (
+      {showForm && canWriteReview && (
         <div className="mb-8">
           <CreateReviewForm
             listingId={listingId}
-            listingTitle=""
+            listingTitle={listingTitle}
             onSubmitted={handleReviewSubmitted}
             onCancel={() => setShowForm(false)}
           />

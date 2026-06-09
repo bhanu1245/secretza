@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
         code: couponCode,
         userId: session.user.id,
         originalAmount,
+        paymentType: paymentType ?? undefined,
       });
       if (!result.valid || Math.abs(result.finalAmount - amount) > 0.01) {
         return NextResponse.json({ error: "Invalid coupon or discounted amount" }, { status: 400 });

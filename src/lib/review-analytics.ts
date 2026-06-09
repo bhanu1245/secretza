@@ -55,10 +55,10 @@ export async function getReviewAnalytics(days: number): Promise<ReviewAnalyticsD
     approvedRatingData,
     recentFlagged,
   ] = await Promise.all([
-    db.review.count({ where: { createdAt: { gte: since } } }),
-    db.review.count({ where: { status: "approved", createdAt: { gte: since } } }),
+    db.review.count(),
+    db.review.count({ where: { status: "approved" } }),
     db.review.count({ where: { status: "pending" } }),
-    db.review.count({ where: { status: "rejected", createdAt: { gte: since } } }),
+    db.review.count({ where: { status: "rejected" } }),
     db.review.count({ where: { status: "flagged" } }),
     db.review.aggregate({
       where: { status: "approved" },

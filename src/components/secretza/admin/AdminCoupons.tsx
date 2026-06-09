@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Save, Trash2, Tag } from "lucide-react";
+import {
+  COUPON_APPLIES_TO_LABELS,
+  COUPON_APPLIES_TO_VALUES,
+  type CouponAppliesTo,
+} from "@/lib/coupon-scope";
 
 type Coupon = {
   id: string;
@@ -13,6 +18,7 @@ type Coupon = {
   maxUses: number;
   maxUsesPerUser: number;
   usedCount: number;
+  appliesTo: CouponAppliesTo;
   isActive: boolean;
   expiresAt: string | null;
   createdAt: string;
@@ -26,6 +32,7 @@ const emptyCoupon: Omit<Coupon, "id" | "usedCount" | "createdAt" | "updatedAt"> 
   discountValue: 10,
   maxUses: 0,
   maxUsesPerUser: 0,
+  appliesTo: "all",
   isActive: true,
   expiresAt: null,
 };
@@ -181,6 +188,18 @@ export default function AdminCoupons() {
             className="w-full rounded-lg bg-[#0B0B0F] border border-[rgba(255,255,255,0.08)] px-3 py-2 text-sm text-[#F5F5F7]"
           />
 
+          <select
+            value={editing.appliesTo || "all"}
+            onChange={(e) => update("appliesTo", e.target.value)}
+            className="w-full rounded-lg bg-[#0B0B0F] border border-[rgba(255,255,255,0.08)] px-3 py-2 text-sm text-[#F5F5F7]"
+          >
+            {COUPON_APPLIES_TO_VALUES.map((value) => (
+              <option key={value} value={value}>
+                {COUPON_APPLIES_TO_LABELS[value]}
+              </option>
+            ))}
+          </select>
+
           <label className="flex items-center gap-2 text-sm text-[#A1A1AA]">
             <input
               type="checkbox"
@@ -225,6 +244,8 @@ export default function AdminCoupons() {
                       {coupon.discountType === "percentage"
                         ? `${coupon.discountValue}% off`
                         : `₹${coupon.discountValue} off`}
+                      {" · "}
+                      {COUPON_APPLIES_TO_LABELS[coupon.appliesTo ?? "all"]}
                       {" · "}
                       Used {coupon.usedCount}
                       {coupon.maxUses > 0 ? ` / ${coupon.maxUses}` : ""}

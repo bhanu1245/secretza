@@ -55,6 +55,7 @@ export async function POST(request: Request) {
         discountValue: input.discountValue,
         maxUses: input.maxUses,
         maxUsesPerUser: input.maxUsesPerUser,
+        appliesTo: input.appliesTo,
         isActive: input.isActive,
         expiresAt: input.expiresAt,
       },

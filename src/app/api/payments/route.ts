@@ -74,6 +74,7 @@ export async function POST(request: Request) {
           code: String(couponCode),
           userId: authenticatedUserId,
           originalAmount,
+          paymentType: type,
         });
         if (!couponResult.valid) {
           return NextResponse.json({ error: couponResult.error, field: "couponCode" }, { status: 400 });

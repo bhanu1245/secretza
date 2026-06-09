@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, ShieldCheck, AlertCircle, Send, X } from "lucide-react";
+import { Loader2, ShieldCheck, AlertCircle, Send, X, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,6 +59,7 @@ export default function CreateReviewForm({
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Pre-fill form when editing
@@ -126,25 +127,19 @@ export default function CreateReviewForm({
         return;
       }
 
-      toast.success(
-        isEditing ? "Review updated!" : "Review submitted!",
-        {
-          description: isEditing
-            ? "Your review has been updated successfully."
-            : isUserVerified
-              ? "Your review has been published."
-              : "Your review is pending moderation.",
-        }
-      );
-
-      // Reset form
-      if (!isEditing) {
-        setRating(0);
-        setTitle("");
-        setBody("");
+      if (isEditing) {
+        toast.success("Review updated!", {
+          description: "Your review has been updated and is pending re-approval.",
+        });
+        onSubmitted?.();
+      } else {
+        setSubmitted(true);
+        toast.success("Review Submitted", {
+          description:
+            "Your review has been submitted successfully and is awaiting moderation.",
+        });
       }
 
-      onSubmitted?.();
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Unknown error";
@@ -180,6 +175,25 @@ export default function CreateReviewForm({
           className="bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-500 text-white rounded-lg shadow-lg shadow-violet/25"
         >
           Sign In to Review
+        </Button>
+      </div>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <div className="w-full rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-6 text-center">
+        <CheckCircle2 className="size-12 text-emerald-400 mx-auto mb-4" />
+        <h3 className="text-lg font-bold text-[#F5F5F7] mb-2">Review Submitted</h3>
+        <p className="text-sm text-[#A1A1AA] max-w-md mx-auto leading-relaxed">
+          Your review has been submitted successfully and is awaiting moderation.
+          It will become publicly visible once approved.
+        </p>
+        <Button
+          className="mt-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+          onClick={() => onSubmitted?.()}
+        >
+          Done
         </Button>
       </div>
     );
@@ -289,9 +303,7 @@ export default function CreateReviewForm({
               isUserVerified ? "text-emerald-400/90" : "text-amber-400/90"
             }`}
           >
-            {isUserVerified
-              ? "Your review will be published immediately."
-              : "Your review will be reviewed by our moderation team before being published."}
+            All reviews are reviewed by our moderation team before being published publicly.
           </p>
         </div>
 

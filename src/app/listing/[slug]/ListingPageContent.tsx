@@ -289,7 +289,7 @@ export default function ListingPageContent({ listing }: ListingPageContentProps)
         )}
 
         {/* Reviews */}
-        <ReviewList listingId={listing.id} />
+        <ReviewList listingId={listing.id} listingTitle={listing.title} />
       </div>
 
       {/* Right Column — Sidebar */}

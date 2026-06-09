@@ -200,6 +200,7 @@ export default function ManualPaymentPage({
         body: JSON.stringify({
           code,
           originalAmount: tierOriginalAmount,
+          paymentType,
         }),
       });
       const data = await res.json();
@@ -221,7 +222,7 @@ export default function ManualPaymentPage({
     } finally {
       setCouponLoading(false);
     }
-  }, [couponInput, tierOriginalAmount]);
+  }, [couponInput, tierOriginalAmount, paymentType]);
 
   const handleTierSelect = useCallback((idx: number) => {
     setSelectedTierIndex(idx);

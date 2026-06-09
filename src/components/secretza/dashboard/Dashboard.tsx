@@ -29,7 +29,9 @@ import {
   Ban,
   Upload,
   Circle,
+  MessageSquare,
 } from "lucide-react";
+import MyReviewsPanel from "@/components/secretza/review/MyReviewsPanel";
 import { toast } from "sonner";
 import { signOut } from "next-auth/react";
 import { logError } from "@/lib/logger";
@@ -53,7 +55,7 @@ import type { ListingStatus, Listing } from "@/lib/types";
 // ==========================================
 // Types
 // ==========================================
-type DashboardPage = "overview" | "listings" | "settings";
+type DashboardPage = "overview" | "listings" | "reviews" | "settings";
 
 // ==========================================
 // Status Badge Helper
@@ -106,6 +108,7 @@ function SidebarNav({
   const navItems = [
     { id: "overview" as DashboardPage, label: "Overview", icon: LayoutDashboard },
     { id: "listings" as DashboardPage, label: "My Listings", icon: FileText },
+    { id: "reviews" as DashboardPage, label: "My Reviews", icon: MessageSquare },
     { id: "settings" as DashboardPage, label: "Account Settings", icon: Settings },
   ];
 
@@ -1298,7 +1301,7 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState<DashboardPage>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("dashboardPage") as DashboardPage;
-      if (saved && ["overview", "listings", "settings"].includes(saved)) return saved;
+      if (saved && ["overview", "listings", "reviews", "settings"].includes(saved)) return saved;
     }
     return "overview";
   });
@@ -1318,7 +1321,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (hasProcessedNavTab.current) return;
     const tab = nav.params?.tab as string | undefined;
-    if (tab && ["overview", "listings", "settings"].includes(tab)) {
+    if (tab && ["overview", "listings", "reviews", "settings"].includes(tab)) {
       setCurrentPage(tab as DashboardPage);
       hasProcessedNavTab.current = true;
     }
@@ -1382,6 +1385,7 @@ export default function Dashboard() {
   const pageTitle: Record<DashboardPage, string> = {
     overview: "Dashboard Overview",
     listings: "My Listings",
+    reviews: "My Reviews",
     settings: "Account Settings",
   };
 
@@ -1444,6 +1448,7 @@ export default function Dashboard() {
               onListingsChange={setUserListings}
             />
           )}
+          {currentPage === "reviews" && <MyReviewsPanel />}
           {currentPage === "settings" && <AccountSettingsPage />}
         </div>
       </main>

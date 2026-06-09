@@ -5,6 +5,11 @@ import { authOptions } from "@/lib/auth";
 import { logAdminAction, extractIpAddress } from "@/lib/audit-logger";
 import type { AdminActionType } from "@/lib/audit-logger";
 import { logError } from "@/lib/monitoring";
+import {
+  formatRejectionAdminNote,
+  REVIEW_REJECTION_REASONS,
+  type ReviewRejectionReasonId,
+} from "@/lib/review-moderation";
 
 // POST /api/admin/reviews/[id]/moderate
 // Body: { action: "approve"|"reject"|"flag"|"feature"|"unfeature", flaggedReason?, adminNote? }
@@ -24,10 +29,11 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    const { action, flaggedReason, adminNote } = body as {
+    const { action, flaggedReason, adminNote, rejectionReason } = body as {
       action?: string;
       flaggedReason?: string;
       adminNote?: string;
+      rejectionReason?: string;
     };
 
     const validActions = ["approve", "reject", "flag", "feature", "unfeature"];
@@ -62,15 +68,27 @@ export async function POST(
         message = "Review approved";
         break;
 
-      case "reject":
+      case "reject": {
+        const validReasons = REVIEW_REJECTION_REASONS.map((r) => r.id);
+        const reason = rejectionReason as ReviewRejectionReasonId | undefined;
+        if (reason && !validReasons.includes(reason)) {
+          return NextResponse.json(
+            { error: `Invalid rejectionReason. Must be one of: ${validReasons.join(", ")}` },
+            { status: 400 },
+          );
+        }
+        const rejectionNote = reason
+          ? formatRejectionAdminNote(reason, adminNote)
+          : adminNote?.trim() || null;
         updateData = {
           status: "rejected",
           moderatedBy: moderatorId,
           moderatedAt: now,
-          ...(adminNote ? { adminNote } : {}),
+          ...(rejectionNote ? { adminNote: rejectionNote } : {}),
         };
         message = "Review rejected";
         break;
+      }
 
       case "flag":
         if (!flaggedReason) {
