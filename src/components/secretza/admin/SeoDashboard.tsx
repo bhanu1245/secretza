@@ -45,6 +45,9 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import type { SeoDashboardMetrics } from '@/lib/seo-dashboard-metrics';
+import { SeoHealthOverviewWidget } from '@/components/secretza/admin/seo-dashboard-v2/SeoHealthOverviewWidget';
+import { SeoRegenerationMonitorWidget } from '@/components/secretza/admin/seo-dashboard-v2/SeoRegenerationMonitorWidget';
+import { SeoSitemapDashboardWidget } from '@/components/secretza/admin/seo-dashboard-v2/SeoSitemapDashboardWidget';
 
 type DashboardData = SeoDashboardMetrics & { loadTimeMs?: number };
 
@@ -243,31 +246,8 @@ export default function SeoDashboard() {
         </div>
       </div>
 
-      {/* Health */}
-      <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
-        <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-6">
-          <div className="text-center">
-            <p className="text-5xl font-bold" style={{ color: health.color }}>{data.healthScore}</p>
-            <p className="text-xs text-[#A1A1AA]">Avg SEO Score / 100</p>
-          </div>
-          <div>
-            <Badge variant="outline" style={{ backgroundColor: health.bg, color: health.color, borderColor: `${health.color}30` }}>
-              {health.label}
-            </Badge>
-            <p className="text-sm text-[#A1A1AA] mt-2 max-w-md">
-              Health score equals the database average of <code className="text-[#8B5CF6]">seoQualityScore</code> across all {formatNumber(data.seoPages.total)} SEO pages.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Page counts */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total SEO Pages" value={formatNumber(data.seoPages.total)} icon={FileText} color="#7C3AED" bg="rgba(124,58,237,0.1)" />
-        <StatCard label="Published" value={formatNumber(data.seoPages.published)} icon={FileCheck} color="#10B981" bg="rgba(16,185,129,0.1)" />
-        <StatCard label="Drafts" value={formatNumber(data.seoPages.drafts)} icon={FileX2} color="#EAB308" bg="rgba(234,179,8,0.1)" />
-        <StatCard label="Noindex" value={formatNumber(data.seoPages.noindex)} icon={AlertTriangle} color="#EF4444" bg="rgba(239,68,68,0.1)" />
-      </div>
+      {/* V2 Widget: Health & Top-level metrics */}
+      <SeoHealthOverviewWidget data={data} />
 
       {/* Quality averages */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -374,20 +354,13 @@ export default function SeoDashboard() {
         </CardContent>
       </Card>
 
-      {/* Regeneration */}
-      <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-[#F5F5F7] flex items-center gap-2">
-            <RotateCcw className="size-4" /> Regeneration Statistics
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-          <div><p className="text-[#A1A1AA] text-xs">Total regenerated</p><p className="text-xl font-bold">{formatNumber(data.regeneration.totalRegeneratedPages)}</p></div>
-          <div><p className="text-[#A1A1AA] text-xs">Success rate</p><p className="text-xl font-bold">{data.regeneration.successRate != null ? `${data.regeneration.successRate}%` : 'N/A'}</p></div>
-          <div><p className="text-[#A1A1AA] text-xs">Rollbacks</p><p className="text-xl font-bold">{formatNumber(data.regeneration.rollbackCount)}</p></div>
-          <div><p className="text-[#A1A1AA] text-xs">Last regeneration</p><p className="text-sm font-medium">{data.regeneration.lastRegenerationDate ? formatTimeAgo(data.regeneration.lastRegenerationDate) : 'Never'}</p></div>
-        </CardContent>
-      </Card>
+      {/* V2 Widget: Regeneration Monitor */}
+      <div className="lg:col-span-full">
+        <h2 className="text-lg font-bold text-[#F5F5F7] mt-8 mb-4 flex items-center gap-2">
+          <RotateCcw className="size-5" /> SEO Regeneration Monitor
+        </h2>
+        <SeoRegenerationMonitorWidget />
+      </div>
 
       {/* Duplicate risk pages */}
       <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
@@ -463,25 +436,13 @@ export default function SeoDashboard() {
         </CardContent>
       </Card>
 
-      {/* Sitemap */}
-      <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-[#F5F5F7] flex items-center gap-2">
-            <MapIcon className="size-4" /> Sitemap
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-[#F5F5F7] mb-3">{formatNumber(data.sitemap.totalUrls)} URLs · {data.sitemap.chunks} chunks</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {data.sitemap.breakdown.map((item) => (
-              <div key={item.section} className="p-2 rounded bg-[#1E1E2A] text-xs">
-                <p className="font-bold text-[#F5F5F7]">{formatNumber(item.count)}</p>
-                <p className="text-[#A1A1AA]">{item.section}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* V2 Widget: Sitemap Dashboard */}
+      <div className="lg:col-span-full">
+        <h2 className="text-lg font-bold text-[#F5F5F7] mt-8 mb-4 flex items-center gap-2">
+          <MapIcon className="size-5" /> Sitemap Dashboard
+        </h2>
+        <SeoSitemapDashboardWidget />
+      </div>
 
       {/* Recent activity */}
       <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">

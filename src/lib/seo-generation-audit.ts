@@ -9,7 +9,10 @@ export type SeoGenerationAuditAction =
   | "seo_generate_keyword_multi_city"
   | "seo_generate_city_category_longtail"
   | "seo_generate_city_category_keywords"
-  | "seo_repair_url_structure";
+  | "seo_repair_url_structure"
+  | "sitemap_validate"
+  | "sitemap_submit"
+  | "sitemap_regenerate";
 
 export async function logSeoGenerationAction(params: {
   adminUserId: string;

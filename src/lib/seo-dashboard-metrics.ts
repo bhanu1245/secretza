@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { SEO_MIN_WORD_COUNT } from "@/lib/seo-quality";
 import { getAllVerificationConfigs } from "@/lib/seo-verification";
 import { generateSitemapStats } from "@/lib/seo-operations";
+import { calculateReadabilityScore } from "@/lib/readability";
 
 const MIN_INTERNAL_LINKS = 15;
 
@@ -57,6 +58,7 @@ export async function loadSeoDashboardMetrics(days = 30) {
     sitemapStats,
     crawlEvents,
     regenHistoryRows,
+    recentReadabilitySample,
   ] = await Promise.all([
     db.seoPage.count(),
     db.seoPage.count({ where: { isPublished: true } }),
@@ -194,6 +196,11 @@ export async function loadSeoDashboardMetrics(days = 30) {
       orderBy: { completedAt: "asc" },
       select: { completedAt: true, completedCount: true },
     }),
+    db.seoPage.findMany({
+      take: 50,
+      orderBy: { updatedAt: "desc" },
+      select: { introContent: true, customData: true },
+    }),
   ]);
 
   const riskCount = (risk: string) =>
@@ -255,6 +262,14 @@ export async function loadSeoDashboardMetrics(days = 30) {
     },
   ];
 
+  let avgReadability = 0;
+  if (recentReadabilitySample?.length > 0) {
+    const scores = recentReadabilitySample.map(p => calculateReadabilityScore(p.introContent || p.customData)).filter(s => s > 0);
+    if (scores.length > 0) {
+      avgReadability = round1(scores.reduce((a, b) => a + b, 0) / scores.length);
+    }
+  }
+
   return {
     generatedAt: new Date().toISOString(),
     healthScore,
@@ -264,6 +279,7 @@ export async function loadSeoDashboardMetrics(days = 30) {
       avgWordCount: round1(aggregates._avg.wordCount),
       avgFaqCount: round1(aggregates._avg.faqCount),
       avgInternalLinks: round1(aggregates._avg.internalLinksCount),
+      avgReadability,
     },
     seoPages: {
       total: totalPages,
