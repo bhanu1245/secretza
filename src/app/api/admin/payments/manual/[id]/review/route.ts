@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireMinRole } from "@/lib/auth-helpers";
 import {
+  buildPremiumActivationUpdate,
   computePriorityScore,
   getBoostExpiry,
   getFeatureExpiry,
@@ -212,10 +213,10 @@ export async function POST(
             },
           });
           for (const lst of userListings) {
-            const newScore = computePriorityScore({ ...lst, isPremium: true });
+            const activation = buildPremiumActivationUpdate(lst);
             await tx.listing.update({
               where: { id: lst.id },
-              data: { isPremium: true, priorityScore: newScore },
+              data: activation,
             });
           }
         }

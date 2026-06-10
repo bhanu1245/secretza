@@ -36,7 +36,7 @@ import { toast } from "sonner";
 import { signOut } from "next-auth/react";
 import { logError } from "@/lib/logger";
 import { getListingCoverImageWithPlaceholder } from "@/lib/listing-images";
-import ListingTierBadge from "@/components/secretza/listing/ListingTierBadge";
+import { ListingTierBadges } from "@/components/secretza/listing/ListingTierBadge";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -682,7 +682,7 @@ const handleDelete = async (id: string) => {
                   <StatusBadge status={listing.status} />
                 </div>
                 <div className="absolute top-3 right-3">
-                  <ListingTierBadge listing={listing} variant="inline" />
+                  <ListingTierBadges listing={listing} variant="inline" layout="stack" />
                 </div>
               </div>
               <CardContent className="p-4 space-y-3">

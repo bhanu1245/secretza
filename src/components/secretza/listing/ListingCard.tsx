@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { MapPin, Shield, Eye, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import ListingTierBadge, { resolveListingTier } from "@/components/secretza/listing/ListingTierBadge";
+import { ListingTierBadges } from "@/components/secretza/listing/ListingTierBadge";
 import type { Listing } from "@/lib/types";
 import TimeAgo from "@/components/secretza/shared/TimeAgo";
 import { useNavigationStore, useUIStore } from "@/store/useAppStore";
@@ -288,12 +288,10 @@ export default function ListingCard({ listing }: ListingCardProps) {
         </div>
         )}
 
-        {/* Tier Badge (Boosted > Premium > Featured) */}
-        {resolveListingTier(listing) && (
-          <div className="absolute top-2.5 right-2.5 z-10">
-            <ListingTierBadge listing={listing} variant="overlay" />
-          </div>
-        )}
+        {/* Tier badges — show all active tiers (Premium does not hide Featured) */}
+        <div className="absolute top-2.5 right-2.5 z-10">
+          <ListingTierBadges listing={listing} variant="overlay" layout="stack" />
+        </div>
 
         {/* Image Count Badge (if multiple images) */}
         {resolvedImages.length > 1 && (

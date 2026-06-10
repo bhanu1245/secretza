@@ -148,6 +148,20 @@ export function computePriorityScore(listing: ListingRankInput): number {
   return Math.round(score * 100) / 100;
 }
 
+/** Listing update payload applied when a user's premium payment is approved. */
+export function buildPremiumActivationUpdate(
+  listing: ListingRankInput,
+  bumpedAt: Date = new Date(),
+) {
+  const lastBumpedAt = bumpedAt;
+  const rankInput: ListingRankInput = { ...listing, isPremium: true, lastBumpedAt };
+  return {
+    isPremium: true as const,
+    lastBumpedAt,
+    priorityScore: computePriorityScore(rankInput),
+  };
+}
+
 // ==========================================
 // Determine Rank Label
 // ==========================================

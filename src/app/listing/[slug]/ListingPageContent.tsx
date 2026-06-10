@@ -17,7 +17,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import ListingTierBadge from "@/components/secretza/listing/ListingTierBadge";
+import { ListingTierBadges } from "@/components/secretza/listing/ListingTierBadge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -209,7 +209,7 @@ export default function ListingPageContent({ listing }: ListingPageContentProps)
 
         {/* Badges */}
         <div className="flex flex-wrap gap-2">
-          <ListingTierBadge listing={listing} variant="inline" />
+          <ListingTierBadges listing={listing} variant="inline" />
           {listing.user.isVerified && (
             <Badge className="gap-1 bg-emerald-500/90 text-white border-0">
               <Shield className="size-3" />

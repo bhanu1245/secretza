@@ -15,6 +15,20 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import AiGenerateButton from '@/components/secretza/seo/AiGenerateButton';
 import SeoQualityMeter from '@/components/secretza/seo/SeoQualityMeter';
+import AdminSeoGranularTools, {
+  SeoGranularTriggerButtons,
+  type SeoGranularMode,
+} from '@/components/secretza/admin/AdminSeoGranularTools';
+import AdminSeoKeywordGenerator, {
+  SeoKeywordGeneratorTrigger,
+} from '@/components/secretza/admin/AdminSeoKeywordGenerator';
+import AdminSeoAdvancedGenerators, {
+  SeoAdvancedGeneratorTriggers,
+  type AdvancedGeneratorMode,
+} from '@/components/secretza/admin/AdminSeoAdvancedGenerators';
+import AdminSeoUrlRepair, {
+  SeoUrlRepairTrigger,
+} from '@/components/secretza/admin/AdminSeoUrlRepair';
 import { useSeoQualityScore } from '@/hooks/useSeoQualityScore';
 import { useTrackEvent } from '@/components/providers/AnalyticsProvider';
 import {
@@ -240,6 +254,10 @@ export default function SeoManager() {
   const [batchSize, setBatchSize] = useState(100);
   const [processAllMissing, setProcessAllMissing] = useState(true);
   const [genProgress, setGenProgress] = useState<GenProgress | null>(null);
+  const [granularMode, setGranularMode] = useState<SeoGranularMode | null>(null);
+  const [keywordGeneratorOpen, setKeywordGeneratorOpen] = useState(false);
+  const [advancedGeneratorMode, setAdvancedGeneratorMode] = useState<AdvancedGeneratorMode>(null);
+  const [urlRepairOpen, setUrlRepairOpen] = useState(false);
   const [typeStats, setTypeStats] = useState<SeoTypeStats>({
     city: 0,
     category: 0,
@@ -1255,21 +1273,57 @@ export default function SeoManager() {
 
           {/* Generate buttons */}
           <div className="flex flex-wrap gap-2">
-            {GENERATE_BUTTONS.map(({ type, label }) => (
-              <Button
-                key={type}
-                onClick={() => handleGenerate(type)}
-                disabled={isGenerating}
-                className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
-              >
-                {activeGenerateType === type ? (
-                  <Loader2 className="size-3 animate-spin mr-1" />
-                ) : (
-                  <RefreshCw className="size-3 mr-1" />
-                )}
-                Generate {label}
-              </Button>
-            ))}
+            {GENERATE_BUTTONS.map(({ type, label }) => {
+              const isGranular = type === 'city' || type === 'category_city';
+              const granularTarget: SeoGranularMode | null =
+                type === 'city' ? 'single_city' : type === 'category_city' ? 'category_city' : null;
+
+              return (
+                <Button
+                  key={type}
+                  onClick={() => {
+                    if (isGranular && granularTarget) {
+                      setGranularMode(granularTarget);
+                    } else {
+                      handleGenerate(type);
+                    }
+                  }}
+                  disabled={isGenerating || granularMode !== null}
+                  className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+                  title={
+                    isGranular
+                      ? type === 'city'
+                        ? 'Select a single city to generate'
+                        : 'Select category and city to generate one page'
+                      : undefined
+                  }
+                >
+                  {activeGenerateType === type ? (
+                    <Loader2 className="size-3 animate-spin mr-1" />
+                  ) : (
+                    <RefreshCw className="size-3 mr-1" />
+                  )}
+                  Generate {label}
+                  {isGranular && <MapPin className="size-3 ml-1 opacity-70" />}
+                </Button>
+              );
+            })}
+            <SeoGranularTriggerButtons
+              onOpen={setGranularMode}
+              disabled={isGenerating || granularMode !== null}
+            />
+            <SeoKeywordGeneratorTrigger
+              onOpen={() => setKeywordGeneratorOpen(true)}
+              disabled={isGenerating || granularMode !== null || keywordGeneratorOpen || advancedGeneratorMode !== null}
+            />
+            <SeoAdvancedGeneratorTriggers
+              onOpen={setAdvancedGeneratorMode}
+              disabled={isGenerating || granularMode !== null || keywordGeneratorOpen || advancedGeneratorMode !== null || urlRepairOpen}
+            />
+            <SeoUrlRepairTrigger
+              onOpen={() => setUrlRepairOpen(true)}
+              disabled={isGenerating || urlRepairOpen}
+            />
             <Button
               onClick={handleGenerateAll}
               disabled={isGenerating}
@@ -2154,6 +2208,46 @@ export default function SeoManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AdminSeoGranularTools
+        mode={granularMode}
+        onModeChange={setGranularMode}
+        onComplete={() => {
+          fetchPages();
+          fetchStats();
+        }}
+        disabled={isGenerating}
+      />
+
+      <AdminSeoKeywordGenerator
+        open={keywordGeneratorOpen}
+        onOpenChange={setKeywordGeneratorOpen}
+        onComplete={() => {
+          fetchPages();
+          fetchStats();
+        }}
+        disabled={isGenerating}
+      />
+
+      <AdminSeoAdvancedGenerators
+        mode={advancedGeneratorMode}
+        onModeChange={setAdvancedGeneratorMode}
+        onComplete={() => {
+          fetchPages();
+          fetchStats();
+        }}
+        disabled={isGenerating}
+      />
+
+      <AdminSeoUrlRepair
+        open={urlRepairOpen}
+        onOpenChange={setUrlRepairOpen}
+        onComplete={() => {
+          fetchPages();
+          fetchStats();
+        }}
+        disabled={isGenerating}
+      />
     </div>
   );
 }

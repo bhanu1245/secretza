@@ -12,7 +12,7 @@ import {
   BadgeCheck,
   ImageIcon,
 } from "lucide-react";
-import ListingTierBadge from "@/components/secretza/listing/ListingTierBadge";
+import { ListingTierBadges } from "@/components/secretza/listing/ListingTierBadge";
 import {
   Sheet,
   SheetContent,
@@ -247,7 +247,7 @@ export default function ListingDetail({
             <div className="flex flex-col gap-4 p-4">
               {/* Status Badges */}
               <div className="flex flex-wrap gap-2">
-                <ListingTierBadge listing={listing} variant="inline" />
+                <ListingTierBadges listing={listing} variant="inline" />
                 {(listing.user as any)?.isVerified && (
                   <Badge className="gap-1 bg-emerald-500/90 text-white border-0">
                     <Shield className="size-3" />

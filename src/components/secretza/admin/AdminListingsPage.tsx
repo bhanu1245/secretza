@@ -11,6 +11,7 @@ import AdminPaginationBar from "@/components/secretza/admin/AdminPaginationBar";
 import AdminListingReviewModal from "@/components/secretza/admin/AdminListingReviewModal";
 import ListingRejectDialog from "@/components/secretza/admin/ListingRejectDialog";
 import ListingDeleteConfirmDialog from "@/components/secretza/admin/ListingDeleteConfirmDialog";
+import AdminRankingTools from "@/components/secretza/admin/AdminRankingTools";
 import { buildAdminListingsUrl } from "@/lib/admin-listings-query";
 import { resolveAdminListingThumbnail } from "@/lib/listing-images";
 import { logError } from "@/lib/logger";
@@ -220,6 +221,8 @@ export default function AdminListingsPage() {
           <CardContent className="p-4 text-sm text-red-300">{error}</CardContent>
         </Card>
       )}
+
+      <AdminRankingTools />
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1 max-w-md">
