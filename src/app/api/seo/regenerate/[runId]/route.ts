@@ -3,6 +3,14 @@ import { requireMinRole } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { logError } from "@/lib/monitoring";
 import { serializeRunProgress } from "@/lib/seo-regeneration-service";
+import { aggregateRunDashboardStats } from "@/lib/seo-generation-metadata";
+import { safeRegenerationItemFindMany } from "@/lib/seo-regeneration-queries";
+import {
+  getRegenerationSchemaHealth,
+  isMissingColumnError,
+  logSchemaMismatchOnce,
+  schemaOutdatedJson,
+} from "@/lib/seo-schema-health";
 
 /** GET /api/seo/regenerate/[runId] — run detail + recent items */
 export async function GET(
@@ -17,7 +25,10 @@ export async function GET(
     const run = await db.seoRegenerationRun.findUnique({ where: { id: runId } });
     if (!run) return NextResponse.json({ error: "Run not found" }, { status: 404 });
 
-    const items = await db.seoRegenerationItem.findMany({
+    const health = await getRegenerationSchemaHealth();
+    const schemaDegraded = !health.generationMetaJson;
+
+    const items = await safeRegenerationItemFindMany({
       where: { runId },
       orderBy: { updatedAt: "desc" },
       take: 50,
@@ -42,14 +53,34 @@ export async function GET(
       },
     });
 
-    return NextResponse.json({
+    const dashboard = await aggregateRunDashboardStats(runId);
+
+    const payload = {
+      success: true,
       run: serializeRunProgress(run),
       report: run.reportJson ? JSON.parse(run.reportJson) : null,
+      dashboard,
       items,
       versions,
-    });
+      schemaDegraded,
+    };
+
+    if (schemaDegraded) {
+      return NextResponse.json({
+        ...payload,
+        warning: schemaOutdatedJson().error,
+        code: "SCHEMA_OUTDATED",
+        action: schemaOutdatedJson().action,
+      });
+    }
+
+    return NextResponse.json(payload);
   } catch (error) {
+    if (isMissingColumnError(error)) {
+      logSchemaMismatchOnce();
+      return NextResponse.json(schemaOutdatedJson(), { status: 503 });
+    }
     logError(error, { component: "route:api/seo/regenerate/[runId] GET" });
-    return NextResponse.json({ error: "Failed to fetch run" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Failed to fetch run" }, { status: 500 });
   }
 }

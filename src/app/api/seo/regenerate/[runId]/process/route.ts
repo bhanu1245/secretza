@@ -24,7 +24,7 @@ export async function POST(
     const batchSize = typeof body.batchSize === "number" ? body.batchSize : undefined;
 
     const result = untilDone
-      ? await resumeRegenerationRun(runId)
+      ? await resumeRegenerationRun(runId, true)
       : await processRegenerationBatch(runId, batchSize);
 
     const run = await db.seoRegenerationRun.findUnique({ where: { id: runId } });

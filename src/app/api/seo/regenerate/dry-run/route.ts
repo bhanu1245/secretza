@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
 import { requireMinRole } from "@/lib/auth-helpers";
-import { db } from "@/lib/db";
 import { logError } from "@/lib/monitoring";
 import {
-  createRegenerationRun,
-  processRunUntilDone,
-  serializeRunProgress,
+  buildVirtualDryRunProgress,
+  formatDryRunPreviewResponse,
+  previewToStudioItem,
+  runDryRunBatch,
+} from "@/lib/seo-dry-run-service";
+import {
   resolvePagesForRegeneration,
   type RegenerationMode,
 } from "@/lib/seo-regeneration-service";
 
-/** POST /api/seo/regenerate/dry-run — preview without saving */
+/** POST /api/seo/regenerate/dry-run — V6.2 memory-only preview (zero DB writes) */
 export async function POST(request: Request) {
   try {
     const admin = await requireMinRole("admin");
@@ -19,8 +21,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const mode = (body.mode ?? "all") as RegenerationMode;
     const pageTypeFilter = body.pageTypeFilter ?? "city";
+    const batchSize = [10, 25, 50, 100].includes(body.batchSize) ? body.batchSize : 25;
 
-    const pages = await resolvePagesForRegeneration({
+    const allPages = await resolvePagesForRegeneration({
       mode,
       pageTypeFilter,
       citySlugs: body.citySlugs,
@@ -28,40 +31,58 @@ export async function POST(request: Request) {
       duplicateRisks: body.duplicateRisks,
     });
 
-    const { run } = await createRegenerationRun({
+    const pages = allPages.slice(0, batchSize).map((p) => ({
+      pageType: p.pageType,
+      pageSlug: p.pageSlug,
+    }));
+
+    const start = Date.now();
+    const batch = await runDryRunBatch({
+      pages,
+      mode: "regenerate",
+      concurrency: 3,
+    });
+
+    const run = buildVirtualDryRunProgress({
+      sessionId: batch.sessionId,
       mode,
-      dryRun: true,
-      batchSize: body.batchSize ?? 50,
-      pageTypeFilter,
-      citySlugs: body.citySlugs,
-      lowScoreThreshold: body.lowScoreThreshold,
-      duplicateRisks: body.duplicateRisks,
-      createdBy: { id: admin.id, email: admin.email },
+      dashboard: batch.dashboard,
+      errorCount: batch.errors.length,
+      createdByEmail: admin.email,
+      elapsedMs: Date.now() - start,
     });
 
-    await processRunUntilDone(run.id);
-
-    const updated = await db.seoRegenerationRun.findUnique({
-      where: { id: run.id },
-      include: {
-        items: {
-          where: { status: "completed" },
-          select: {
-            pageSlug: true,
-            predictedWords: true,
-            predictedUnique: true,
-            predictedScore: true,
-            predictedRisk: true,
-          },
-        },
-      },
-    });
+    const report = {
+      pagesProcessed: batch.dashboard.totalPages,
+      pagesUpdated: batch.dashboard.wouldSaveCount,
+      pagesImproved: batch.previews.filter((p) => (p.delta.uniqueness ?? 0) > 0).length,
+      pagesUnchanged: batch.previews.filter((p) => !p.wouldSave).length,
+      pagesSkipped: batch.errors.length,
+      failures: batch.errors.length,
+      averagePriorUniqueness:
+        batch.previews.length > 0
+          ? batch.previews.reduce((s, p) => s + (p.before.uniqueness ?? 0), 0) / batch.previews.length
+          : null,
+      averageUniqueness: batch.dashboard.avgUniqueness,
+      averagePriorSeoScore:
+        batch.previews.length > 0
+          ? batch.previews.reduce((s, p) => s + (p.before.seo ?? 0), 0) / batch.previews.length
+          : null,
+      averageSeoScore: batch.dashboard.avgSeo,
+    };
 
     return NextResponse.json({
-      totalPages: pages.length,
-      run: updated ? serializeRunProgress(updated) : serializeRunProgress(run),
-      report: updated?.reportJson ? JSON.parse(updated.reportJson) : null,
-      sampleItems: updated?.items.slice(0, 10) ?? [],
+      dryRun: true,
+      previewOnly: true,
+      sessionId: batch.sessionId,
+      totalPages: allPages.length,
+      processedPages: pages.length,
+      run,
+      report,
+      dashboard: batch.dashboard,
+      previews: batch.previews.map(formatDryRunPreviewResponse),
+      items: batch.previews.map((p) => previewToStudioItem(p)),
+      errors: batch.errors,
     });
   } catch (error) {
     logError(error, { component: "route:api/seo/regenerate/dry-run" });

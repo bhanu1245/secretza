@@ -1,6 +1,11 @@
 /**
  * Run-scoped cache for SEO peer pages used in uniqueness scoring.
  * Cleared between regeneration batches to release memory.
+ *
+ * When a background job run is active (`beginSeoJobRun`), calls to
+ * `clearSeoPeerCache` are silenced so the peer corpus survives across
+ * all batches in a single job.  The cache is flushed once when the job
+ * finishes (`endSeoJobRun`).
  */
 
 import { db } from "@/lib/db";
@@ -8,6 +13,30 @@ import type { SeoPageSnapshot } from "@/lib/seo-quality";
 import type { SeoPageType } from "@/lib/seo-page-service";
 
 const peerCache = new Map<string, SeoPageSnapshot[]>();
+
+// Job IDs that are currently being processed.  While this Set is non-empty,
+// clearSeoPeerCache() is a no-op so the cache survives mid-job batch clears.
+const activeJobRuns = new Set<string>();
+
+/**
+ * Signal that a job run has started.  Peer cache clears are suppressed
+ * until the matching endSeoJobRun() call.
+ */
+export function beginSeoJobRun(jobId: string): void {
+  activeJobRuns.add(jobId);
+}
+
+/**
+ * Signal that a job run has finished.  Removes the lock and immediately
+ * flushes the peer cache if no other jobs are still running.
+ */
+export function endSeoJobRun(jobId: string): void {
+  activeJobRuns.delete(jobId);
+  if (activeJobRuns.size === 0) {
+    peerCache.clear();
+    console.log("[seo-peer-cache] job run ended — peer cache flushed");
+  }
+}
 
 export function getSeoPeerLimit(): number {
   const parsed = parseInt(process.env.SEO_REGEN_PEER_LIMIT ?? "75", 10);
@@ -61,8 +90,17 @@ export async function getCachedPeerPages(
   return peers.filter((p) => p.pageSlug !== excludeSlug);
 }
 
-/** Release peer snapshots between batches to avoid heap growth. */
+/**
+ * Release peer snapshots.  If a job run is active the call is silenced —
+ * the cache will be flushed when endSeoJobRun() fires instead.
+ */
 export function clearSeoPeerCache(): void {
+  if (activeJobRuns.size > 0) {
+    console.log(
+      `[seo-peer-cache] clear skipped — job run active (${[...activeJobRuns].join(",")}), peer cache retained`,
+    );
+    return;
+  }
   peerCache.clear();
 }
 

@@ -4,7 +4,9 @@ import { db } from "@/lib/db";
 import { logError } from "@/lib/monitoring";
 import {
   createRegenerationRun,
-  processRunUntilDone,
+  kickOffRegenerationProcessing,
+  processRegenerationBatch,
+  resumeStaleRegenerationRuns,
   serializeRunProgress,
   type CreateRunInput,
   type RegenerationMode,
@@ -15,6 +17,8 @@ export async function GET(request: Request) {
   try {
     const admin = await requireMinRole("admin");
     if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    await resumeStaleRegenerationRuns();
 
     const { searchParams } = new URL(request.url);
     const limit = Math.min(50, parseInt(searchParams.get("limit") || "20", 10));
@@ -40,8 +44,9 @@ export async function POST(request: Request) {
     if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
+    if (process.env.SEO_DEBUG === "true") console.log("API_RECEIVED", body);
     const mode = body.mode as RegenerationMode;
-    const validModes = ["all", "selected_cities", "duplicate_risk", "low_score", "below_words"];
+    const validModes = ["all", "selected_cities", "selected_pages", "duplicate_risk", "low_score", "below_words"];
     if (!validModes.includes(mode)) {
       return NextResponse.json({ error: "Invalid mode" }, { status: 400 });
     }
@@ -53,6 +58,7 @@ export async function POST(request: Request) {
       batchSize: typeof body.batchSize === "number" ? body.batchSize : 25,
       pageTypeFilter: body.pageTypeFilter ?? null,
       citySlugs: Array.isArray(body.citySlugs) ? body.citySlugs : undefined,
+      pageIds: Array.isArray(body.pageIds) ? body.pageIds : undefined,
       lowScoreThreshold: typeof body.lowScoreThreshold === "number" ? body.lowScoreThreshold : undefined,
       duplicateRisks: Array.isArray(body.duplicateRisks) ? body.duplicateRisks : undefined,
       createdBy: { id: admin.id, email: admin.email },
@@ -68,14 +74,18 @@ export async function POST(request: Request) {
       });
     }
 
-    const processResult = await processRunUntilDone(run.id);
+    const firstBatch = await processRegenerationBatch(run.id);
+    if (!firstBatch.done) {
+      kickOffRegenerationProcessing(run.id);
+    }
 
     const updated = await db.seoRegenerationRun.findUnique({ where: { id: run.id } });
 
     return NextResponse.json({
       run: updated ? serializeRunProgress(updated) : serializeRunProgress(run),
       requiresConfirmation: false,
-      processResult,
+      processResult: firstBatch,
+      background: !firstBatch.done,
       report: updated?.reportJson ? JSON.parse(updated.reportJson) : null,
     });
   } catch (error) {

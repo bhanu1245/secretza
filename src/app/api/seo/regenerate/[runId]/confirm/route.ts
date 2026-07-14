@@ -4,7 +4,9 @@ import { db } from "@/lib/db";
 import { logError } from "@/lib/monitoring";
 import {
   confirmRegenerationRun,
-  processRunUntilDone,
+  kickOffRegenerationProcessing,
+  processRegenerationBatch,
+  recomputeRunCounters,
   serializeRunProgress,
 } from "@/lib/seo-regeneration-service";
 
@@ -18,14 +20,23 @@ export async function POST(
     if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { runId } = await params;
+    console.log("SEO_REGEN_CONFIRM", { runId });
     await confirmRegenerationRun(runId);
-    const processResult = await processRunUntilDone(runId);
+    await recomputeRunCounters(runId);
+
+    const firstBatch = await processRegenerationBatch(runId);
+    console.log("SEO_REGEN_FIRST_BATCH", { runId, processed: firstBatch.processed, done: firstBatch.done });
+
+    if (!firstBatch.done) {
+      kickOffRegenerationProcessing(runId);
+    }
 
     const run = await db.seoRegenerationRun.findUnique({ where: { id: runId } });
 
     return NextResponse.json({
       run: run ? serializeRunProgress(run) : null,
-      processResult,
+      processResult: firstBatch,
+      background: !firstBatch.done,
       report: run?.reportJson ? JSON.parse(run.reportJson) : null,
     });
   } catch (error) {

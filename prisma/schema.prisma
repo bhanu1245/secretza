@@ -719,6 +719,7 @@ model SeoPage {
   faqs               SeoFaq[]
   contentVersions    SeoContentVersion[]
   regenerationItems  SeoRegenerationItem[]
+  jobItems           SeoJobItem[]
 
   @@unique([pageType, pageSlug])
   @@index([pageType])
@@ -774,11 +775,12 @@ model SeoRegenerationItem {
   predictedUnique Float?
   predictedScore  Float?
   predictedRisk   String?
-  versionId       String?
-  processedAt     DateTime?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  run             SeoRegenerationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  versionId           String?
+  generationMetaJson  String?
+  processedAt         DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  run                 SeoRegenerationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
   seoPage         SeoPage?           @relation(fields: [seoPageId], references: [id], onDelete: SetNull)
 
   @@index([runId, status])
@@ -823,6 +825,59 @@ model SeoFaq {
   updatedAt DateTime @updatedAt
   seoPage   SeoPage  @relation(fields: [seoPageId], references: [id], onDelete: Cascade)
 
+  @@index([seoPageId])
+}
+
+// ============================================================================
+// SEO Job Queue (Dashboard V2 Phase 4)
+// ============================================================================
+
+model SeoJob {
+  id                     String       @id @default(cuid())
+  jobType                String
+  status                 String       @default("queued")
+  progress               Float        @default(0)
+  total                  Int          @default(0)
+  processed              Int          @default(0)
+  successCount           Int          @default(0)
+  failedCount            Int          @default(0)
+  skippedCount           Int          @default(0)
+  batchSize              Int          @default(100)
+  lastProcessedId        String?
+  lastCheckpointAt       DateTime?
+  estimatedTimeRemaining Int?
+  startedAt              DateTime?
+  completedAt            DateTime?
+  createdById            String?
+  createdByEmail         String?
+  payloadJson            String?
+  issueTypesJson         String?
+  errorLog               String?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  items                  SeoJobItem[]
+
+  @@index([status])
+  @@index([jobType, status])
+  @@index([createdAt(sort: Desc)])
+}
+
+model SeoJobItem {
+  id          String    @id @default(cuid())
+  jobId       String
+  seoPageId   String?
+  pageType    String
+  pageSlug    String
+  status      String    @default("queued")
+  error       String?
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  job         SeoJob    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  seoPage     SeoPage?  @relation(fields: [seoPageId], references: [id], onDelete: SetNull)
+
+  @@index([jobId, status])
+  @@index([jobId, seoPageId])
   @@index([seoPageId])
 }
 
