@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, type ComponentType } from 'react';
+import { useState, useEffect, useCallback, useRef, type ComponentType } from 'react';
 import { toast } from 'sonner';
 import {
   BarChart,
@@ -43,11 +43,13 @@ import {
   Map as MapIcon,
   Link2,
   RotateCcw,
+  ListTodo,
 } from 'lucide-react';
 import type { SeoDashboardMetrics } from '@/lib/seo-dashboard-metrics';
 import { SeoHealthOverviewWidget } from '@/components/secretza/admin/seo-dashboard-v2/SeoHealthOverviewWidget';
 import { SeoRegenerationMonitorWidget } from '@/components/secretza/admin/seo-dashboard-v2/SeoRegenerationMonitorWidget';
 import { SeoSitemapDashboardWidget } from '@/components/secretza/admin/seo-dashboard-v2/SeoSitemapDashboardWidget';
+import { SeoJobQueueWidget } from '@/components/secretza/admin/seo-dashboard-v2/SeoJobQueueWidget';
 
 type DashboardData = SeoDashboardMetrics & { loadTimeMs?: number };
 
@@ -163,37 +165,58 @@ export default function SeoDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
+  const [highlightJobId, setHighlightJobId] = useState<string | null>(null);
+  const fetchControllerRef = useRef<AbortController | null>(null);
 
-  const fetchDashboard = useCallback(
-    (showToast = false) => {
-      setLoading(true);
-      const started = performance.now();
-      fetch(`/api/seo/dashboard?days=${days}`)
-        .then((res) => {
-          if (!res.ok) throw new Error('Failed to fetch');
-          return res.json();
-        })
-        .then((res: DashboardData) => {
-          setData(res);
-          const clientMs = Math.round(performance.now() - started);
-          if (showToast) {
-            toast.success(`Dashboard refreshed (${res.loadTimeMs ?? clientMs}ms server)`);
-          }
-        })
-        .catch(() => {
-          toast.error(showToast ? 'Failed to refresh SEO dashboard' : 'Failed to load SEO dashboard');
-        })
-        .finally(() => setLoading(false));
-    },
-    [days],
-  );
+  const fetchDashboard = useCallback(async (showToast = false) => {
+    fetchControllerRef.current?.abort();
+    const controller = new AbortController();
+    fetchControllerRef.current = controller;
+
+    setLoading(true);
+    const started = performance.now();
+    try {
+      const res = await fetch(`/api/seo/dashboard?days=${days}`, {
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error('Failed to fetch');
+      const json = (await res.json()) as DashboardData;
+      if (controller.signal.aborted) return;
+      setData(json);
+      const clientMs = Math.round(performance.now() - started);
+      if (showToast) {
+        toast.success(`Dashboard refreshed (${json.loadTimeMs ?? clientMs}ms server)`);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      toast.error(showToast ? 'Failed to refresh SEO dashboard' : 'Failed to load SEO dashboard');
+    } finally {
+      if (fetchControllerRef.current === controller) {
+        setLoading(false);
+      }
+    }
+  }, [days]);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      fetchDashboard();
-    }, 0);
+    void fetchDashboard();
 
-    return () => window.clearTimeout(timeoutId);
+    const handleRefreshEvent = () => {
+      console.log("REFRESH_TRIGGERED");
+      void fetchDashboard();
+    };
+    window.addEventListener('seo_dashboard_refresh', handleRefreshEvent);
+
+    const handleJobHighlight = (e: Event) => {
+      const detail = (e as CustomEvent<{ jobId?: string }>).detail;
+      if (detail?.jobId) setHighlightJobId(detail.jobId);
+    };
+    window.addEventListener('seo_job_highlight', handleJobHighlight);
+
+    return () => {
+      fetchControllerRef.current?.abort();
+      window.removeEventListener('seo_dashboard_refresh', handleRefreshEvent);
+      window.removeEventListener('seo_job_highlight', handleJobHighlight);
+    };
   }, [fetchDashboard]);
 
   if (loading && !data) {
@@ -306,6 +329,7 @@ export default function SeoDashboard() {
               ['Missing FAQ', issues.missingFaq],
               ['Missing structured data', issues.missingStructuredData],
               [`Missing internal links (<${issues.minInternalLinks})`, issues.missingInternalLinks],
+              ['Broken internal links', issues.brokenInternalLinks ?? 0],
             ].map(([label, count]) => (
               <div key={String(label)} className="flex justify-between p-2 rounded bg-[#1E1E2A]">
                 <span className="text-[#A1A1AA]">{label}</span>
@@ -360,6 +384,14 @@ export default function SeoDashboard() {
           <RotateCcw className="size-5" /> SEO Regeneration Monitor
         </h2>
         <SeoRegenerationMonitorWidget />
+      </div>
+
+      {/* V2 Widget: Background Job Queue */}
+      <div className="lg:col-span-full">
+        <h2 className="text-lg font-bold text-[#F5F5F7] mt-8 mb-4 flex items-center gap-2">
+          <ListTodo className="size-5" /> Background Job Queue
+        </h2>
+        <SeoJobQueueWidget highlightJobId={highlightJobId} />
       </div>
 
       {/* Duplicate risk pages */}

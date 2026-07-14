@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Layers, Loader2, MapPin } from "lucide-react";
+import { AlertTriangle, Layers, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +16,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { buildGeoCascadeUrl } from "@/lib/admin-geo-form";
+import SeoReviewStudio from "@/components/secretza/admin/SeoReviewStudio";
+import {
+  DEFAULT_QUALITY_SETTINGS,
+  type QualitySettings,
+  type ReviewDashboard,
+  type ReviewPageRow,
+} from "@/types/seo-review";
+import {
+  clearCityPackPreviewSession,
+  loadCityPackPreviewSession,
+  saveCityPackPreviewSession,
+} from "@/lib/seo-city-pack-preview-storage";
+import {
+  logReviewLoadingFinished,
+  logReviewLoadingStarted,
+  REVIEW_LOADING_WATCHDOG_MS,
+  reviewStudioFetch,
+  reviewStudioPostJson,
+  ReviewStudioTimeoutError,
+} from "@/lib/review-studio-client";
 
 export type SeoGranularMode = "city_pack" | "single_city" | "category_city";
 
@@ -81,6 +103,55 @@ const MODE_CONFIG: Record<
 const fieldClass =
   "w-full rounded-lg border border-[rgba(255,255,255,0.1)] bg-[#0B0B0F] px-3 py-2 text-sm text-[#F5F5F7] focus:outline-none focus:ring-1 focus:ring-[#7C3AED] disabled:opacity-50";
 
+type DryRunPreviewPage = ReviewPageRow;
+
+type CityPackJobStatus = {
+  jobId: string;
+  status: string;
+  dryRun: boolean;
+  total: number;
+  completed: number;
+  created: number;
+  skipped: number;
+  failed: number;
+  percentComplete: number;
+  currentStage: string;
+  currentPage: string | null;
+  elapsedMs: number;
+  errors: string[];
+  previewReady?: boolean;
+  result: {
+    created: number;
+    skipped: number;
+    total: number;
+    cityName: string;
+    stateName?: string;
+    countryName?: string;
+  } | null;
+  qualitySettings?: QualitySettings;
+  dryRunPreview?: {
+    ready: boolean;
+    wouldSaveCount: number;
+    avgUniqueness: number | null;
+    avgSeo: number | null;
+    avgReadability: number | null;
+    failedPages: number;
+    pageCount: number;
+    dashboard?: ReviewDashboard;
+    pages?: DryRunPreviewPage[];
+  } | null;
+};
+
+const POLL_MS = 2000;
+const TERMINAL_STATUSES = new Set(["completed", "failed", "stalled", "cancelled"]);
+
+function formatElapsed(ms: number) {
+  const sec = Math.floor(ms / 1000);
+  const min = Math.floor(sec / 60);
+  if (min > 0) return `${min}m ${sec % 60}s`;
+  return `${sec}s`;
+}
+
 export default function AdminSeoGranularTools({
   mode,
   onModeChange,
@@ -102,10 +173,27 @@ export default function AdminSeoGranularTools({
   const [loadingGeo, setLoadingGeo] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [dryRun, setDryRun] = useState(true);
+  const [jobStatus, setJobStatus] = useState<CityPackJobStatus | null>(null);
+  const [showDryRunPreview, setShowDryRunPreview] = useState(false);
+  const [previewPages, setPreviewPages] = useState<DryRunPreviewPage[]>([]);
+  const [previewDashboard, setPreviewDashboard] = useState<ReviewDashboard | null>(null);
+  const [qualitySettings, setQualitySettings] = useState<QualitySettings>({
+    ...DEFAULT_QUALITY_SETTINGS,
+  });
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewUnavailable, setPreviewUnavailable] = useState(false);
+  const [previewTimedOut, setPreviewTimedOut] = useState(false);
+  const [committing, setCommitting] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const previewAbortRef = useRef<AbortController | null>(null);
+  const sessionRestoreRef = useRef(false);
 
   const isOpen = mode !== null;
   const config = mode ? MODE_CONFIG[mode] : null;
-  const isBusy = generating || disabled;
+  const isBusy = generating || committing || disabled;
 
   const resetForm = useCallback(() => {
     setCountryId("");
@@ -115,7 +203,196 @@ export default function AdminSeoGranularTools({
     setPreview(null);
     setStates([]);
     setCities([]);
+    setJobStatus(null);
+    setShowDryRunPreview(false);
+    setPreviewPages([]);
+    setPreviewDashboard(null);
+    setPreviewLoading(false);
+    setPreviewError(null);
+    setPreviewUnavailable(false);
+    setPreviewTimedOut(false);
+    setCommitting(false);
+    sessionRestoreRef.current = false;
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+    abortRef.current?.abort();
+    abortRef.current = null;
+    previewAbortRef.current?.abort();
+    previewAbortRef.current = null;
   }, []);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  const pollJob = useCallback(async (jobId: string, signal?: AbortSignal) => {
+    const res = await reviewStudioFetch(
+      `/api/admin/seo/generate-city-pack?jobId=${jobId}`,
+      {},
+      { label: "pollJob", externalSignal: signal },
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Failed to load job status");
+    const job = data.job as CityPackJobStatus;
+    setJobStatus(job);
+    return job;
+  }, []);
+
+  const loadPreview = useCallback(async (jobId: string) => {
+    console.log("ReviewStudio: loadPreview() called", { jobId });
+    previewAbortRef.current?.abort();
+    const controller = new AbortController();
+    previewAbortRef.current = controller;
+
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setPreviewUnavailable(false);
+    setPreviewTimedOut(false);
+    logReviewLoadingStarted("loadPreview");
+
+    const MAX_PREVIEW_RETRIES = 8;
+    const RETRY_DELAY_MS = 2000;
+
+    try {
+      for (let attempt = 0; attempt < MAX_PREVIEW_RETRIES; attempt++) {
+        if (controller.signal.aborted) {
+          console.log("ReviewStudio: loadPreview() aborted");
+          return;
+        }
+
+        const res = await reviewStudioFetch(
+          `/api/admin/seo/generate-city-pack?jobId=${jobId}&includePreview=true`,
+          {},
+          { label: `loadPreview attempt ${attempt + 1}`, externalSignal: controller.signal },
+        );
+        const data = await res.json();
+
+        if (res.status === 202) {
+          console.log("ReviewStudio: loadPreview() preview not ready (202)", { attempt });
+          if (attempt < MAX_PREVIEW_RETRIES - 1) {
+            await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+            continue;
+          }
+          throw new Error(data.error ?? "Preview not ready yet — try again shortly");
+        }
+
+        if (!res.ok) throw new Error(data.error ?? "Failed to load preview");
+
+        const job = data.job as CityPackJobStatus;
+        const pages = job.dryRunPreview?.pages ?? [];
+
+        if (!pages.length) {
+          const allSkipped =
+            job.status === "completed" && (job.skipped ?? 0) >= (job.total ?? 0) && (job.total ?? 0) > 0;
+          if (allSkipped) {
+            setJobStatus(job);
+            setPreviewPages([]);
+            setPreviewDashboard(job.dryRunPreview?.dashboard ?? null);
+            if (job.qualitySettings) setQualitySettings(job.qualitySettings);
+            setShowDryRunPreview(true);
+            setPreviewUnavailable(false);
+            saveCityPackPreviewSession({
+              jobId,
+              cityId: cityId || "",
+              cityName: job.result?.cityName ?? preview?.cityName ?? "City",
+            });
+            toast.info("Dry run complete — all pages already exist, nothing to preview");
+            return;
+          }
+
+          setJobStatus(job);
+          setPreviewPages([]);
+          setShowDryRunPreview(true);
+          setPreviewUnavailable(true);
+          setPreviewError("No preview available");
+          console.warn("ReviewStudio: loadPreview() empty preview", { jobId, jobStatus: job.status });
+          return;
+        }
+
+        setJobStatus(job);
+        setPreviewPages(pages);
+        setPreviewDashboard(job.dryRunPreview?.dashboard ?? null);
+        if (job.qualitySettings) setQualitySettings(job.qualitySettings);
+        setShowDryRunPreview(true);
+        setPreviewUnavailable(false);
+        saveCityPackPreviewSession({
+          jobId,
+          cityId: cityId || "",
+          cityName: job.result?.cityName ?? preview?.cityName ?? "City",
+        });
+        console.log("ReviewStudio: loadPreview() success", { jobId, pageCount: pages.length });
+        toast.success(`Dry run preview ready — ${pages.length} page(s)`);
+        return;
+      }
+    } catch (err) {
+      if (controller.signal.aborted) return;
+
+      const msg =
+        err instanceof ReviewStudioTimeoutError
+          ? "Request timed out after 60 seconds. Please retry."
+          : err instanceof Error
+            ? err.message
+            : "Failed to load preview";
+
+      console.error("ReviewStudio: loadPreview() failed", err);
+      setPreviewError(msg);
+      setPreviewTimedOut(err instanceof ReviewStudioTimeoutError);
+      setShowDryRunPreview(false);
+      setPreviewUnavailable(false);
+      toast.error(msg);
+    } finally {
+      if (previewAbortRef.current === controller) {
+        previewAbortRef.current = null;
+      }
+      setPreviewLoading(false);
+      logReviewLoadingFinished("loadPreview");
+    }
+  }, [cityId, preview?.cityName]);
+
+  useEffect(() => {
+    return () => {
+      stopPolling();
+      abortRef.current?.abort();
+    };
+  }, [stopPolling]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      sessionRestoreRef.current = false;
+      return;
+    }
+    if (
+      mode !== "city_pack" ||
+      showDryRunPreview ||
+      generating ||
+      previewLoading ||
+      sessionRestoreRef.current
+    ) {
+      return;
+    }
+    const stored = loadCityPackPreviewSession();
+    if (!stored?.jobId) return;
+    sessionRestoreRef.current = true;
+    console.log("ReviewStudio: restoring session preview", { jobId: stored.jobId });
+    void loadPreview(stored.jobId);
+  }, [isOpen, mode, showDryRunPreview, generating, previewLoading, loadPreview]);
+
+  useEffect(() => {
+    if (!previewLoading) return;
+    const watchdog = setTimeout(() => {
+      console.warn("ReviewStudio: loadPreview watchdog fired (>90s)");
+      previewAbortRef.current?.abort();
+      setPreviewLoading(false);
+      setPreviewTimedOut(true);
+      setPreviewError("Operation taking longer than expected. Please retry.");
+    }, REVIEW_LOADING_WATCHDOG_MS);
+    return () => clearTimeout(watchdog);
+  }, [previewLoading]);
 
   const loadCountries = useCallback(async () => {
     const res = await fetch("/api/admin/geo/countries?limit=100");
@@ -215,22 +492,196 @@ export default function AdminSeoGranularTools({
       .finally(() => setLoadingPreview(false));
   }, [cityId, categoryId, mode, config]);
 
+  const handleCloseModal = useCallback(() => {
+    console.log("ReviewStudio: modal close — resetting loading state");
+    stopPolling();
+    abortRef.current?.abort();
+    previewAbortRef.current?.abort();
+    setPreviewLoading(false);
+    setGenerating(false);
+    setCommitting(false);
+    onModeChange(null);
+  }, [onModeChange, stopPolling]);
+
+  const handleDiscardPreview = useCallback(async () => {
+    if (!jobStatus?.jobId) {
+      handleCloseModal();
+      return;
+    }
+    console.log("ReviewStudio: discard() started", { jobId: jobStatus.jobId });
+    setCommitting(true);
+    try {
+      await reviewStudioPostJson({ action: "discard", jobId: jobStatus.jobId }, "discard");
+      console.log("ReviewStudio: discard() completed", { jobId: jobStatus.jobId });
+      clearCityPackPreviewSession();
+      toast.info("Preview discarded — no changes saved");
+      handleCloseModal();
+    } catch (err) {
+      console.error("ReviewStudio: discard() failed", err);
+      toast.error(err instanceof Error ? err.message : "Discard failed");
+    } finally {
+      setCommitting(false);
+    }
+  }, [handleCloseModal, jobStatus?.jobId]);
+
+  const handleCommitPreview = useCallback(
+    async (
+      commitMode: "production_only" | "selected" | "all_anyway" = "production_only",
+      slugs?: string[],
+    ) => {
+      if (!jobStatus?.jobId) return;
+      console.log("ReviewStudio: commit() started", {
+        jobId: jobStatus.jobId,
+        mode: commitMode,
+        slugCount: slugs?.length ?? 0,
+      });
+      setCommitting(true);
+      try {
+        const data = await reviewStudioPostJson<{
+          committed: number;
+          rejected?: number;
+        }>(
+          {
+            action: "commit",
+            jobId: jobStatus.jobId,
+            mode: commitMode,
+            pageSlugs: slugs,
+          },
+          "commit",
+        );
+        console.log("ReviewStudio: commit() completed", {
+          jobId: jobStatus.jobId,
+          committed: data.committed,
+          mode: commitMode,
+        });
+        clearCityPackPreviewSession();
+        const rejected = data.rejected ?? 0;
+        toast.success(
+          `Committed ${data.committed} page(s)${rejected > 0 ? ` (${rejected} below quality threshold skipped)` : ""}`,
+        );
+        onComplete?.();
+        handleCloseModal();
+      } catch (err) {
+        console.error("ReviewStudio: commit() failed", err);
+        toast.error(err instanceof Error ? err.message : "Commit failed");
+      } finally {
+        setCommitting(false);
+      }
+    },
+    [handleCloseModal, jobStatus?.jobId, onComplete],
+  );
+
+  const handleJobFinished = useCallback(
+    (job: CityPackJobStatus) => {
+      const cityLabel = job.result?.cityName || preview?.cityName || "city";
+      if (job.status === "completed") {
+        if (job.dryRun) {
+          setGenerating(false);
+          console.log("ReviewStudio: job completed — loading preview", { jobId: job.jobId });
+          void loadPreview(job.jobId);
+          return;
+        }
+        if ((job.result?.created ?? job.created) > 0) {
+          toast.success(
+            `Generated ${job.result?.created ?? job.created} SEO page(s) for ${cityLabel}${
+              (job.result?.skipped ?? job.skipped) > 0
+                ? ` (${job.result?.skipped ?? job.skipped} already existed)`
+                : ""
+            }`,
+          );
+        } else if ((job.result?.skipped ?? job.skipped) > 0) {
+          toast.info(`All pages already exist for ${cityLabel}. Nothing to generate.`);
+        } else {
+          toast.success("Generation complete");
+        }
+        onModeChange(null);
+        onComplete?.();
+      } else if (job.status === "stalled") {
+        setGenerating(false);
+        toast.error("Generation stalled — no progress for 60s. Click Retry to start again.");
+      } else if (job.status === "failed") {
+        setGenerating(false);
+        toast.error(job.errors[job.errors.length - 1] ?? "Generation failed");
+      }
+    },
+    [loadPreview, onComplete, onModeChange, preview?.cityName],
+  );
+
+  const startJobPolling = useCallback(
+    (jobId: string) => {
+      stopPolling();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      const tick = async () => {
+        try {
+          const job = await pollJob(jobId, controller.signal);
+          if (TERMINAL_STATUSES.has(job.status)) {
+            stopPolling();
+            setGenerating(false);
+            handleJobFinished(job);
+          }
+        } catch (err) {
+          if (controller.signal.aborted) return;
+          stopPolling();
+          setGenerating(false);
+          toast.error(err instanceof Error ? err.message : "Lost connection to job");
+        }
+      };
+
+      void tick();
+      pollRef.current = setInterval(() => void tick(), POLL_MS);
+    },
+    [handleJobFinished, pollJob, stopPolling],
+  );
+
   const handleGenerate = async () => {
     if (!config || !cityId) return;
     if (mode === "category_city" && !categoryId) return;
 
     setGenerating(true);
+    setJobStatus(null);
+    stopPolling();
+    abortRef.current?.abort();
+
     try {
-      const body: Record<string, string> = { cityId };
+      const body: Record<string, string | boolean> = { cityId };
       if (mode === "category_city") body.categoryId = categoryId;
+      if (mode === "city_pack") body.dryRun = dryRun;
+
+      const controller = new AbortController();
+      abortRef.current = controller;
 
       const res = await fetch(config.generatePath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Generation failed");
+
+      if (mode === "city_pack" && data.jobId) {
+        setJobStatus({
+          jobId: data.jobId,
+          status: data.status ?? "queued",
+          dryRun: data.dryRun === true,
+          total: data.total ?? preview?.total ?? 0,
+          completed: 0,
+          created: 0,
+          skipped: 0,
+          failed: 0,
+          percentComplete: 0,
+          currentStage: "queued",
+          currentPage: null,
+          elapsedMs: 0,
+          errors: [],
+          result: null,
+        });
+        toast.info(data.dryRun ? "Dry run started…" : "Generation started…");
+        startJobPolling(data.jobId);
+        return;
+      }
 
       const cityLabel = data.cityName || preview?.cityName || "city";
       if (data.created > 0) {
@@ -248,9 +699,12 @@ export default function AdminSeoGranularTools({
       onModeChange(null);
       onComplete?.();
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(err instanceof Error ? err.message : "Generation failed");
     } finally {
-      setGenerating(false);
+      if (mode !== "city_pack") {
+        setGenerating(false);
+      }
     }
   };
 
@@ -261,11 +715,23 @@ export default function AdminSeoGranularTools({
     !!preview &&
     !loadingPreview &&
     !generating &&
+    !showDryRunPreview &&
     (mode !== "category_city" || !!categoryId);
 
+  const showConfigForm = !showDryRunPreview && !previewLoading;
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !isBusy && onModeChange(open ? mode : null)}>
-      <DialogContent className="bg-[#15151D] border-[rgba(255,255,255,0.08)] max-w-md">
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open && !generating) handleCloseModal();
+      }}
+    >
+      <DialogContent
+        className={`bg-[#15151D] border-[rgba(255,255,255,0.08)] ${
+          showDryRunPreview ? "max-w-5xl max-h-[90vh] overflow-y-auto" : "max-w-md"
+        }`}
+      >
         <DialogHeader>
           <DialogTitle className="text-[#F5F5F7] flex items-center gap-2">
             {mode === "city_pack" ? (
@@ -273,12 +739,99 @@ export default function AdminSeoGranularTools({
             ) : (
               <MapPin className="size-4 text-[#7C3AED]" />
             )}
-            {config?.title}
+            {showDryRunPreview ? "SEO Review Studio — Dry Run Preview" : config?.title}
           </DialogTitle>
-          <DialogDescription className="text-[#A1A1AA]">{config?.description}</DialogDescription>
+          <DialogDescription className="text-[#A1A1AA]">
+            {showDryRunPreview
+              ? "No changes have been written. Review results, then commit or discard."
+              : config?.description}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
+          {previewLoading && (
+            <div className="flex flex-col items-center gap-2 py-6 text-sm text-[#A1A1AA]">
+              <Loader2 className="size-6 animate-spin text-violet-400" />
+              Loading preview results…
+              {previewTimedOut && (
+                <p className="text-xs text-amber-400">Taking longer than expected…</p>
+              )}
+            </div>
+          )}
+
+          {previewError && !previewLoading && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 space-y-2">
+              <p className="text-sm text-red-300 flex items-center gap-2">
+                <AlertTriangle className="size-4 shrink-0" />
+                {previewError}
+              </p>
+              {jobStatus?.jobId && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs w-full"
+                  onClick={() => {
+                    sessionRestoreRef.current = false;
+                    setPreviewTimedOut(false);
+                    void loadPreview(jobStatus.jobId);
+                  }}
+                >
+                  Retry Load Preview
+                </Button>
+              )}
+            </div>
+          )}
+
+          {showDryRunPreview && previewUnavailable && !previewLoading && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 space-y-2 text-center">
+              <p className="text-sm text-amber-300 flex items-center justify-center gap-2">
+                <AlertTriangle className="size-4 shrink-0" />
+                No preview available
+              </p>
+              <p className="text-xs text-[#A1A1AA]">
+                The dry run completed but no preview data was returned. The job may have expired.
+              </p>
+              {jobStatus?.jobId && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => void loadPreview(jobStatus.jobId)}
+                >
+                  Retry
+                </Button>
+              )}
+            </div>
+          )}
+
+          {showDryRunPreview && previewPages.length === 0 && !previewUnavailable && !previewLoading && (
+            <div className="rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#0E0E17] p-4 text-sm text-[#A1A1AA] text-center">
+              All pages for this city already exist. Nothing new was generated in this dry run.
+            </div>
+          )}
+
+          {showDryRunPreview && previewPages.length > 0 && jobStatus?.jobId && (
+            <SeoReviewStudio
+              jobId={jobStatus.jobId}
+              pages={previewPages}
+              dashboard={previewDashboard}
+              qualitySettings={qualitySettings}
+              onPagesChange={(pages, dashboard) => {
+                setPreviewPages(pages);
+                if (dashboard) setPreviewDashboard(dashboard);
+              }}
+              onQualitySettingsChange={setQualitySettings}
+              onCommit={handleCommitPreview}
+              onDiscard={handleDiscardPreview}
+              onClose={() => setShowDryRunPreview(false)}
+              committing={committing}
+            />
+          )}
+
+          {showConfigForm && (
+          <>
           <div>
             <label className="mb-1 block text-xs font-medium text-[#A1A1AA]">Country</label>
             <select
@@ -356,7 +909,67 @@ export default function AdminSeoGranularTools({
             </div>
           )}
 
-          {preview && !loadingPreview && (
+          {mode === "city_pack" && (
+            <div className="flex items-center justify-between rounded-lg border border-[rgba(255,255,255,0.08)] p-2">
+              <Label htmlFor="city-pack-dry-run" className="text-xs text-[#A1A1AA]">
+                Dry run (preview only, no DB writes)
+              </Label>
+              <Switch
+                id="city-pack-dry-run"
+                checked={dryRun}
+                onCheckedChange={setDryRun}
+                disabled={isBusy}
+              />
+            </div>
+          )}
+
+          {jobStatus && generating && !showDryRunPreview && !previewLoading && (
+            <div className="rounded-lg border border-violet-500/30 bg-violet-500/5 p-3 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-violet-300 font-medium capitalize">
+                  {jobStatus.status === "stalled" ? (
+                    <span className="inline-flex items-center gap-1 text-amber-400">
+                      <AlertTriangle className="size-3" /> Stalled
+                    </span>
+                  ) : (
+                    <>
+                      {jobStatus.dryRun ? "Dry run" : "Generating"} — {jobStatus.currentStage.replace(/_/g, " ")}
+                    </>
+                  )}
+                </span>
+                <span className="text-[#A1A1AA]">{jobStatus.percentComplete}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-[#0B0B0F] overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-violet-500 to-emerald-500 transition-all duration-500"
+                  style={{ width: `${jobStatus.percentComplete}%` }}
+                />
+              </div>
+              <div className="flex flex-wrap gap-3 text-[10px] text-[#A1A1AA]">
+                <span>{jobStatus.completed}/{jobStatus.total} pages</span>
+                <span className="text-emerald-400">{jobStatus.created} created</span>
+                <span>{jobStatus.skipped} skipped</span>
+                {jobStatus.failed > 0 && <span className="text-red-400">{jobStatus.failed} failed</span>}
+                <span>{formatElapsed(jobStatus.elapsedMs)}</span>
+              </div>
+              {jobStatus.currentPage && (
+                <p className="text-[10px] text-[#6B6B7A] font-mono truncate">{jobStatus.currentPage}</p>
+              )}
+              {jobStatus.status === "stalled" && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs w-full"
+                  onClick={() => void handleGenerate()}
+                >
+                  Retry
+                </Button>
+              )}
+            </div>
+          )}
+
+          {preview && !loadingPreview && showConfigForm && (
             <div className="rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#0E0E17] p-3 space-y-1.5">
               <p className="text-sm text-[#F5F5F7]">
                 <span className="text-[#A1A1AA]">City:</span> {preview.cityName}
@@ -382,33 +995,57 @@ export default function AdminSeoGranularTools({
               )}
             </div>
           )}
+          </>
+          )}
         </div>
 
         <DialogFooter className="gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onModeChange(null)}
-            disabled={isBusy}
-            className="border-white/10 bg-transparent text-[#A1A1AA]"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleGenerate}
-            disabled={!canConfirm || isBusy}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="size-4 mr-2 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              config?.confirmLabel
-            )}
-          </Button>
+          {showDryRunPreview && previewPages.length > 0 ? null : showDryRunPreview ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseModal}
+                disabled={committing}
+                className="border-white/10 bg-transparent text-[#A1A1AA]"
+              >
+                Close
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseModal}
+                disabled={generating || committing}
+                className="border-white/10 bg-transparent text-[#A1A1AA]"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => void handleGenerate()}
+                disabled={!canConfirm || isBusy}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="size-4 mr-2 animate-spin" />
+                    {jobStatus?.dryRun
+                      ? `Dry run… ${jobStatus.percentComplete}%`
+                      : jobStatus
+                        ? `Generating… ${jobStatus.percentComplete}%`
+                        : "Generating…"}
+                  </>
+                ) : (
+                  mode === "city_pack" && dryRun
+                    ? "Preview SEO Pack (Dry Run)"
+                    : config?.confirmLabel
+                )}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

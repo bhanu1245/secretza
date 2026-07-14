@@ -170,7 +170,12 @@ export default function SeoManager() {
   const [pages, setPages] = useState<SeoPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [pageType, setPageType] = useState<PageTypeOption>('all');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('search') || '';
+    }
+    return '';
+  });
   const [isPublishedFilter, setIsPublishedFilter] = useState<boolean | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

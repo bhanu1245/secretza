@@ -56,7 +56,7 @@ export function SeoRegenerationMonitorWidget() {
 
   if (!data) return null;
 
-  const { metrics, history } = data;
+  const { metrics, history, v61 } = data;
 
   return (
     <div className="space-y-4">
@@ -188,6 +188,36 @@ export function SeoRegenerationMonitorWidget() {
           </CardContent>
         </Card>
       </div>
+
+      {v61 && (
+        <Card className="bg-[#15151D] border-[rgba(255,255,255,0.08)]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-[#F5F5F7]">V6.1 Engine Stats</CardTitle>
+            <CardDescription className="text-xs text-[#A1A1AA]">Per-page generation metrics (last {days} days)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+              {[
+                ["Avg time/page", v61.avgGenerationTimeMs != null ? `${(v61.avgGenerationTimeMs / 1000).toFixed(1)}s` : "—"],
+                ["Uniq. improvement", v61.avgUniquenessImprovement != null ? `+${v61.avgUniquenessImprovement}%` : "—"],
+                ["Retries", v61.totalRetries],
+                ["Candidates", v61.totalCandidatesEvaluated],
+                ["Paras rewritten", v61.totalParagraphsRewritten],
+                ["Conflicts fixed", v61.totalConflictsFixed],
+                ["Auto-saved", v61.pagesAutoSaved],
+                ["Manual review", v61.pagesManualReview],
+                ["Partial regen", v61.pagesPartialRegen],
+                ["Est. tokens", v61.estimatedTokenCost?.toLocaleString() ?? "0"],
+              ].map(([label, value]) => (
+                <div key={String(label)} className="bg-[#0E0E17] rounded-lg p-3">
+                  <p className="text-[#71717A]">{label}</p>
+                  <p className="text-lg font-semibold text-[#F5F5F7] mt-0.5">{value}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <SeoRegenerationQueueModal open={queueOpen} onOpenChange={setQueueOpen} />
     </div>

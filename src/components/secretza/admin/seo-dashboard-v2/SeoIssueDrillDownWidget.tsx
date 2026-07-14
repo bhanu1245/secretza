@@ -13,8 +13,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { getSeoPagePublicUrl } from "@/lib/seo-public-page";
+import { apiFetch } from "@/lib/api-client";
+import { BULK_ACTION_TO_JOB_TYPE } from "@/lib/seo-job-types";
 
 export type IssueType =
   | "missing_title"
@@ -28,7 +36,8 @@ export type IssueType =
   | "duplicate_titles"
   | "duplicate_meta"
   | "duplicate_h1"
-  | "duplicate_content";
+  | "duplicate_content"
+  | "broken_internal_links";
 
 interface DrillDownProps {
   open: boolean;
@@ -37,6 +46,13 @@ interface DrillDownProps {
   issueName: string;
   issueDescription: string;
 }
+
+const BULK_ACTION_LABELS: Record<string, string> = {
+  auto_fix: "Auto Fix",
+  regenerate: "Regenerate",
+  generate_missing: "Generate Missing Meta",
+  repair_canonical: "Repair Canonicals",
+};
 
 export function SeoIssueDrillDownWidget({
   open,
@@ -60,6 +76,19 @@ export function SeoIssueDrillDownWidget({
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [fixConfirmOpen, setFixConfirmOpen] = useState(false);
   const [pageToFix, setPageToFix] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [pendingBulkAction, setPendingBulkAction] = useState<string | null>(null);
+  const [bulkPreview, setBulkPreview] = useState<{
+    pageCount: number;
+    estimatedMinutes: number;
+    issueTypes: string[];
+    batchSize: number;
+  } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [conflictOpen, setConflictOpen] = useState(false);
+  const [conflictJob, setConflictJob] = useState<{ id: string; jobType: string } | null>(null);
+  const [conflictMessage, setConflictMessage] = useState("");
 
   const limit = 50; // Increased limit for better grouping
 
@@ -140,11 +169,36 @@ export function SeoIssueDrillDownWidget({
   }, [pages, issueType]);
 
   const handleRegenerate = async (id: string) => {
-    toast.info("Regeneration will be implemented in bulk operations phase.");
+    if (!confirm("Are you sure you want to regenerate SEO for this page?")) return;
+
+    const payload = { mode: "selected_pages", pageIds: [id], confirmed: true, dryRun: false };
+    console.log("ACTION_START", "regenerate", payload);
+    setActionLoading(`regen_${id}`);
+    try {
+      const res = await apiFetch("/api/seo/regenerate", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Failed to regenerate");
+      const completed = data?.run?.completed ?? 0;
+      const failed = data?.run?.failed ?? 0;
+      if (completed > 0) {
+        toast.success(`Regenerated ${completed} page${completed === 1 ? "" : "s"}.`);
+      } else {
+        toast.error(failed > 0 ? `Regeneration failed for ${failed} page(s).` : "No pages were regenerated.");
+      }
+      fetchPages(currentPage);
+      window.dispatchEvent(new CustomEvent("seo_dashboard_refresh"));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error regenerating page");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
-  const handleEdit = (id: string) => {
-    toast.info("Edit mode opening (Placeholder).");
+  const handleEdit = (slug: string) => {
+    window.open(`/admin/seo?search=${encodeURIComponent(slug)}`, "_blank");
   };
 
   const confirmAutoFix = (id: string) => {
@@ -152,21 +206,55 @@ export function SeoIssueDrillDownWidget({
     setFixConfirmOpen(true);
   };
 
-  const executeAutoFix = async () => {
-    if (!pageToFix) return;
-    toast.success(`Auto fix queued for page ID: ${pageToFix}. (Bulk Phase feature)`);
-    setFixConfirmOpen(false);
-    setPageToFix(null);
+  /** Shared Auto Fix path — used by single-row and bulk actions. */
+  const submitAutoFix = async (pageIds: string[]) => {
+    if (!issueType || pageIds.length === 0) return;
+    const payload = { pageIds, issueType };
+    console.log("ACTION_START", "auto_fix", payload);
+    const res = await apiFetch("/api/seo/issues/autofix", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.error || "Auto fix failed");
+
+    const changed = data?.changed ?? 0;
+    const skipped = data?.skipped ?? 0;
+    const failed = data?.failed ?? 0;
+    const processed = data?.processed ?? pageIds.length;
+
+    if (changed > 0) {
+      toast.success(
+        data.message ||
+          `Auto Fix: ${changed} fixed, ${skipped} skipped, ${failed} failed (${processed} processed).`,
+      );
+    } else if (failed > 0) {
+      toast.error(
+        data.message ||
+          `Auto Fix failed for ${failed} of ${processed} page(s).`,
+      );
+    } else {
+      toast.info(data?.message || "No fixes were necessary.");
+    }
+
+    fetchPages(currentPage);
+    window.dispatchEvent(new CustomEvent("seo_dashboard_refresh"));
+    return data;
   };
 
-  const supportsAutoFix = [
-    "missing_meta",
-    "missing_title",
-    "missing_h1",
-    "missing_schema",
-    "duplicate_titles",
-    "duplicate_meta",
-  ].includes(issueType || "");
+  const executeAutoFix = async () => {
+    if (!pageToFix) return;
+    setActionLoading("auto_fix");
+    try {
+      await submitAutoFix([pageToFix]);
+      setFixConfirmOpen(false);
+      setPageToFix(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error running auto fix");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -174,6 +262,138 @@ export function SeoIssueDrillDownWidget({
     } else {
       setSortField(field);
       setSortOrder("desc");
+    }
+  };
+
+  // Opens a controlled confirmation dialog. We deliberately avoid the native
+  // window.confirm() here: this dropdown is nested inside the Radix Dialog, and a
+  // blocking confirm() inside a Radix DropdownMenuItem leaves the dismiss layer
+  // in a bad state (body pointer-events:none), so the action never runs.
+  const resolveBulkJobType = (action: string) => BULK_ACTION_TO_JOB_TYPE[action];
+
+  const loadBulkPreview = async (action: string, ids: string[]) => {
+    const jobType = resolveBulkJobType(action);
+    if (!jobType) return null;
+    setPreviewLoading(true);
+    try {
+      const res = await apiFetch("/api/seo/jobs/preview", {
+        method: "POST",
+        body: JSON.stringify({
+          jobType,
+          pageIds: ids,
+          issueType: action === "auto_fix" ? issueType : undefined,
+          issueTypes: issueType ? [issueType] : [],
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Preview failed");
+      return data.preview as {
+        pageCount: number;
+        estimatedMinutes: number;
+        issueTypes: string[];
+        batchSize: number;
+      };
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleBulkAction = async (action: string) => {
+    if (selectedIds.size === 0) return;
+    if (!resolveBulkJobType(action)) {
+      toast.error("Unsupported bulk action");
+      return;
+    }
+    setPendingBulkAction(action);
+    setBulkConfirmOpen(true);
+    const preview = await loadBulkPreview(action, Array.from(selectedIds));
+    setBulkPreview(preview);
+  };
+
+  const createBackgroundJob = async (action: string, ids: string[]) => {
+    const jobType = resolveBulkJobType(action);
+    if (!jobType) throw new Error("Unsupported bulk action");
+
+    const payload: Record<string, unknown> = {
+      jobType,
+      pageIds: ids,
+      issueTypes: issueType ? [issueType] : [],
+    };
+    if (action === "auto_fix" && issueType) {
+      payload.issueType = issueType;
+    }
+
+    const res = await apiFetch("/api/seo/jobs", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (res.status === 409 && data.conflict) {
+      setConflictJob(data.activeJob ?? null);
+      setConflictMessage(data.message ?? "Another job is already running.");
+      setConflictOpen(true);
+      return null;
+    }
+
+    if (!res.ok) throw new Error(data?.error || "Failed to create job");
+    return data.job as { id: string };
+  };
+
+  const executeBulkAction = async () => {
+    const action = pendingBulkAction;
+    const ids = Array.from(selectedIds);
+    if (!action || ids.length === 0) {
+      setBulkConfirmOpen(false);
+      return;
+    }
+
+    const actionName = BULK_ACTION_LABELS[action] || action;
+
+    setActionLoading("bulk_action");
+    try {
+      const job = await createBackgroundJob(action, ids);
+      if (!job) return;
+
+      toast.success(
+        `Background job started: ${actionName} on ${ids.length} page(s). Track progress in Job Queue.`,
+      );
+      window.dispatchEvent(
+        new CustomEvent("seo_job_highlight", { detail: { jobId: job.id } }),
+      );
+
+      setBulkConfirmOpen(false);
+      setPendingBulkAction(null);
+      setBulkPreview(null);
+      setSelectedIds(new Set());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Error running ${actionName}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const waitForConflictJob = async () => {
+    if (!conflictJob?.id) return;
+    setActionLoading("wait_conflict");
+    try {
+      let attempts = 0;
+      while (attempts < 120) {
+        const res = await fetch(`/api/seo/jobs/${conflictJob.id}`);
+        const data = await res.json().catch(() => ({}));
+        const status = data?.job?.status;
+        if (status === "completed" || status === "failed" || status === "cancelled") {
+          setConflictOpen(false);
+          setConflictJob(null);
+          toast.success("Previous job finished. You can retry your bulk action.");
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 3000));
+        attempts++;
+      }
+      toast.info("Job still running. Check Job Queue for progress.");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -234,15 +454,37 @@ export function SeoIssueDrillDownWidget({
               </SelectContent>
             </Select>
 
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-violet-600/10 hover:bg-violet-600/20 text-violet-400 border-violet-500/30 h-9 shrink-0"
-              disabled={selectedIds.size === 0}
-            >
-              <CheckSquare className="size-4 mr-2" />
-              Bulk Actions ({selectedIds.size})
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-violet-600/10 hover:bg-violet-600/20 text-violet-400 border-violet-500/30 h-9 shrink-0"
+                  disabled={selectedIds.size === 0 || actionLoading !== null}
+                >
+                  {actionLoading === "bulk_action" ? (
+                    <Loader2 className="size-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckSquare className="size-4 mr-2" />
+                  )}
+                  Bulk Actions ({selectedIds.size})
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-[#1E1E2A] border-[rgba(255,255,255,0.08)]">
+                <DropdownMenuItem className="text-violet-400 focus:bg-violet-600/20 focus:text-violet-300 cursor-pointer" onClick={() => handleBulkAction("auto_fix")}>
+                  Auto Fix Selected
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-[#F5F5F7] focus:bg-[rgba(255,255,255,0.05)] cursor-pointer" onClick={() => handleBulkAction("regenerate")}>
+                  Regenerate Selected
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-[#F5F5F7] focus:bg-[rgba(255,255,255,0.05)] cursor-pointer" onClick={() => handleBulkAction("generate_missing")}>
+                  Generate Missing Meta
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-[#F5F5F7] focus:bg-[rgba(255,255,255,0.05)] cursor-pointer" onClick={() => handleBulkAction("repair_canonical")}>
+                  Repair Canonicals
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -277,6 +519,9 @@ export function SeoIssueDrillDownWidget({
                   >
                     Duplicate Value <SortIcon field="duplicateValue" />
                   </th>
+                )}
+                {issueType === "broken_internal_links" && (
+                  <th className="py-3 px-4 font-medium">Broken Links</th>
                 )}
                 <th className="py-3 px-4 font-medium text-right">Actions</th>
               </tr>
@@ -356,24 +601,23 @@ export function SeoIssueDrillDownWidget({
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {supportsAutoFix && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 hover:bg-violet-600/20 text-violet-400 font-medium"
-                                title="Auto Fix Issue"
-                                onClick={() => confirmAutoFix(p.id)}
-                              >
-                                Auto Fix
-                              </Button>
-                            )}
                             <Button
                               variant="ghost"
-                              size="icon"
-                              className="size-7 hover:bg-[rgba(255,255,255,0.05)] text-[#A1A1AA]"
-                              title="Edit SEO"
-                              onClick={() => handleEdit(p.id)}
+                              size="sm"
+                              className="h-7 px-2 hover:bg-violet-600/20 text-violet-400 font-medium"
+                              title="Auto Fix Issue"
+                              disabled={actionLoading !== null}
+                              onClick={() => confirmAutoFix(p.id)}
                             >
+                              Auto Fix
+                            </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 hover:bg-[rgba(255,255,255,0.05)] text-[#A1A1AA]"
+                            title="Edit SEO"
+                            onClick={() => handleEdit(p.pageSlug)}
+                          >
                               <Edit3 className="size-3.5" />
                             </Button>
                             <Button
@@ -382,8 +626,9 @@ export function SeoIssueDrillDownWidget({
                               className="size-7 hover:bg-[rgba(255,255,255,0.05)] text-[#A1A1AA]"
                               title="Regenerate SEO"
                               onClick={() => handleRegenerate(p.id)}
+                              disabled={actionLoading === `regen_${p.id}`}
                             >
-                              <RefreshCw className="size-3.5" />
+                              {actionLoading === `regen_${p.id}` ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
                             </Button>
                             <Button
                               variant="ghost"
@@ -442,25 +687,43 @@ export function SeoIssueDrillDownWidget({
                         </span>
                       </div>
                     </td>
+                    {issueType === "broken_internal_links" && (
+                      <td className="py-3 px-4 max-w-[280px]">
+                        <div className="flex flex-col gap-1 text-xs text-[#A1A1AA]">
+                          {(p.brokenLinks ?? []).slice(0, 2).map((link: { brokenUrl: string; anchor: string; suggestedReplacement?: string | null }, idx: number) => (
+                            <div key={`${p.id}-broken-${idx}`} className="truncate" title={`${link.anchor} → ${link.brokenUrl}`}>
+                              <span className="text-red-400">{link.brokenUrl}</span>
+                              {link.suggestedReplacement ? (
+                                <span className="text-emerald-400"> → {link.suggestedReplacement}</span>
+                              ) : (
+                                <span className="text-[#52525B]"> (remove)</span>
+                              )}
+                            </div>
+                          ))}
+                          {(p.brokenLinkCount ?? 0) > 2 && (
+                            <span className="text-[#52525B]">+{(p.brokenLinkCount ?? 0) - 2} more</span>
+                          )}
+                        </div>
+                      </td>
+                    )}
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {supportsAutoFix && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 hover:bg-violet-600/20 text-violet-400 font-medium"
-                            title="Auto Fix Issue"
-                            onClick={() => confirmAutoFix(p.id)}
-                          >
-                            Auto Fix
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 hover:bg-violet-600/20 text-violet-400 font-medium"
+                          title="Auto Fix Issue"
+                          disabled={actionLoading !== null}
+                          onClick={() => confirmAutoFix(p.id)}
+                        >
+                          Auto Fix
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="size-7 hover:bg-[rgba(255,255,255,0.05)] text-[#A1A1AA]"
                           title="Edit SEO"
-                          onClick={() => handleEdit(p.id)}
+                          onClick={() => handleEdit(p.pageSlug)}
                         >
                           <Edit3 className="size-3.5" />
                         </Button>
@@ -542,8 +805,118 @@ export function SeoIssueDrillDownWidget({
             <Button
               onClick={executeAutoFix}
               className="bg-violet-600 hover:bg-violet-700 text-white"
+              disabled={actionLoading === "auto_fix"}
             >
-              Confirm Auto Fix
+              {actionLoading === "auto_fix" ? (
+                <><Loader2 className="size-4 mr-2 animate-spin" /> Processing</>
+              ) : "Confirm Auto Fix"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Action Confirmation Dialog */}
+      <Dialog open={bulkConfirmOpen} onOpenChange={(o) => { if (!o) { setBulkConfirmOpen(false); setPendingBulkAction(null); setBulkPreview(null); } }}>
+        <DialogContent className="bg-[#15151D] border-[rgba(255,255,255,0.08)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#F5F5F7]">
+              Confirm {pendingBulkAction ? BULK_ACTION_LABELS[pendingBulkAction] ?? pendingBulkAction : "Bulk Action"}
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="text-[#A1A1AA] space-y-2 mt-2">
+                <p>
+                  You are about to process:{" "}
+                  <span className="text-[#F5F5F7] font-medium">
+                    {bulkPreview?.pageCount ?? selectedIds.size} pages
+                  </span>
+                </p>
+                {previewLoading ? (
+                  <p className="flex items-center gap-2 text-sm">
+                    <Loader2 className="size-3 animate-spin" /> Estimating duration…
+                  </p>
+                ) : (
+                  <p>
+                    Estimated duration:{" "}
+                    <span className="text-[#F5F5F7] font-medium">
+                      ~{bulkPreview?.estimatedMinutes ?? "—"} minutes
+                    </span>
+                  </p>
+                )}
+                {(bulkPreview?.issueTypes?.length ?? 0) > 0 && (
+                  <p>
+                    Affected issue types:{" "}
+                    <span className="text-[#F5F5F7]">
+                      {bulkPreview!.issueTypes.join(", ")}
+                    </span>
+                  </p>
+                )}
+                <p className="text-xs text-[#52525B]">
+                  Runs as a background job (batch size {bulkPreview?.batchSize ?? 100}). Dashboard updates automatically.
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => { setBulkConfirmOpen(false); setPendingBulkAction(null); setBulkPreview(null); }}
+              className="bg-transparent border-[rgba(255,255,255,0.08)] text-[#A1A1AA]"
+              disabled={actionLoading === "bulk_action"}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={executeBulkAction}
+              className="bg-violet-600 hover:bg-violet-700 text-white"
+              disabled={actionLoading === "bulk_action" || previewLoading}
+            >
+              {actionLoading === "bulk_action" ? (
+                <><Loader2 className="size-4 mr-2 animate-spin" /> Starting…</>
+              ) : "Confirm"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Concurrent job conflict */}
+      <Dialog open={conflictOpen} onOpenChange={setConflictOpen}>
+        <DialogContent className="bg-[#15151D] border-[rgba(255,255,255,0.08)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#F5F5F7]">Job Already Running</DialogTitle>
+            <DialogDescription className="text-[#A1A1AA]">
+              {conflictMessage}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-wrap justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setConflictOpen(false)}
+              className="bg-transparent border-[rgba(255,255,255,0.08)] text-[#A1A1AA]"
+            >
+              Cancel
+            </Button>
+            {conflictJob?.id && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setConflictOpen(false);
+                  window.dispatchEvent(
+                    new CustomEvent("seo_job_highlight", { detail: { jobId: conflictJob.id } }),
+                  );
+                }}
+                className="border-violet-500/30 text-violet-400"
+              >
+                View Job
+              </Button>
+            )}
+            <Button
+              onClick={waitForConflictJob}
+              className="bg-violet-600 hover:bg-violet-700 text-white"
+              disabled={actionLoading === "wait_conflict"}
+            >
+              {actionLoading === "wait_conflict" ? (
+                <><Loader2 className="size-4 mr-2 animate-spin" /> Waiting…</>
+              ) : "Wait"}
             </Button>
           </div>
         </DialogContent>

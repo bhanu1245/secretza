@@ -133,6 +133,13 @@ export function SeoHealthOverviewWidget({ data }: { data: any }) {
       issueType: "missing_internal_links",
     },
     {
+      name: "Broken Internal Links",
+      count: issues.brokenInternalLinks ?? 0,
+      total: totalPages,
+      issue: "Links resolve to 404",
+      issueType: "broken_internal_links",
+    },
+    {
       name: "Duplicate Issues",
       count: duplicates.pagesWithDuplicateContent,
       total: totalPages,
