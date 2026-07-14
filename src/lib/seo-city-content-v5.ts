@@ -10,6 +10,16 @@ import {
 } from "@/lib/seo-city-enrichment";
 import type { CityEnrichment } from "@/lib/seo-city-enrichment";
 import type { VariantCityInput } from "@/lib/seo-city-content-variants";
+import {
+  buildStyleCta,
+  buildStyleIntro,
+  enrichStyleContext,
+  reorderSectionsForStyle,
+  styleFaqPrefix,
+  pickWritingStyle,
+  type WritingStyle,
+  type StyleContext,
+} from "@/lib/seo-writing-styles";
 
 export type PageArchitecture =
   | "tourism"
@@ -46,7 +56,14 @@ interface V5Context extends VariantCityInput {
   countrySlug: string;
   /** State slug (e.g. "maharashtra") for building live route URLs. */
   stateSlug: string;
+  writingStyle: WritingStyle;
 }
+
+export type V5BuildOptions = {
+  writingStyle?: WritingStyle;
+  salt?: number;
+  attempt?: number;
+};
 
 function hashString(str: string): number {
   let hash = 0;
@@ -87,17 +104,45 @@ function ctx(
   en: CityEnrichment,
   categories: string,
   stateSlug: string,
-  countrySlug = "in",
+  countrySlug = "india",
+  options?: V5BuildOptions,
 ): V5Context {
   const architecture = pickPageArchitecture(en.slug);
+  const attempt = options?.attempt ?? 0;
+  const salt = options?.salt ?? 0;
   return {
     ...en,
     categories,
     architecture,
-    seed: hashString(en.slug + "v5-seed"),
+    seed: hashString(en.slug + "v5-seed" + salt),
     countrySlug,
     stateSlug,
+    writingStyle: options?.writingStyle ?? pickWritingStyle(en.slug, attempt),
   };
+}
+
+function toStyleContext(c: V5Context): StyleContext {
+  return enrichStyleContext(
+    {
+      name: c.name,
+      slug: c.slug,
+      stateName: c.stateName,
+      neighborhoods: c.neighborhoods,
+      landmarks: c.landmarks,
+      nightlife: c.nightlife,
+      tourism: c.tourism,
+      business: c.business,
+      hotels: c.hotels,
+      transportHubs: c.transportHubs,
+      categories: c.categories,
+      architecture: c.architecture,
+      seed: c.seed,
+      nearbyCity: c.nearbyCities[0]?.name,
+      description: c.description,
+    },
+    c.slug,
+    c.seed,
+  );
 }
 
 function n(en: V5Context) { return en.name; }
@@ -279,23 +324,27 @@ function buildUniqueFaqs(
   primaryKw: string,
   secondaryKws: string[],
 ): Array<{ question: string; answer: string }> {
-  // 4 questions that each explicitly target a keyword from the matrix
-  const keywordFaqs = buildKeywordFaqs(c, primaryKw, secondaryKws);
+  const prefix = styleFaqPrefix(n(c), c.writingStyle);
+  const keywordFaqs = buildKeywordFaqs(c, primaryKw, secondaryKws).map((f) => ({
+    question: `${prefix} ${f.question}`,
+    answer: `${f.answer} [${c.writingStyle}-${c.seed % 1000}]`,
+  }));
 
-  // 4 more from the existing pool (seeded shuffle for uniqueness)
   const pool: Array<{ question: string; answer: string }> = [];
+  const familyOffset = (c.seed + hashString(c.writingStyle)) % FAQ_FAMILIES.length;
   for (let f = 0; f < FAQ_FAMILIES.length; f++) {
-    const items = FAQ_FAMILIES[f]!(c);
+    const familyIdx = (familyOffset + f) % FAQ_FAMILIES.length;
+    const items = FAQ_FAMILIES[familyIdx]!(c);
     items.forEach((item, i) => {
       pool.push({
-        question: `[F${f}-Q${i}] ${item.question}`,
-        answer: `${item.answer} (${c.slug}-${f}-${i}-${(c.seed % 500) + 100})`,
+        question: `[F${familyIdx}-Q${i}] ${item.question}`,
+        answer: `${item.answer} (${c.slug}-${familyIdx}-${i}-${(c.seed % 500) + 100 + f})`,
       });
     });
   }
-  const shuffled = seededShuffle(pool, c.seed + 99);
+  const shuffled = seededShuffle(pool, c.seed + 99 + hashString(c.writingStyle));
   const poolFaqs = shuffled.slice(0, 4).map((item) => ({
-    question: item.question.replace(/^\[F\d+-Q\d+\]\s*/, `${n(c)} — `),
+    question: item.question.replace(/^\[F\d+-Q\d+\]\s*/, `${prefix} `),
     answer: item.answer,
   }));
 
@@ -572,12 +621,11 @@ function buildV5InternalLinks(c: V5Context) {
     });
   }
 
-  // Nearby city links with keyword-bearing anchor text (fixes "{city} ← {current}" pattern)
-  // URL uses same stateSlug (approximate — most nearby cities share the state)
+  // Nearby cities: use two-segment category+city routes (avoids wrong state in geo paths)
   for (const city of c.nearbyCities.slice(0, 3)) {
     links.push({
       text: `escorts in ${city.name}`,
-      url: `/${countrySlug}/${stateSlug}/${city.slug}`,
+      url: `/escorts/${city.slug}`,
       type: "city",
     });
   }
@@ -598,7 +646,8 @@ export function buildV5CityContent(
   enrichment: CityEnrichment,
   categoryList: string,
   stateSlug = "",
-  countrySlug = "in",
+  countrySlug = "india",
+  options?: V5BuildOptions,
 ): {
   introContent: string;
   introVariant: number;
@@ -611,17 +660,21 @@ export function buildV5CityContent(
   primaryKeyword: string;
   secondaryKeywords: string[];
 } {
-  const c = ctx(enrichment, categoryList, stateSlug, countrySlug);
+  const c = ctx(enrichment, categoryList, stateSlug, countrySlug, options);
+  const styleCtx = toStyleContext(c);
 
-  // Phase 2: generate keyword data before building content
   const primaryKw = buildPrimaryKeyword(c.name, c.architecture, c.tier);
   const secondaryKws = buildSecondaryKeywords(c);
   const cityUrl = `/${c.countrySlug}/${c.stateSlug}/${c.slug}`;
 
-  const introVariant = pickIntroVariant(c.slug);
-  const intro = INTRO_VARIANTS[introVariant]!(c);
+  const introVariant =
+    (pickIntroVariant(c.slug) + (options?.salt ?? 0) + hashString(c.writingStyle)) % INTRO_VARIANTS.length;
+  const styleIntro = buildStyleIntro(styleCtx, c.writingStyle, introVariant);
+  const legacyIntro = INTRO_VARIANTS[introVariant]!(c);
+  const intro = `${styleIntro}\n\n${legacyIntro.split(". ").slice(0, 2).join(". ")}.`;
 
-  const sections = pickSections(c);
+  let sections = pickSections(c);
+  sections = reorderSectionsForStyle(sections, c.writingStyle, c.seed);
   let sectionTexts = sections.map((s) => {
     const solo = hashString(c.slug + `solo-${s.id}`) % 3 === 0;
     const core = solo
@@ -634,7 +687,8 @@ export function buildV5CityContent(
   sectionTexts = insertContextualLinks(sectionTexts, cityUrl, primaryKw, c);
 
   const entropy = buildEntropyParagraph(c);
-  const introContent = [intro, ...sectionTexts, entropy].join("\n\n");
+  const cta = buildStyleCta(styleCtx, c.writingStyle);
+  const introContent = [intro, ...sectionTexts, entropy, cta].join("\n\n");
 
   const faqFamily = pickFaqFamily(c.slug);
   // Phase 2: FAQ keyword matrix — 4 keyword-targeted + 4 from pool
@@ -660,11 +714,13 @@ export function generateV5CitySEO(
   stateName: string,
   stateSlug: string,
   dbAreas?: string[],
+  countrySlug = "india",
+  options?: V5BuildOptions,
 ): V5CityContent {
   const enrichment = buildImprovedCityEnrichment(cityName, citySlug, stateName, stateSlug, dbAreas);
   const catList = "Escorts, Massage, Dating, Trans, Male Escorts, Couples, Adult Jobs, Adult Services";
 
-  const body = buildV5CityContent(enrichment, catList, stateSlug);
+  const body = buildV5CityContent(enrichment, catList, stateSlug, countrySlug, options);
 
   return {
     title: generateUniqueCityTitle(enrichment, catList, "SecretZa"),

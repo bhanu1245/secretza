@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { generateLongTailSEOContent } from "@/lib/seo-engine";
+import { generateUniversalSeoContent } from "@/lib/seo-universal-engine";
 import { loadCitySeoContext, type CitySeoContext } from "@/lib/seo-granular-generation";
 import {
   normalizeKeywordsForGeneration,
@@ -45,27 +45,25 @@ function buildTitle(keyword: string, phrase: string): string {
   return `${keyword} - Verified ${phrase} Listings | SecretZa`;
 }
 
-function buildLongtailContent(
+async function buildLongtailContent(
   keyword: string,
   phrase: string,
   city: CitySeoContext,
-): SEOContent {
+): Promise<SEOContent> {
   const phraseSlug = slugify(phrase) || slugFromKeyword(keyword);
-  const longtail = generateLongTailSEOContent(
-    phrase,
-    phraseSlug,
-    city.cityName,
-    city.citySlug,
-    city.stateName,
-    city.stateSlug,
-  );
+  const pageSlug = `${phraseSlug}/${city.citySlug}`;
+  const result = await generateUniversalSeoContent({
+    pageType: "longtail",
+    pageSlug,
+    mode: "generate",
+  });
 
   return {
-    ...longtail,
+    ...result.content,
     title: buildTitle(keyword, phrase),
     h1: keyword,
     metaDescription:
-      longtail.metaDescription ||
+      result.content.metaDescription ||
       `Browse verified ${phrase.toLowerCase()} in ${city.cityName}. Premium companion listings, photos, reviews, and direct contact details.`,
     primaryKeyword: keyword,
     pageType: "longtail",
@@ -281,7 +279,7 @@ async function generateFromPreview(
       const phrase =
         entry.keyword.replace(new RegExp(`\\s*${city.cityName}\\s*$`, "i"), "").trim() ||
         entry.keyword;
-      const content = buildLongtailContent(entry.keyword, phrase, city);
+      const content = await buildLongtailContent(entry.keyword, phrase, city);
       await upsertFromContent("longtail", entry.slug, content, entry.canonicalUrl, {
         skipImage: true,
       });

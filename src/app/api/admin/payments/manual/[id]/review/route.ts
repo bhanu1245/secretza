@@ -156,6 +156,15 @@ export async function POST(
                 console.warn("[review/approve] boost tier not found in PaymentSettings", {
                   tierAmount, label, submissionId: submission.id,
                 });
+                await tx.auditLog.create({
+                  data: {
+                    userId: admin.id,
+                    action: "payment_tier_mismatch",
+                    entityType: "ManualPaymentSubmission",
+                    entityId: submission.id,
+                    details: JSON.stringify({ type: "boost", submittedAmount: tierAmount, fallbackLabel: label, submissionId: submission.id }),
+                  },
+                });
               }
               const boostUntil = getBoostExpiry(durationMinutes);
               const newPriorityScore = computePriorityScore({ ...listing, isBoosted: true, boostUntil });
@@ -174,6 +183,15 @@ export async function POST(
                 console.warn("[review/approve] feature tier not found in PaymentSettings", {
                   tierAmount, label, submissionId: submission.id,
                 });
+                await tx.auditLog.create({
+                  data: {
+                    userId: admin.id,
+                    action: "payment_tier_mismatch",
+                    entityType: "ManualPaymentSubmission",
+                    entityId: submission.id,
+                    details: JSON.stringify({ type: "feature", submittedAmount: tierAmount, fallbackLabel: label, submissionId: submission.id }),
+                  },
+                });
               }
               const featuredUntil = getFeatureExpiry(durationDays);
               const newPriorityScore = computePriorityScore({ ...listing, isFeatured: true, featuredUntil });
@@ -188,6 +206,15 @@ export async function POST(
           if (!matched) {
             console.warn("[review/approve] premium tier not found in PaymentSettings", {
               tierAmount, label, submissionId: submission.id,
+            });
+            await tx.auditLog.create({
+              data: {
+                userId: admin.id,
+                action: "payment_tier_mismatch",
+                entityType: "ManualPaymentSubmission",
+                entityId: submission.id,
+                details: JSON.stringify({ type: "premium", submittedAmount: tierAmount, fallbackLabel: label, submissionId: submission.id }),
+              },
             });
           }
           const premiumExpiry = getFeatureExpiry(durationDays);
@@ -244,9 +271,41 @@ export async function POST(
             couponCode: submission.couponCode,
           },
         });
+
+        // E2-2: Audit log and notification inside the approve transaction so they
+        // are written atomically with the approval — no partial state on tx failure.
+        await tx.auditLog.create({
+          data: {
+            userId: admin.id,
+            action: "manual_payment_approve",
+            entityType: "ManualPaymentSubmission",
+            entityId: submission.id,
+            details: JSON.stringify({
+              originalStatus: submission.status,
+              newStatus,
+              paymentType: submission.paymentType,
+              amount: submission.amount,
+              utrNumber: submission.utrNumber,
+              listingId: submission.listingId,
+              targetUserId: submission.userId,
+              adminNotes: adminNotes || null,
+            }),
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: submission.userId,
+            type: "payment_approved",
+            title: "Payment Approved!",
+            message: `Your ${submission.paymentType} payment of ₹${submission.amount} has been approved and activated.`,
+            entityType: "ManualPaymentSubmission",
+            entityId: submission.id,
+          },
+        });
       });
     } else {
-      // Non-approve actions: update submission status only.
+      // Non-approve actions: single update, then audit log and notification.
       updatedSubmission = await db.manualPaymentSubmission.update({
         where: { id },
         data: {
@@ -256,69 +315,58 @@ export async function POST(
           reviewedAt: new Date(),
         },
       });
-    }
 
-    // --- Audit log ---
-    await db.auditLog.create({
-      data: {
-        userId: admin.id,
-        action: `manual_payment_${reviewAction === "request_proof" ? "proof_requested" : reviewAction}`,
-        entityType: "ManualPaymentSubmission",
-        entityId: submission.id,
-        details: JSON.stringify({
-          originalStatus: submission.status,
-          newStatus,
-          paymentType: submission.paymentType,
-          amount: submission.amount,
-          utrNumber: submission.utrNumber,
-          listingId: submission.listingId,
-          targetUserId: submission.userId,
-          adminNotes: adminNotes || null,
-        }),
-      },
-    });
+      await db.auditLog.create({
+        data: {
+          userId: admin.id,
+          action: `manual_payment_${reviewAction === "request_proof" ? "proof_requested" : reviewAction}`,
+          entityType: "ManualPaymentSubmission",
+          entityId: submission.id,
+          details: JSON.stringify({
+            originalStatus: submission.status,
+            newStatus,
+            paymentType: submission.paymentType,
+            amount: submission.amount,
+            utrNumber: submission.utrNumber,
+            listingId: submission.listingId,
+            targetUserId: submission.userId,
+            adminNotes: adminNotes || null,
+          }),
+        },
+      });
 
-    // --- Notifications ---
-    if (reviewAction === "approve") {
-      await createNotification({
-        userId: submission.userId,
-        type: "payment_approved",
-        title: "Payment Approved!",
-        message: `Your ${submission.paymentType} payment of ₹${submission.amount} has been approved and activated.`,
-        entityType: "ManualPaymentSubmission",
-        entityId: submission.id,
-      });
-    } else if (reviewAction === "reject") {
-      await createNotification({
-        userId: submission.userId,
-        type: "payment_rejected",
-        title: "Payment Rejected",
-        message: `Your ${submission.paymentType} payment of ₹${submission.amount} has been rejected. ${adminNotes ? "Reason: " + adminNotes : ""}`,
-        entityType: "ManualPaymentSubmission",
-        entityId: submission.id,
-      });
-    } else if (reviewAction === "request_proof") {
-      await createNotification({
-        userId: submission.userId,
-        type: "payment_proof_requested",
-        title: "Additional Proof Requested",
-        message: `We need additional proof for your ${submission.paymentType} payment. ${adminNotes || "Please upload a clearer screenshot."}`,
-        entityType: "ManualPaymentSubmission",
-        entityId: submission.id,
-      });
-    } else if (reviewAction === "duplicate") {
-      // P1 Fix 3: notify users when their submission is marked duplicate so
-      // they know to contact support rather than waiting indefinitely.
-      await createNotification({
-        userId: submission.userId,
-        type: "payment_duplicate",
-        title: "Payment Marked as Duplicate",
-        message:
-          `Your ${submission.paymentType} payment of ₹${submission.amount} has been flagged as a duplicate submission. ` +
-          (adminNotes ? `Note: ${adminNotes}` : "Please contact support if you believe this is an error."),
-        entityType: "ManualPaymentSubmission",
-        entityId: submission.id,
-      });
+      if (reviewAction === "reject") {
+        await createNotification({
+          userId: submission.userId,
+          type: "payment_rejected",
+          title: "Payment Rejected",
+          message: `Your ${submission.paymentType} payment of ₹${submission.amount} has been rejected. ${adminNotes ? "Reason: " + adminNotes : ""}`,
+          entityType: "ManualPaymentSubmission",
+          entityId: submission.id,
+        });
+      } else if (reviewAction === "request_proof") {
+        await createNotification({
+          userId: submission.userId,
+          type: "payment_proof_requested",
+          title: "Additional Proof Requested",
+          message: `We need additional proof for your ${submission.paymentType} payment. ${adminNotes || "Please upload a clearer screenshot."}`,
+          entityType: "ManualPaymentSubmission",
+          entityId: submission.id,
+        });
+      } else if (reviewAction === "duplicate") {
+        // P1 Fix 3: notify users when their submission is marked duplicate so
+        // they know to contact support rather than waiting indefinitely.
+        await createNotification({
+          userId: submission.userId,
+          type: "payment_duplicate",
+          title: "Payment Marked as Duplicate",
+          message:
+            `Your ${submission.paymentType} payment of ₹${submission.amount} has been flagged as a duplicate submission. ` +
+            (adminNotes ? `Note: ${adminNotes}` : "Please contact support if you believe this is an error."),
+          entityType: "ManualPaymentSubmission",
+          entityId: submission.id,
+        });
+      }
     }
 
     return NextResponse.json({

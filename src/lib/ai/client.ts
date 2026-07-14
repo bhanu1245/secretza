@@ -30,7 +30,7 @@ const PROVIDER_DEFAULTS: Record<AiProvider, { baseUrl: string; model: string }> 
   },
 };
 
-const REQUEST_TIMEOUT_MS = 20_000;
+const REQUEST_TIMEOUT_MS = 30_000;
 const DEFAULT_TEMPERATURE = 0.4;
 const DEFAULT_MAX_TOKENS = 300;
 

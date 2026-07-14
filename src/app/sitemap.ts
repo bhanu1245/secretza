@@ -1,5 +1,9 @@
 import { db } from "@/lib/db";
 import type { MetadataRoute } from "next";
+import {
+  getServedPathForSeoPage,
+  listUnroutableSeoPageIds,
+} from "@/lib/seo-route-validation";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://SecretZa.com";
 
@@ -92,23 +96,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  // Published SEO pages (includes canonical URLs from DB)
+  // Published SEO pages — only routable paths (never bare /{country} 404s)
+  const unroutable = await listUnroutableSeoPageIds();
   const seoPages = await db.seoPage.findMany({
-    where: { isPublished: true, noindex: false },
+    where: {
+      isPublished: true,
+      noindex: false,
+      ...(unroutable.size > 0 ? { id: { notIn: [...unroutable] } } : {}),
+    },
     select: { canonicalUrl: true, updatedAt: true, pageType: true, pageSlug: true },
     take: 50000,
   });
 
-  const seoSitemapPages: MetadataRoute.Sitemap = seoPages
-    .filter((p) => p.canonicalUrl)
-    .map((p) => ({
-      url: p.canonicalUrl!.startsWith("http")
-        ? p.canonicalUrl!
-        : `${BASE_URL}${p.canonicalUrl}`,
+  const seoSitemapPages: MetadataRoute.Sitemap = seoPages.map((p) => {
+    const path = getServedPathForSeoPage(p);
+    return {
+      url: `${BASE_URL}${path}`,
       lastModified: p.updatedAt,
       changeFrequency: "weekly" as const,
       priority: 0.55,
-    }));
+    };
+  });
 
   return [
     ...staticPages,

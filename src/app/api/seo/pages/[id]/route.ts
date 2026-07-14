@@ -8,6 +8,10 @@ import {
   enrichSchemaWithFeaturedImage,
   resolveSeoImageUrl,
 } from "@/lib/seo-images";
+import {
+  sanitizeStoredIntroContent,
+  sanitizeStoredCustomData,
+} from "@/lib/seo-internal-links";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -124,7 +128,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if (title !== undefined) updateData.title = title;
     if (metaDescription !== undefined) updateData.metaDescription = metaDescription;
     if (h1 !== undefined) updateData.h1 = h1;
-    if (introContent !== undefined) updateData.introContent = introContent;
+    if (introContent !== undefined) {
+      updateData.introContent = introContent
+        ? await sanitizeStoredIntroContent(introContent, existing.pageType, existing.pageSlug)
+        : introContent;
+    }
     if (canonicalUrl !== undefined) updateData.canonicalUrl = canonicalUrl;
     if (noindex !== undefined) updateData.noindex = noindex;
     if (isPublished !== undefined) updateData.isPublished = isPublished;
@@ -134,7 +142,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if (imageCaption !== undefined) updateData.imageCaption = imageCaption;
 
     if (customData !== undefined) {
-      updateData.customData = customData;
+      updateData.customData = sanitizeStoredCustomData(customData);
     } else if (featuredImage !== undefined && featuredImage) {
       const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL || "https://secretza.com";
       const pageUrl = `${siteOrigin.replace(/\/+$/, "")}${canonicalUrl ?? existing.canonicalUrl ?? ""}`;

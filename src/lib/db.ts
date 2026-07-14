@@ -38,3 +38,9 @@ export const db = globalForPrisma.prisma ?? createPrismaClient()
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = db
 }
+
+if (typeof window === "undefined") {
+  import("@/lib/seo-schema-health")
+    .then(({ runSeoSchemaStartupCheck }) => runSeoSchemaStartupCheck())
+    .catch(() => { /* non-fatal */ });
+}

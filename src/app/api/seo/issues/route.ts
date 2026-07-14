@@ -4,8 +4,13 @@ import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { logError } from "@/lib/monitoring";
 import { SEO_MIN_WORD_COUNT } from "@/lib/seo-quality";
+import {
+  MIN_INTERNAL_LINKS_PER_PAGE,
+  scanPagesWithBrokenInternalLinks,
+} from "@/lib/seo-internal-links";
+import { listUnroutableSeoPageIds } from "@/lib/seo-route-validation";
 
-const MIN_INTERNAL_LINKS = 15;
+const MIN_INTERNAL_LINKS = MIN_INTERNAL_LINKS_PER_PAGE;
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,7 +38,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Missing issue type" }, { status: 400 });
     }
 
-    let where: Prisma.SeoPageWhereInput = {};
+    const unroutable = await listUnroutableSeoPageIds();
+    const routableExclusion =
+      unroutable.size > 0 ? { id: { notIn: [...unroutable] } } : {};
+
+    let where: Prisma.SeoPageWhereInput = { ...routableExclusion };
     let isRawQuery = false;
     let rawQueryField = "";
     
@@ -109,6 +118,8 @@ export async function GET(request: NextRequest) {
         isRawQuery = true;
         rawQueryField = "contentHash";
         break;
+      case "broken_internal_links":
+        break;
       default:
         return NextResponse.json({ error: "Invalid issue type" }, { status: 400 });
     }
@@ -116,45 +127,77 @@ export async function GET(request: NextRequest) {
     let pages: any[] = [];
     let total = 0;
 
-    if (isRawQuery) {
-      // Build raw query conditions based on filters
-      const conditions: string[] = [];
-      conditions.push(`${rawQueryField} IS NOT NULL AND TRIM(${rawQueryField}) != ''`);
-      
-      if (pageType) conditions.push(`pageType = '${pageType}'`);
-      if (isPublished === "true") conditions.push(`isPublished = 1`);
-      if (isPublished === "false") conditions.push(`isPublished = 0`);
-      if (indexed === "true") conditions.push(`noindex = 0`);
-      if (indexed === "false") conditions.push(`noindex = 1`);
-      if (minScore) conditions.push(`seoQualityScore >= ${Number(minScore)}`);
-      if (maxScore) conditions.push(`seoQualityScore <= ${Number(maxScore)}`);
-      if (search) conditions.push(`(title LIKE '%${search}%' OR pageSlug LIKE '%${search}%')`);
-      
-      const whereClause = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
+    if (issueType === "broken_internal_links") {
+      const affected = await scanPagesWithBrokenInternalLinks({
+        search: search ?? undefined,
+        pageType: pageType ?? undefined,
+        isPublished:
+          isPublished === "true" ? true : isPublished === "false" ? false : undefined,
+      });
+      total = affected.length;
+      const slice = affected.slice(skip, skip + limit);
+      pages = slice.map((p) => ({
+        id: p.id,
+        pageType: p.pageType,
+        pageSlug: p.pageSlug,
+        title: p.title,
+        metaDescription: p.metaDescription,
+        h1: p.h1,
+        canonicalUrl: p.canonicalUrl,
+        wordCount: p.wordCount,
+        internalLinksCount: p.internalLinksCount,
+        seoQualityScore: p.seoQualityScore,
+        updatedAt: p.updatedAt,
+        duplicateRisk: p.duplicateRisk,
+        isPublished: p.isPublished,
+        brokenLinks: p.brokenLinks,
+        brokenLinkCount: p.brokenLinks.length,
+      }));
+    } else if (isRawQuery) {
+      // rawQueryField is set only from a switch statement to one of 4 known column names —
+      // whitelisted, not user input, safe for Prisma.raw().
+      const col = Prisma.raw(rawQueryField);
 
-      const rawCount = await db.$queryRawUnsafe<Array<{ cnt: bigint }>>(`
+      const sqlConditions: Prisma.Sql[] = [
+        Prisma.sql`${col} IS NOT NULL AND TRIM(${col}) != ''`,
+      ];
+
+      if (pageType) sqlConditions.push(Prisma.sql`pageType = ${pageType}`);
+      if (isPublished === "true") sqlConditions.push(Prisma.sql`isPublished = ${1}`);
+      if (isPublished === "false") sqlConditions.push(Prisma.sql`isPublished = ${0}`);
+      if (indexed === "true") sqlConditions.push(Prisma.sql`noindex = ${0}`);
+      if (indexed === "false") sqlConditions.push(Prisma.sql`noindex = ${1}`);
+      if (minScore) sqlConditions.push(Prisma.sql`seoQualityScore >= ${Number(minScore)}`);
+      if (maxScore) sqlConditions.push(Prisma.sql`seoQualityScore <= ${Number(maxScore)}`);
+      if (search) sqlConditions.push(Prisma.sql`(title LIKE ${'%' + search + '%'} OR pageSlug LIKE ${'%' + search + '%'})`);
+
+      const whereConditions = Prisma.join(sqlConditions, ' AND ');
+
+      const rawCount = await db.$queryRaw<Array<{ cnt: bigint }>>(Prisma.sql`
         SELECT COUNT(*) as cnt FROM SeoPage p
-        ${whereClause}
-        ${conditions.length > 0 ? "AND" : "WHERE"} ${rawQueryField} IN (
-          SELECT ${rawQueryField} FROM SeoPage
-          WHERE ${rawQueryField} IS NOT NULL AND TRIM(${rawQueryField}) != ''
-          GROUP BY ${rawQueryField} HAVING COUNT(*) > 1
+        WHERE ${whereConditions}
+        AND ${col} IN (
+          SELECT ${col} FROM SeoPage
+          WHERE ${col} IS NOT NULL AND TRIM(${col}) != ''
+          GROUP BY ${col} HAVING COUNT(*) > 1
         )
       `);
       total = Number(rawCount[0]?.cnt ?? 0);
 
-      const safeSortField = ["updatedAt", "seoQualityScore", "pageSlug", "duplicateValue"].includes(sortField) ? (sortField === "duplicateValue" ? rawQueryField : sortField) : "updatedAt";
-      
-      const rawPages = await db.$queryRawUnsafe<any[]>(`
-        SELECT id, pageType, pageSlug, title, metaDescription, h1, canonicalUrl, wordCount, internalLinksCount, seoQualityScore, updatedAt, duplicateRisk, isPublished, ${rawQueryField} as duplicateValue
+      const resolvedSortField = ["updatedAt", "seoQualityScore", "pageSlug", "duplicateValue"].includes(sortField) ? (sortField === "duplicateValue" ? rawQueryField : sortField) : "updatedAt";
+      const safeSortCol = Prisma.raw(resolvedSortField);
+      const safeOrder = Prisma.raw(sortOrder === "asc" ? "ASC" : "DESC");
+
+      const rawPages = await db.$queryRaw<any[]>(Prisma.sql`
+        SELECT id, pageType, pageSlug, title, metaDescription, h1, canonicalUrl, wordCount, internalLinksCount, seoQualityScore, updatedAt, duplicateRisk, isPublished, ${col} as duplicateValue
         FROM SeoPage p
-        ${whereClause}
-        ${conditions.length > 0 ? "AND" : "WHERE"} ${rawQueryField} IN (
-          SELECT ${rawQueryField} FROM SeoPage
-          WHERE ${rawQueryField} IS NOT NULL AND TRIM(${rawQueryField}) != ''
-          GROUP BY ${rawQueryField} HAVING COUNT(*) > 1
+        WHERE ${whereConditions}
+        AND ${col} IN (
+          SELECT ${col} FROM SeoPage
+          WHERE ${col} IS NOT NULL AND TRIM(${col}) != ''
+          GROUP BY ${col} HAVING COUNT(*) > 1
         )
-        ORDER BY ${safeSortField} ${sortOrder === "asc" ? "ASC" : "DESC"}, updatedAt DESC
+        ORDER BY ${safeSortCol} ${safeOrder}, updatedAt DESC
         LIMIT ${limit} OFFSET ${skip}
       `);
       pages = rawPages;

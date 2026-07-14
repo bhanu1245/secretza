@@ -525,3 +525,536 @@ export function getPublicPathForPage(pageType: string, pageSlug: string, canonic
   }
   return normalizePath(getSeoPagePublicUrl({ pageType, pageSlug, canonicalUrl }));
 }
+
+// ---------------------------------------------------------------------------
+// Central internal link builder — all SEO generators should use these helpers
+// ---------------------------------------------------------------------------
+
+const MARKDOWN_LINK_RE = /\[([^\]]+)\]\(([^)]+)\)/g;
+
+export type BrokenInternalLink = {
+  sourcePageId?: string;
+  sourcePageSlug?: string;
+  sourcePageType?: string;
+  anchor: string;
+  brokenUrl: string;
+  suggestedReplacement: string | null;
+};
+
+export type LinkBuildContext = {
+  citySlug?: string;
+  stateSlug?: string;
+  countrySlug?: string;
+  categorySlug?: string;
+  keywordSlug?: string;
+  pageType?: string;
+  pageSlug?: string;
+};
+
+/** Reset slug caches (e.g. after bulk geo seed). */
+export function clearSlugCaches(): void {
+  slugCaches = null;
+}
+
+/** Legacy ISO alias `/in/...` — invalid in rendered HTML (404). Always rewrite to `india`. */
+export function rewriteLegacyInPaths(text: string): string {
+  if (!text.includes("/in/") && !text.includes('"/in') && !text.includes("'/in")) {
+    return text;
+  }
+  return text
+    .replace(/(^|["'(])\/in\//g, "$1/india/")
+    .replace(/(^|["'(])\/in(["')/])/g, "$1/country/india$2");
+}
+
+/** Map legacy ISO alias `/in/...` to live country slug `india`. */
+function resolveLegacyCountryAlias(path: string): string {
+  if (path === "/in") return "/country/india";
+  if (path.startsWith("/in/")) return `/india${path.slice(3)}`;
+  return path;
+}
+
+/** True when href uses the invalid `/in/` prefix (must be rewritten before render/save). */
+export function hasLegacyInPath(href: string): boolean {
+  const path = normalizePath(href);
+  return path === "/in" || path.startsWith("/in/");
+}
+
+/**
+ * Build and validate an internal URL. Returns the normalized href or null when
+ * the destination cannot resolve to a live public route.
+ */
+export async function getValidInternalLink(
+  href: string,
+  _context?: LinkBuildContext,
+): Promise<string | null> {
+  const caches = await loadSlugCaches();
+  let path = normalizePublicSeoPath(href, caches);
+  path = resolveLegacyCountryAlias(path);
+  path = normalizePublicSeoPath(path, caches);
+  if (!(await validateInternalHref(path))) return null;
+  return path;
+}
+
+export function extractMarkdownLinks(
+  content: string,
+): Array<{ anchor: string; url: string; fullMatch: string }> {
+  const links: Array<{ anchor: string; url: string; fullMatch: string }> = [];
+  const re = new RegExp(MARKDOWN_LINK_RE.source, "g");
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(content)) !== null) {
+    links.push({
+      anchor: match[1]!,
+      url: match[2]!.trim(),
+      fullMatch: match[0]!,
+    });
+  }
+  return links;
+}
+
+/** Count unique internal URLs in visible intro markdown — single source for dashboard + issues. */
+export function calculateInternalLinksCount(introContent: string | null | undefined): number {
+  const seen = new Set<string>();
+  for (const link of extractMarkdownLinks(introContent ?? "")) {
+    const path = normalizePath(link.url);
+    if (path && path !== "#") seen.add(path);
+  }
+  return seen.size;
+}
+
+const FALLBACK_INTERNAL_LINKS: Array<{ text: string; url: string }> = [
+  { text: "Escorts nationwide", url: "/category/escorts" },
+  { text: "Massage listings", url: "/category/massage" },
+  { text: "Dating connections", url: "/category/dating" },
+  { text: "Adult jobs board", url: "/category/adult-jobs" },
+  { text: "Adult services index", url: "/category/adult-services" },
+  { text: "Male escorts", url: "/category/male-escorts" },
+  { text: "Couples listings", url: "/category/couples" },
+  { text: "Browse India directory", url: "/country/india" },
+  { text: "Mumbai listings", url: "/escorts/mumbai" },
+  { text: "Delhi listings", url: "/escorts/delhi" },
+  { text: "Bangalore listings", url: "/escorts/bangalore" },
+  { text: "Hyderabad listings", url: "/escorts/hyderabad" },
+  { text: "Chennai listings", url: "/escorts/chennai" },
+  { text: "Kolkata listings", url: "/escorts/kolkata" },
+  { text: "Pune listings", url: "/escorts/pune" },
+  { text: "Ahmedabad listings", url: "/escorts/ahmedabad" },
+  { text: "Jaipur listings", url: "/escorts/jaipur" },
+  { text: "Lucknow listings", url: "/escorts/lucknow" },
+  { text: "Kochi listings", url: "/escorts/kochi" },
+  { text: "Indore listings", url: "/escorts/indore" },
+  { text: "Nagpur listings", url: "/escorts/nagpur" },
+  { text: "Vadodara listings", url: "/escorts/vadodara" },
+];
+
+/**
+ * Embed markdown internal links into intro until the visible count meets the target.
+ * Uses sanitized metadata links first, then site-wide fallbacks.
+ */
+export function ensureIntroInternalLinks(
+  introContent: string,
+  candidates: Array<{ text: string; url: string }> = [],
+  target = MIN_INTERNAL_LINKS_PER_PAGE,
+): string {
+  const seen = new Set<string>();
+  for (const link of extractMarkdownLinks(introContent)) {
+    const path = normalizePath(link.url);
+    if (path && path !== "#") seen.add(path);
+  }
+
+  if (seen.size >= target) return introContent;
+
+  const toAdd: Array<{ text: string; url: string }> = [];
+  const candidateList =
+    candidates.length > 0 ? candidates : FALLBACK_INTERNAL_LINKS;
+  for (const link of candidateList) {
+    if (seen.size >= target) break;
+    const path = normalizePath(link.url);
+    if (!path || path === "#" || seen.has(path)) continue;
+    seen.add(path);
+    toAdd.push(link);
+  }
+
+  if (toAdd.length === 0) return introContent;
+
+  const lines = toAdd.map((l) => `- [${l.text}](${l.url})`);
+  return `${introContent.trim()}\n\n## Related Pages\n\n${lines.join("\n")}`;
+}
+
+async function resolveValidLinkCandidates(
+  metadataLinks: Array<{ text: string; url: string }>,
+  context: LinkBuildContext,
+): Promise<Array<{ text: string; url: string }>> {
+  const seen = new Set<string>();
+  const result: Array<{ text: string; url: string }> = [];
+  for (const link of [...metadataLinks, ...FALLBACK_INTERNAL_LINKS]) {
+    const valid = await getValidInternalLink(link.url, context);
+    if (!valid || seen.has(valid)) continue;
+    seen.add(valid);
+    result.push({ text: link.text, url: valid });
+  }
+  return result;
+}
+
+/**
+ * Ensure intro meets the link target, then sanitize for storage.
+ * Re-embeds links if sanitization strips invalid URLs (upsertSeoPage runs the same sanitizer).
+ */
+export async function finalizeIntroForPersistence(
+  introContent: string,
+  pageType: string,
+  pageSlug: string,
+  metadataLinks: Array<{ text: string; url: string }> = [],
+  target = MIN_INTERNAL_LINKS_PER_PAGE,
+): Promise<string> {
+  const context = buildLinkContextFromPage(pageType, pageSlug);
+  const candidates = await resolveValidLinkCandidates(metadataLinks, context);
+  let intro = introContent;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    intro = ensureIntroInternalLinks(intro, candidates, target);
+    const sanitized = await sanitizeStoredIntroContent(intro, pageType, pageSlug);
+    if (calculateInternalLinksCount(sanitized) >= target) return sanitized;
+    intro = sanitized;
+  }
+  return intro;
+}
+
+export function buildLinkContextFromPage(pageType: string, pageSlug: string): LinkBuildContext {
+  if (pageType === "city") {
+    return { pageType, pageSlug, citySlug: pageSlug };
+  }
+  const slash = pageSlug.indexOf("/");
+  if (slash >= 0) {
+    const first = pageSlug.slice(0, slash);
+    const citySlug = pageSlug.slice(slash + 1);
+    if (pageType === "category_city") {
+      return { pageType, pageSlug, citySlug, categorySlug: first };
+    }
+    if (pageType === "longtail") {
+      return { pageType, pageSlug, citySlug, keywordSlug: first };
+    }
+    if (pageType === "state") {
+      return { pageType, pageSlug, countrySlug: first, stateSlug: citySlug };
+    }
+  }
+  return { pageType, pageSlug };
+}
+
+let publishedTwoSegmentCache: Set<string> | null = null;
+
+async function loadPublishedTwoSegmentSlugs(): Promise<Set<string>> {
+  if (!publishedTwoSegmentCache) {
+    const pages = await db.seoPage.findMany({
+      where: {
+        isPublished: true,
+        pageType: { in: ["longtail", "category_city"] },
+      },
+      select: { pageSlug: true },
+    });
+    publishedTwoSegmentCache = new Set(pages.map((p) => `/${p.pageSlug.replace(/\/+/g, "/")}`));
+  }
+  return publishedTwoSegmentCache;
+}
+
+/** Prefer published SEO pages (longtail / category_city) for a city context. */
+export async function findPreferredCitySeoLink(
+  citySlug: string,
+  excludePath?: string,
+): Promise<string | null> {
+  const published = await loadPublishedTwoSegmentSlugs();
+  const normalizedExclude = excludePath ? normalizePath(excludePath) : null;
+
+  for (const kw of SEO_LONGTAIL_KEYWORDS) {
+    const candidate = `/${kw.slug}/${citySlug}`;
+    if (normalizedExclude && normalizePath(candidate) === normalizedExclude) continue;
+    if (published.has(candidate)) {
+      const valid = await getValidInternalLink(candidate);
+      if (valid) return valid;
+    }
+  }
+
+  const categories = await db.category.findMany({
+    where: { isActive: true },
+    orderBy: { listingCount: "desc" },
+    take: 12,
+    select: { slug: true },
+  });
+  for (const cat of categories) {
+    const candidate = `/${cat.slug}/${citySlug}`;
+    if (normalizedExclude && normalizePath(candidate) === normalizedExclude) continue;
+    if (published.has(candidate)) {
+      const valid = await getValidInternalLink(candidate);
+      if (valid) return valid;
+    }
+  }
+
+  const caches = await loadSlugCaches();
+  const geo = caches.cityPaths.get(citySlug);
+  if (geo) {
+    const valid = await getValidInternalLink(geo);
+    if (valid && valid !== normalizedExclude) return valid;
+  }
+
+  for (const kw of SEO_LONGTAIL_KEYWORDS) {
+    const candidate = `/${kw.slug}/${citySlug}`;
+    if (normalizedExclude && normalizePath(candidate) === normalizedExclude) continue;
+    const valid = await getValidInternalLink(candidate);
+    if (valid) return valid;
+  }
+
+  for (const cat of categories) {
+    const candidate = `/${cat.slug}/${citySlug}`;
+    if (normalizedExclude && normalizePath(candidate) === normalizedExclude) continue;
+    const valid = await getValidInternalLink(candidate);
+    if (valid) return valid;
+  }
+
+  return null;
+}
+
+export async function findReplacementLink(
+  brokenHref: string,
+  _anchor: string,
+  context: LinkBuildContext,
+): Promise<string | null> {
+  const citySlug = context.citySlug;
+  if (!citySlug) return null;
+  return findPreferredCitySeoLink(citySlug, brokenHref);
+}
+
+export async function findBrokenLinksInContent(
+  content: string,
+  context: LinkBuildContext = {},
+): Promise<BrokenInternalLink[]> {
+  const broken: BrokenInternalLink[] = [];
+  for (const link of extractMarkdownLinks(content)) {
+    const legacy = hasLegacyInPath(link.url);
+    const valid = legacy ? null : await getValidInternalLink(link.url, context);
+    if (!valid) {
+      const suggested = legacy
+        ? resolveLegacyCountryAlias(normalizePath(link.url))
+        : await findReplacementLink(link.url, link.anchor, context);
+      broken.push({
+        sourcePageSlug: context.pageSlug,
+        sourcePageType: context.pageType,
+        anchor: link.anchor,
+        brokenUrl: link.url,
+        suggestedReplacement: suggested,
+      });
+    }
+  }
+  return broken;
+}
+
+export async function sanitizeMarkdownLinksInContent(
+  content: string,
+  context: LinkBuildContext = {},
+): Promise<{ content: string; fixed: number; removed: number }> {
+  let output = rewriteLegacyInPaths(content);
+  let fixed = output !== content ? 1 : 0;
+  let removed = 0;
+
+  for (const link of extractMarkdownLinks(output)) {
+    let targetUrl = link.url;
+    if (hasLegacyInPath(targetUrl)) {
+      targetUrl = resolveLegacyCountryAlias(normalizePath(targetUrl));
+    }
+
+    const valid = await getValidInternalLink(targetUrl, context);
+    if (valid) {
+      if (valid !== normalizePath(link.url)) {
+        output = output.replace(link.fullMatch, `[${link.anchor}](${valid})`);
+        fixed++;
+      }
+      continue;
+    }
+
+    const replacement = await findReplacementLink(link.url, link.anchor, context);
+    if (replacement) {
+      output = output.replace(link.fullMatch, `[${link.anchor}](${replacement})`);
+      fixed++;
+    } else {
+      output = output.replace(link.fullMatch, link.anchor);
+      removed++;
+    }
+  }
+
+  return { content: output, fixed, removed };
+}
+
+/** Sanitize stored intro/body text before any DB write or public render. */
+export async function sanitizeStoredIntroContent(
+  introContent: string,
+  pageType: string,
+  pageSlug: string,
+): Promise<string> {
+  if (!introContent?.trim()) return introContent;
+  const context = buildLinkContextFromPage(pageType, pageSlug);
+  const { content } = await sanitizeMarkdownLinksInContent(introContent, context);
+  return content;
+}
+
+/** Sanitize JSON-LD / customData strings for legacy `/in/` paths. */
+export function sanitizeStoredCustomData(customData: string | null | undefined): string | null {
+  if (!customData?.trim()) return customData ?? null;
+  return rewriteLegacyInPaths(customData);
+}
+
+async function sanitizeUrlEntries<T extends { url: string }>(
+  entries: T[],
+  context: LinkBuildContext,
+  getText: (entry: T) => string,
+): Promise<T[]> {
+  const result: T[] = [];
+  for (const entry of entries) {
+    const valid = await getValidInternalLink(entry.url, context);
+    if (valid) {
+      result.push({ ...entry, url: valid });
+      continue;
+    }
+    const replacement = await findReplacementLink(entry.url, getText(entry), context);
+    if (replacement) {
+      result.push({ ...entry, url: replacement });
+    }
+  }
+  return result;
+}
+
+/** Sanitize all link-bearing fields on generated SEO content before persistence. */
+export async function sanitizeSeoContentLinks(
+  content: import("@/lib/seo-content").SEOContent,
+  context: LinkBuildContext,
+): Promise<import("@/lib/seo-content").SEOContent> {
+  const intro = content.fullIntroContent ?? content.introParagraph;
+  const { content: sanitizedIntro } = await sanitizeMarkdownLinksInContent(intro, context);
+
+  const internalLinks = await sanitizeUrlEntries(
+    content.internalLinks ?? [],
+    context,
+    (l) => l.text,
+  );
+
+  const breadcrumbItems = await sanitizeUrlEntries(
+    content.breadcrumbItems ?? [],
+    context,
+    (b) => b.name,
+  );
+
+  const relatedPages = content.relatedPages
+    ? await sanitizeUrlEntries(content.relatedPages, context, (p) => p.title)
+    : undefined;
+
+  const introParagraph = sanitizedIntro.split("\n\n")[0] ?? sanitizedIntro;
+
+  return {
+    ...content,
+    introParagraph,
+    fullIntroContent: sanitizedIntro,
+    internalLinks,
+    breadcrumbItems,
+    relatedPages,
+  };
+}
+
+export async function repairBrokenLinksInIntro(
+  introContent: string,
+  pageType: string,
+  pageSlug: string,
+): Promise<{ introContent: string; changed: boolean; fixed: number; removed: number }> {
+  const context = buildLinkContextFromPage(pageType, pageSlug);
+  const { content, fixed, removed } = await sanitizeMarkdownLinksInContent(introContent, context);
+  return {
+    introContent: content,
+    changed: fixed > 0 || removed > 0,
+    fixed,
+    removed,
+  };
+}
+
+export type PageWithBrokenLinks = {
+  id: string;
+  pageType: string;
+  pageSlug: string;
+  title: string | null;
+  metaDescription: string | null;
+  h1: string | null;
+  canonicalUrl: string | null;
+  wordCount: number | null;
+  internalLinksCount: number | null;
+  seoQualityScore: number | null;
+  updatedAt: Date;
+  duplicateRisk: string | null;
+  isPublished: boolean;
+  brokenLinks: BrokenInternalLink[];
+};
+
+export async function scanPagesWithBrokenInternalLinks(input?: {
+  pageIds?: string[];
+  search?: string;
+  pageType?: string;
+  isPublished?: boolean;
+}): Promise<PageWithBrokenLinks[]> {
+  const where: import("@prisma/client").Prisma.SeoPageWhereInput = {};
+  if (input?.pageIds?.length) where.id = { in: input.pageIds };
+  if (input?.pageType) where.pageType = input.pageType;
+  if (input?.isPublished === true) where.isPublished = true;
+  if (input?.isPublished === false) where.isPublished = false;
+  if (input?.search) {
+    where.OR = [
+      { title: { contains: input.search } },
+      { pageSlug: { contains: input.search } },
+    ];
+  }
+
+  const pages = await db.seoPage.findMany({
+    where,
+    select: {
+      id: true,
+      pageType: true,
+      pageSlug: true,
+      title: true,
+      metaDescription: true,
+      h1: true,
+      canonicalUrl: true,
+      wordCount: true,
+      internalLinksCount: true,
+      seoQualityScore: true,
+      updatedAt: true,
+      duplicateRisk: true,
+      isPublished: true,
+      introContent: true,
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  const affected: PageWithBrokenLinks[] = [];
+  for (const page of pages) {
+    if (!page.introContent?.trim()) continue;
+    const context = buildLinkContextFromPage(page.pageType, page.pageSlug);
+    const brokenLinks = await findBrokenLinksInContent(page.introContent, context);
+    if (brokenLinks.length === 0) continue;
+    const enriched = brokenLinks.map((b) => ({
+      ...b,
+      sourcePageId: page.id,
+      sourcePageSlug: page.pageSlug,
+      sourcePageType: page.pageType,
+    }));
+    const { introContent: _intro, ...rest } = page;
+    affected.push({ ...rest, brokenLinks: enriched });
+  }
+  return affected;
+}
+
+export async function countBrokenInternalLinks(): Promise<number> {
+  const pages = await db.seoPage.findMany({
+    where: { introContent: { not: null } },
+    select: { pageType: true, pageSlug: true, introContent: true },
+  });
+  let total = 0;
+  for (const page of pages) {
+    if (!page.introContent?.trim()) continue;
+    const context = buildLinkContextFromPage(page.pageType, page.pageSlug);
+    const broken = await findBrokenLinksInContent(page.introContent, context);
+    total += broken.length;
+  }
+  return total;
+}

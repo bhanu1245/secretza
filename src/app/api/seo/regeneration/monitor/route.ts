@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireMinRole } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { logError } from "@/lib/monitoring";
+import { aggregateRecentV61Stats } from "@/lib/seo-generation-metadata";
 
 export async function GET(request: Request) {
   try {
@@ -90,6 +91,7 @@ export async function GET(request: Request) {
     const avgDuration = completedCount > 0 ? Math.round(totalDurationMs / completedCount / 1000) : 0;
     const successRate = (successCount + failedCount) > 0 ? Math.round((successCount / (successCount + failedCount)) * 100) : 100;
     const failureRate = 100 - successRate;
+    const v61 = await aggregateRecentV61Stats(days);
 
     return NextResponse.json({
       metrics: {
@@ -104,6 +106,7 @@ export async function GET(request: Request) {
         failureRate,
       },
       history,
+      v61,
     });
   } catch (error) {
     logError(error, { component: "route:api/seo/regeneration/monitor GET" });

@@ -1,4 +1,4 @@
-import { resolveSeoImageUrl, SEO_IMAGE_PLACEHOLDER } from "@/lib/seo-images";
+import { resolveSeoImageUrl, SEO_IMAGE_PLACEHOLDER } from "@/lib/seo-images-utils";
 
 export interface SeoFeaturedImageProps {
   src?: string | null;

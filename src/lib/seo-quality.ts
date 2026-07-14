@@ -52,12 +52,44 @@ export interface SeoQualityResult {
 
 const MIN_WORD_COUNT = 500;
 
-/** Count words in plain text (strips HTML). */
-export function countWords(text: string | null | undefined): number {
-  if (!text?.trim()) return 0;
-  const plain = text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+/** Target word count for generators (buffer above minimum for sanitization losses). */
+export const SEO_GENERATION_TARGET_WORDS = 650;
+
+/**
+ * Strip markup to human-readable visible text for word counting.
+ * Ignores HTML, markdown syntax, URLs, and JSON-LD blocks.
+ */
+export function stripToVisibleText(text: string | null | undefined): string {
+  if (!text?.trim()) return "";
+  return text
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/\{[\s\S]*?"@type"[\s\S]*?\}/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/[*_~`>#\-|]+/g, " ")
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Count visible human-readable words — shared by dashboard, DB metrics, and audits. */
+export function calculateVisibleWordCount(text: string | null | undefined): number {
+  const plain = stripToVisibleText(text);
   if (!plain) return 0;
-  return plain.split(/\s+/).filter(Boolean).length;
+  return plain.split(/\s+/).filter((w) => w.length > 0).length;
+}
+
+/** @alias calculateVisibleWordCount — all SEO pipelines use visible text counting. */
+export function countWords(text: string | null | undefined): number {
+  return calculateVisibleWordCount(text);
+}
+
+export function meetsMinWordCount(text: string | null | undefined): boolean {
+  return calculateVisibleWordCount(text) >= MIN_WORD_COUNT;
 }
 
 /** Normalize text for comparison — lowercase, strip punctuation, collapse whitespace. */

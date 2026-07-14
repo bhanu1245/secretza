@@ -1,9 +1,5 @@
 import { db } from "@/lib/db";
-import {
-  generateCategorySEOContent,
-  generateCitySEOContent,
-  generateLongTailSEOContent,
-} from "@/lib/seo-engine";
+import { generateUniversalSeoContent } from "@/lib/seo-universal-engine";
 import { generateKeywordPhraseSEO } from "@/lib/seo-keyword-content";
 import { loadCitySeoContext, type CitySeoContext } from "@/lib/seo-granular-generation";
 import {
@@ -405,17 +401,21 @@ async function generateContentForEntry(
   );
 
   if (entry.pageType === "city" && exactCity) {
-    return generateCitySEOContent(
-      exactCity.name,
-      exactCity.slug,
-      exactCity.stateName,
-      exactCity.countryName,
-      { stateSlug: exactCity.stateSlug },
-    );
+    const result = await generateUniversalSeoContent({
+      pageType: "city",
+      citySlug: exactCity.slug,
+      mode: "generate",
+    });
+    return result.content;
   }
 
   if (entry.pageType === "category" && exactCategory) {
-    return generateCategorySEOContent(exactCategory.name, exactCategory.slug);
+    const result = await generateUniversalSeoContent({
+      pageType: "category",
+      categorySlug: exactCategory.slug,
+      mode: "generate",
+    });
+    return result.content;
   }
 
   let phrase: string;
@@ -442,21 +442,19 @@ async function generateContentForEntry(
   }
 
   const phraseSlug = slugify(phrase) || entry.slug;
-  const longtail = generateLongTailSEOContent(
-    phrase,
-    phraseSlug,
-    city.name,
-    city.slug,
-    city.stateName,
-    city.stateSlug,
-  );
+  const pageSlug = `${phraseSlug}/${city.slug}`;
+  const result = await generateUniversalSeoContent({
+    pageType: "longtail",
+    pageSlug,
+    mode: "generate",
+  });
 
   return {
-    ...longtail,
+    ...result.content,
     title: `${entry.keyword} - Verified ${phrase} Listings | SecretZa`,
     h1: entry.keyword,
     metaDescription:
-      longtail.metaDescription ||
+      result.content.metaDescription ||
       `Browse verified ${phrase.toLowerCase()} in ${city.name}. Premium companion listings, photos, reviews, and direct contact details.`,
     primaryKeyword: entry.keyword,
   };

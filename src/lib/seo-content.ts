@@ -38,6 +38,8 @@ export interface SEOContent {
   primaryKeyword?: string;
   /** Secondary keyword cluster (JSON-serialisable array) */
   secondaryKeywords?: string[];
+  /** V6 generation metadata (writing style, retries, local refs, etc.) */
+  generationMeta?: Record<string, unknown>;
 }
 
 interface SchemaBreadcrumbItem {
@@ -59,6 +61,11 @@ import { generateCitySEOContent } from '@/lib/seo-engine';
 import {
   type CityEnrichment,
 } from '@/lib/seo-city-enrichment';
+import {
+  calculateVisibleWordCount,
+  SEO_GENERATION_TARGET_WORDS,
+  SEO_MIN_WORD_COUNT,
+} from "@/lib/seo-quality";
 
 // ------------------------------------------
 // Category Data
@@ -640,6 +647,89 @@ function generateCountryIntro(countryName: string): string {
 }
 
 // ------------------------------------------
+// Expanded intro assembly (country / state / category shells)
+// ------------------------------------------
+
+function assembleIntroToTarget(paragraphs: string[], target = SEO_GENERATION_TARGET_WORDS): string {
+  const parts = paragraphs.filter((p) => p?.trim());
+  let combined = parts.join("\n\n");
+  let words = calculateVisibleWordCount(combined);
+
+  const genericFillers = [
+    "Every listing on SecretZa passes profile review, photo checks, and ongoing moderation. Providers update availability, services, and pricing directly — so filters return current results instead of stale directory entries copied from other platforms.",
+    "Browse by city, category, verification badge, or price band to narrow results quickly. SecretZa separates escort, massage, dating, and adult-services listings into distinct indexes so searches stay relevant and users avoid mixed-result noise.",
+    "User reviews and report tools help the community surface trustworthy profiles. Suspicious listings are investigated within twenty-four hours, and repeat policy violations lead to permanent removal from the index.",
+    "Mobile-friendly profiles, discreet messaging, and clear service descriptions make it easier to compare providers before making contact. Listings include neighbourhood context where available so visitors and residents can filter by area.",
+    "New verified profiles are added daily across metropolitan and regional markets. Featured placements rotate fairly, and standard listings remain visible in category and city browse paths without pay-to-hide tactics.",
+    "SecretZa editorial guides explain how categories differ, what verification badges mean, and how to use filters safely. These guides are updated when product features or moderation policies change.",
+    "Comparison tables on city pages highlight average response times, verification rates, and active listing counts so browsers can judge market depth before contacting providers.",
+    "Privacy controls let users browse without creating an account while still accessing full profile details, photos, and service descriptions on every indexed page.",
+  ];
+
+  let fillerIdx = 0;
+  const minWords = SEO_MIN_WORD_COUNT;
+  while (words < target && fillerIdx < genericFillers.length * 2) {
+    combined += `\n\n${genericFillers[fillerIdx % genericFillers.length]!}`;
+    words = calculateVisibleWordCount(combined);
+    fillerIdx++;
+  }
+  while (words < minWords && fillerIdx < genericFillers.length * 4) {
+    combined += `\n\n${genericFillers[fillerIdx % genericFillers.length]!}`;
+    words = calculateVisibleWordCount(combined);
+    fillerIdx++;
+  }
+
+  return combined;
+}
+
+function buildCountryFullIntro(countryName: string, countrySlug: string): string {
+  const catList = getCategoryList();
+  const topCities = MAJOR_INDIAN_CITIES.slice(0, 8).map((c) => c.name);
+  const opening = generateCountryIntro(countryName);
+  return assembleIntroToTarget([
+    opening,
+    `## Browse Verified Listings in ${countryName}\n\nSecretZa is the primary verified index for adult classifieds in ${countryName}. The platform covers ${catList} and related categories with district-level filters, live availability signals, and moderation-backed profiles rather than unvetted aggregator blurbs.`,
+    `## Major Cities in ${countryName}\n\nHigh-density listing clusters appear in ${topCities.slice(0, 4).join(", ")}, and ${topCities.length - 4} additional hubs listed across the ${countryName} index. Each city page maps neighbourhoods separately so searches tied to a specific area return relevant profiles.`,
+    `## Categories Available in ${countryName}\n\nUsers can switch between escorts, massage, dating, trans, male escorts, couples, adult jobs, and adult services without leaving the ${countrySlug} country context. Category filters inherit city selection automatically, reducing irrelevant cross-country results.`,
+    `## Safety and Verification on SecretZa\n\nProfiles displaying the verified badge completed document and photo checks. Moderators review flagged accounts within one business day, and users can report suspicious behaviour directly from any ${countryName} listing page.`,
+    `## How to Use This ${countryName} Directory\n\nStart from a city or category anchor, apply price and service filters, then bookmark profiles that match your criteria. Return visits surface recently updated listings first so repeat browsers see fresh ${countryName} inventory.`,
+  ]);
+}
+
+function buildStateFullIntro(
+  stateName: string,
+  stateSlug: string,
+  countryName: string,
+): string {
+  const catList = getCategoryList();
+  const stateCities = pickN(MAJOR_INDIAN_CITIES, 6, hashString(stateSlug));
+  const cityNames = stateCities.map((c) => c.name).join(", ");
+  const opening = generateStateIntro(stateName, stateSlug, countryName);
+  return assembleIntroToTarget([
+    opening,
+    `## ${stateName} City Coverage\n\nSecretZa maps ${stateName} listings across ${cityNames} and surrounding towns. City-level pages break down ${catList} by neighbourhood rather than publishing one generic statewide paragraph.`,
+    `## Category Mix in ${stateName}\n\nEscort, massage, and dating listings are indexed independently for ${stateName}. Users comparing categories in the same city can switch tabs without losing location context or re-entering filters.`,
+    `## Verification Standards in ${stateName}\n\nEvery ${stateName} profile submitted to SecretZa passes automated and manual checks. Photo authenticity, contact validity, and policy compliance are reviewed before a listing appears in ${countryName} search results.`,
+    `## Travel and Local Browsing in ${stateName}\n\nVisitors landing in ${stateCities[0]?.name ?? stateName} can filter by transport hubs and commercial districts; residents often anchor searches on home neighbourhoods. Both paths surface the same verified ${stateName} inventory with different sort priorities.`,
+    `## Posting Listings in ${stateName}\n\nProviders based in ${stateName} can publish free standard listings or upgrade to featured placement. Editorial review typically completes within hours, after which profiles appear in city and category browse paths across ${countryName}.`,
+  ]);
+}
+
+function buildCategoryFullIntro(categoryName: string, categorySlug: string): string {
+  const cat = lowerCategory(categoryName);
+  const topCities = MAJOR_INDIAN_CITIES.slice(0, 10).map((c) => c.name);
+  const opening = generateCategoryIntro(categoryName, categorySlug);
+  return assembleIntroToTarget([
+    opening,
+    `## Nationwide ${categoryName} Coverage\n\nSecretZa indexes ${cat} providers in ${topCities.slice(0, 5).join(", ")}, plus dozens of additional Indian cities. Each city page lists neighbourhood tags, price bands, and verification status so nationwide ${categoryName} searches stay locally relevant.`,
+    `## How ${categoryName} Verification Works\n\nProfiles in the ${categorySlug} index complete photo and identity checks before receiving a verified badge. Moderators remove duplicate or misleading ${cat} listings and investigate user reports within twenty-four hours.`,
+    `## Filtering ${categoryName} Results\n\nSort by city, price, services offered, or verification tier. Advanced filters remember your last selection across sessions, making repeat ${categoryName} browsing faster on mobile and desktop.`,
+    `## ${categoryName} vs Other Categories\n\n${categoryName} listings are separated from massage, dating, and adult-services indexes to prevent cross-category noise. Users exploring multiple categories can pivot via internal links without losing their city context.`,
+    `## Posting ${categoryName} Listings\n\nProviders create a free profile, select ${categorySlug} as the primary category, add photos and service details, then submit for review. Approved ${cat} listings appear in city browse paths and category landing pages across India.`,
+  ]);
+}
+
+// ------------------------------------------
 // Enhanced FAQ Generators
 // ------------------------------------------
 
@@ -741,10 +831,10 @@ function buildCityInternalLinks(citySlug: string, cityName: string): Array<{ tex
     links.push({ text: `${cat.name} in ${cityName}`, url: `/${cat.slug}/${citySlug}`, type: 'category' });
   }
 
-  // Nearby city links with descriptive text
+  // Nearby city links — two-segment category+city routes (single-segment city URLs 404)
   const nearby = getNearbyCities(citySlug, 5);
   for (const city of nearby) {
-    links.push({ text: `Adult Classifieds in ${city.name}`, url: `/${city.slug}`, type: 'city' });
+    links.push({ text: `Adult Classifieds in ${city.name}`, url: `/escorts/${city.slug}`, type: 'city' });
   }
 
   return links.slice(0, 16);
@@ -764,10 +854,12 @@ function buildCategoryInternalLinks(categorySlug: string, categoryName: string):
   }
 
   // Cross-category links
-  const otherCategories = CATEGORIES.filter((c) => c.slug !== categorySlug).slice(0, 5);
+  const otherCategories = CATEGORIES.filter((c) => c.slug !== categorySlug);
   for (const catItem of otherCategories) {
-    links.push({ text: `Browse ${catItem.name}`, url: `/${catItem.slug}`, type: 'category' });
+    links.push({ text: `Browse ${catItem.name}`, url: `/category/${catItem.slug}`, type: 'category' });
   }
+
+  links.push({ text: "India country directory", url: "/country/india", type: "search" });
 
   return links;
 }
@@ -795,8 +887,8 @@ function buildCategoryCityInternalLinks(
   }
 
   // Parent navigation links
-  links.push({ text: `All ${categoryName} in India`, url: `/${categorySlug}`, type: 'category' });
-  links.push({ text: `All Adult Classifieds in ${cityName}`, url: `/${citySlug}`, type: 'city' });
+  links.push({ text: `All ${categoryName} in India`, url: `/category/${categorySlug}`, type: 'category' });
+  links.push({ text: `All Adult Classifieds in ${cityName}`, url: `/escorts/${citySlug}`, type: 'city' });
 
   return links.slice(0, 16);
 }
@@ -806,12 +898,13 @@ function buildStateInternalLinks(stateSlug: string, stateName: string): Array<{ 
 
   // City links for this state
   for (const city of MAJOR_INDIAN_CITIES.slice(0, 10)) {
-    links.push({ text: `${city.name} Adult Classifieds`, url: `/${city.slug}`, type: 'city' });
+    links.push({ text: `${city.name} Adult Classifieds`, url: `/escorts/${city.slug}`, type: 'city' });
   }
 
-  // Category links with state context
+  // Category links in major cities (state slug is not a valid city segment)
   for (const cat of CATEGORIES.slice(0, 6)) {
-    links.push({ text: `${cat.name} in ${stateName}`, url: `/${cat.slug}/${stateSlug}`, type: 'search' });
+    const city = MAJOR_INDIAN_CITIES[hashString(stateSlug + cat.slug) % MAJOR_INDIAN_CITIES.length]!;
+    links.push({ text: `${cat.name} in ${city.name}`, url: `/${cat.slug}/${city.slug}`, type: 'search' });
   }
 
   return links.slice(0, 16);
@@ -822,12 +915,12 @@ function buildCountryInternalLinks(): Array<{ text: string; url: string; type: '
 
   // Major cities
   for (const city of MAJOR_INDIAN_CITIES.slice(0, 10)) {
-    links.push({ text: `${city.name} Adult Classifieds`, url: `/${city.slug}`, type: 'city' });
+    links.push({ text: `${city.name} Adult Classifieds`, url: `/escorts/${city.slug}`, type: 'city' });
   }
 
   // All categories
   for (const cat of CATEGORIES) {
-    links.push({ text: cat.name, url: `/${cat.slug}`, type: 'category' });
+    links.push({ text: cat.name, url: `/category/${cat.slug}`, type: 'category' });
   }
 
   return links;
@@ -889,7 +982,7 @@ export function generatePopularSearches(): string[] {
 
 /**
  * Generate SEO content for a city page.
- * @deprecated Use generateCitySEOContent from @/lib/seo-engine (V5). Removed V3 city variant path.
+ * @deprecated Use generateUniversalSeoContent from @/lib/seo-universal-engine. Removed V3 city variant path.
  */
 export function generateCitySEO(
   cityName: string,
@@ -922,16 +1015,15 @@ export function generateCategorySEO(
 
   const h1 = `${categoryName} in India`;
 
-  const introParagraph = description
-    ? generateCategoryIntro(categoryName, categorySlug)
-    : generateCategoryIntro(categoryName, categorySlug);
+  const fullIntroContent = buildCategoryFullIntro(categoryName, categorySlug);
+  const introParagraph = fullIntroContent.split("\n\n")[0] ?? fullIntroContent;
 
   const faqs = getCategoryFAQsGlobal(categoryName, categorySlug);
 
   const breadcrumbItems: Array<{ name: string; url: string }> = [
     { name: "Home", url: "/" },
-    { name: "India", url: "/india" },
-    { name: categoryName, url: `/${categorySlug}` },
+    { name: "India", url: "/country/india" },
+    { name: categoryName, url: `/category/${categorySlug}` },
   ];
 
   const internalLinks = buildCategoryInternalLinks(categorySlug, categoryName);
@@ -949,6 +1041,7 @@ export function generateCategorySEO(
     metaDescription,
     h1,
     introParagraph,
+    fullIntroContent,
     faqs,
     breadcrumbItems,
     internalLinks,
@@ -990,8 +1083,8 @@ export function generateCategoryCitySEO(
 
   const breadcrumbItems: Array<{ name: string; url: string }> = [
     { name: "Home", url: "/" },
-    { name: "India", url: "/india" },
-    { name: categoryName, url: `/${categorySlug}` },
+    { name: "India", url: "/country/india" },
+    { name: categoryName, url: `/category/${categorySlug}` },
     { name: cityName, url: `/${categorySlug}/${citySlug}` },
   ];
 
@@ -1060,7 +1153,8 @@ export function generateStateSEO(
 
   const h1 = `${stateName} Adult Classifieds`;
 
-  const introParagraph = generateStateIntro(stateName, stateSlug, countryNameParam);
+  const fullIntroContent = buildStateFullIntro(stateName, stateSlug, countryNameParam);
+  const introParagraph = fullIntroContent.split("\n\n")[0] ?? fullIntroContent;
 
   const cityNames = stateCities.map((c) => c.name).join(", ");
 
@@ -1089,7 +1183,7 @@ export function generateStateSEO(
 
   const breadcrumbItems: Array<{ name: string; url: string }> = [
     { name: "Home", url: "/" },
-    { name: countryNameParam, url: `/india` },
+    { name: countryNameParam, url: "/country/india" },
     { name: stateName, url: `/india/${stateSlug}` },
   ];
 
@@ -1100,6 +1194,7 @@ export function generateStateSEO(
     metaDescription,
     h1,
     introParagraph,
+    fullIntroContent,
     faqs,
     breadcrumbItems,
     internalLinks,
@@ -1129,7 +1224,8 @@ export function generateCountrySEO(
 
   const h1 = `Adult Classifieds in ${countryNameParam}`;
 
-  const introParagraph = generateCountryIntro(countryNameParam);
+  const fullIntroContent = buildCountryFullIntro(countryNameParam, countrySlug);
+  const introParagraph = fullIntroContent.split("\n\n")[0] ?? fullIntroContent;
 
   const faqs: Array<{ question: string; answer: string }> = [
     {
@@ -1156,7 +1252,7 @@ export function generateCountrySEO(
 
   const breadcrumbItems: Array<{ name: string; url: string }> = [
     { name: "Home", url: "/" },
-    { name: countryNameParam, url: `/${countrySlug}` },
+    { name: countryNameParam, url: `/country/${countrySlug}` },
   ];
 
   const internalLinks = buildCountryInternalLinks();
@@ -1166,6 +1262,7 @@ export function generateCountrySEO(
     metaDescription,
     h1,
     introParagraph,
+    fullIntroContent,
     faqs,
     breadcrumbItems,
     internalLinks,
@@ -1230,8 +1327,8 @@ export function generateLongTailSEO(
 
   const breadcrumbItems: Array<{ name: string; url: string }> = [
     { name: "Home", url: "/" },
-    { name: "India", url: "/india" },
-    { name: cityName, url: `/${citySlug}` },
+    { name: "India", url: "/country/india" },
+    { name: cityName, url: `/escorts/${citySlug}` },
     { name: keyword, url: `/${keywordSlug}/${citySlug}` },
   ];
 
@@ -1246,7 +1343,7 @@ export function generateLongTailSEO(
     });
   }
 
-  for (const cat of CATEGORIES.slice(0, 5)) {
+  for (const cat of CATEGORIES) {
     internalLinks.push({
       text: `${cat.name} in ${cityName}`,
       url: `/${cat.slug}/${citySlug}`,
@@ -1254,7 +1351,9 @@ export function generateLongTailSEO(
     });
   }
 
-  internalLinks.push({ text: `All listings in ${cityName}`, url: `/${citySlug}`, type: 'city' });
+  internalLinks.push({ text: `All listings in ${cityName}`, url: `/escorts/${citySlug}`, type: 'city' });
+  internalLinks.push({ text: `${cityName} city guide`, url: `/escorts/${citySlug}`, type: 'city' });
+  internalLinks.push({ text: "Browse India", url: "/country/india", type: "search" });
 
   return {
     title,

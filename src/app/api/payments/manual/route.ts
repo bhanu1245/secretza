@@ -198,6 +198,11 @@ export async function POST(request: Request) {
     const screenshot = formData.get("screenshot");
     const screenshotFile = screenshot instanceof File && screenshot.size > 0 ? screenshot : null;
 
+    // E2-1: Upload-first atomicity — upload before DB write so we never have a
+    // submission record with screenshotUrl: null when a file was provided.
+    let screenshotUrl: string | null = null;
+    let uploadedStorageKey: string | null = null;
+
     if (screenshotFile) {
       if (screenshotFile.size > MAX_SCREENSHOT_SIZE) {
         return NextResponse.json(
@@ -224,52 +229,50 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
-    }
 
-    const submission = await db.manualPaymentSubmission.create({
-      data: {
-        userId,
-        listingId: listingId ?? null,
-        paymentType,
-        amount: finalAmount,
-        originalAmount: tierOriginalAmount,
-        discountAmount,
-        couponCode: appliedCouponCode,
-        couponId,
-        utrNumber,
-        planLabel: selectedPlan ?? null,
-        paymentMethod: paymentMethod ?? "upi",
-        notes: notes ?? null,
-        screenshotUrl: null,
-        status: "pending",
-      },
-    });
-
-    let screenshotUrl: string | null = null;
-    if (screenshotFile) {
       const ext =
         screenshotFile.type === "image/png"
           ? "png"
           : screenshotFile.type === "image/webp"
             ? "webp"
             : "jpg";
-      const fileName = `${submission.id}-${Date.now()}.${ext}`;
-      const storageKey = `screenshots/${fileName}`;
-      const bytes = await screenshotFile.arrayBuffer();
+      // Deterministic key: safe because utrNumber uniqueness is already enforced above.
+      const storageKey = `screenshots/${userId}-${utrNumber.toUpperCase()}.${ext}`;
       const storage = createStorageService();
-      const uploaded = await storage.upload(
-        storageKey,
-        Buffer.from(bytes),
-        screenshotFile.type || "image/jpeg",
-      );
-
+      const uploaded = await storage.upload(storageKey, buffer, screenshotFile.type || "image/jpeg");
+      uploadedStorageKey = storageKey;
       screenshotUrl = uploaded.url.startsWith("/")
         ? uploaded.url
         : `/api/upload/file?key=${encodeURIComponent(storageKey)}`;
-      await db.manualPaymentSubmission.update({
-        where: { id: submission.id },
-        data: { screenshotUrl },
+    }
+
+    // Single DB write with screenshotUrl already known — no follow-up update needed.
+    let submission: Awaited<ReturnType<typeof db.manualPaymentSubmission.create>>;
+    try {
+      submission = await db.manualPaymentSubmission.create({
+        data: {
+          userId,
+          listingId: listingId ?? null,
+          paymentType,
+          amount: finalAmount,
+          originalAmount: tierOriginalAmount,
+          discountAmount,
+          couponCode: appliedCouponCode,
+          couponId,
+          utrNumber,
+          planLabel: selectedPlan ?? null,
+          paymentMethod: paymentMethod ?? "upi",
+          notes: notes ?? null,
+          screenshotUrl,
+          status: "pending",
+        },
       });
+    } catch (dbError) {
+      // Best-effort cleanup: remove the uploaded file so storage doesn't accumulate orphans.
+      if (uploadedStorageKey) {
+        createStorageService().delete(uploadedStorageKey).catch(() => {});
+      }
+      throw dbError;
     }
 
     await db.auditLog.create({

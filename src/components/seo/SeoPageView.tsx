@@ -5,7 +5,7 @@ import SeoFeaturedImage from "@/components/seo/SeoFeaturedImage";
 import JsonLd from "@/components/seo/JsonLd";
 import ListingCard from "@/components/secretza/listing/ListingCard";
 import ShareButtons from "@/components/secretza/shared/ShareButtons";
-import { serializeSeoPageImages } from "@/lib/seo-images";
+import { serializeSeoPageImages } from "@/lib/seo-images-utils";
 import { seoPageShareUrl } from "@/lib/share-links";
 import {
   parseSeoPageSchemas,

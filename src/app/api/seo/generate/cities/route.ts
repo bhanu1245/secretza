@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireMinRole } from "@/lib/auth-helpers";
-import { generateCitySeoPages } from "@/lib/seo-page-service";
+import { generateCitySeoPages, resolveGenerationCandidates } from "@/lib/seo-page-service";
+import {
+  runDryRunBatch,
+  formatDryRunPreviewResponse,
+  buildVirtualDryRunProgress,
+} from "@/lib/seo-dry-run-service";
 import { logError } from "@/lib/monitoring";
 
 /** @deprecated Use POST /api/seo/generate { type: "city" } */
@@ -20,6 +25,38 @@ export async function POST(request: Request) {
       typeof body.countrySlug === "string" && body.countrySlug.trim()
         ? body.countrySlug.trim()
         : "india";
+
+    if (body.dryRun === true) {
+      const candidates = await resolveGenerationCandidates("city", {
+        limit: limit ?? 25,
+        countrySlug,
+        skipExisting: body.skipExisting === true,
+      });
+      const start = Date.now();
+      const batch = await runDryRunBatch({
+        pages: candidates,
+        mode: "generate",
+        concurrency: 3,
+      });
+      const run = buildVirtualDryRunProgress({
+        sessionId: batch.sessionId,
+        mode: "generate_city",
+        dashboard: batch.dashboard,
+        errorCount: batch.errors.length,
+        elapsedMs: Date.now() - start,
+      });
+      return NextResponse.json({
+        success: true,
+        dryRun: true,
+        previewOnly: true,
+        sessionId: batch.sessionId,
+        run,
+        dashboard: batch.dashboard,
+        previews: batch.previews.map(formatDryRunPreviewResponse),
+        total: candidates.length,
+        message: `Dry run preview for ${batch.dashboard.totalPages} cities`,
+      });
+    }
 
     const result = await generateCitySeoPages({ limit, countrySlug });
 

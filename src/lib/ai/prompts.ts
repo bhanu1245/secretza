@@ -63,3 +63,105 @@ export function improvePrompt(content: string): PromptPair {
     ].join("\n"),
   };
 }
+
+export function rewriteIntroPrompt(ctx: {
+  summary: string;
+  city?: string;
+  category?: string;
+  keywords: string[];
+  intro: string;
+  preserveAfter: string;
+}): PromptPair {
+  return {
+    system: SHARED_SAFETY,
+    prompt: [
+      "Rewrite ONLY the introduction section of this SEO page.",
+      "Rules:",
+      "- Replace generic template paragraphs with city-specific narrative.",
+      "- Keep markdown structure (paragraphs only, no H2 headings in the intro).",
+      "- Do NOT rewrite or reference content after the first H2 — that section is preserved separately.",
+      "- Keep similar word count to the original intro.",
+      "- Vary sentence openings; avoid duplicated phrases.",
+      "- Return ONLY the rewritten introduction paragraphs.",
+      "",
+      `Context: ${ctx.summary}`,
+      ctx.city ? `City: ${ctx.city}` : "",
+      ctx.category ? `Category: ${ctx.category}` : "",
+      ctx.keywords.length
+        ? `Target keywords (use naturally, no stuffing): ${ctx.keywords.join(", ")}`
+        : "",
+      "",
+      "INTRO TO REWRITE:",
+      ctx.intro,
+      ctx.preserveAfter
+        ? "\n(Do not include any of the H2 sections that follow — they stay unchanged.)"
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  };
+}
+
+export function reduceRepetitionPrompt(ctx: {
+  summary: string;
+  city?: string;
+  repetitiveSections: string;
+  fullContent: string;
+}): PromptPair {
+  return {
+    system: SHARED_SAFETY,
+    prompt: [
+      "Reduce repetition in this SEO page content while preserving structure.",
+      "Rules:",
+      "- Rewrite ONLY sentences and paragraphs flagged as repetitive or templated.",
+      "- Keep all H2/H3 headings and their order unchanged.",
+      "- Vary sentence openings; use different vocabulary.",
+      "- Replace generic wording with city-specific descriptions where possible.",
+      "- Do NOT add contact details, prices, or new factual claims.",
+      "- Return the FULL updated markdown (headings + all paragraphs).",
+      "",
+      `Context: ${ctx.summary}`,
+      ctx.city ? `City: ${ctx.city}` : "",
+      "",
+      "SECTIONS WITH REPETITION TO FIX:",
+      ctx.repetitiveSections,
+      "",
+      "FULL CONTENT:",
+      ctx.fullContent,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  };
+}
+
+export function keywordDensityPrompt(ctx: {
+  summary: string;
+  city?: string;
+  category?: string;
+  keywords: string[];
+  content: string;
+}): PromptPair {
+  return {
+    system: SHARED_SAFETY,
+    prompt: [
+      "Improve keyword distribution in this SEO page content naturally.",
+      "Rules:",
+      "- Analyze keyword distribution across H2 headings and paragraphs.",
+      "- Naturally weave city + category keywords into H2s and body text.",
+      "- Avoid keyword stuffing — max one primary keyword mention per paragraph.",
+      "- Keep all headings and overall structure; only adjust wording.",
+      "- Do NOT add contact details or new factual claims.",
+      "- Return the FULL updated markdown.",
+      "",
+      `Context: ${ctx.summary}`,
+      ctx.city ? `City: ${ctx.city}` : "",
+      ctx.category ? `Category: ${ctx.category}` : "",
+      `Target keywords: ${ctx.keywords.join(", ")}`,
+      "",
+      "CONTENT:",
+      ctx.content,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  };
+}

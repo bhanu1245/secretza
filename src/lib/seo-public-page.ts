@@ -1,7 +1,12 @@
 import { db } from "@/lib/db";
 import type { Listing } from "@/lib/types";
 import { buildLongtailCityFallbackFields, titleCaseFromSlug } from "@/lib/seo-fallback";
-import { finalizeRelatedLinks, normalizeBreadcrumbItems, normalizeRelatedLinks } from "@/lib/seo-internal-links";
+import {
+  finalizeRelatedLinks,
+  normalizeBreadcrumbItems,
+  normalizeRelatedLinks,
+  sanitizeStoredIntroContent,
+} from "@/lib/seo-internal-links";
 import { brandTitleSuffix } from "@/lib/brand";
 
 export const TWO_SEGMENT_SEO_TYPES = ["longtail", "category_city"] as const;
@@ -27,11 +32,24 @@ export type PublishedSeoPage = {
 };
 
 /** Build the public path for an SEO page record. */
-export function getSeoPagePublicUrl(page: {
+/** Routable public path — must match a real Next.js route (never bare /{country}). */
+export function getServedPathForSeoPage(page: {
   pageType: string;
   pageSlug: string;
   canonicalUrl?: string | null;
 }): string {
+  switch (page.pageType) {
+    case "country":
+      return `/country/${page.pageSlug}`;
+    case "category":
+      return `/category/${page.pageSlug}`;
+    case "longtail":
+    case "category_city":
+      return `/${page.pageSlug}`;
+    default:
+      break;
+  }
+
   const canonical = page.canonicalUrl?.trim();
   if (canonical) {
     if (canonical.startsWith("http")) {
@@ -44,19 +62,33 @@ export function getSeoPagePublicUrl(page: {
     return canonical.startsWith("/") ? canonical : `/${canonical}`;
   }
 
-  if (page.pageType === "longtail" || page.pageType === "category_city") {
-    return `/${page.pageSlug}`;
-  }
-
-  if (page.pageType === "category") {
-    return `/category/${page.pageSlug}`;
-  }
-
-  if (page.pageType === "country") {
-    return `/country/${page.pageSlug}`;
-  }
-
   return `/${page.pageSlug}`;
+}
+
+export function getSeoPagePublicUrl(page: {
+  pageType: string;
+  pageSlug: string;
+  canonicalUrl?: string | null;
+}): string {
+  const served = getServedPathForSeoPage(page);
+  const canonical = page.canonicalUrl?.trim();
+
+  if (page.pageType === "country" || page.pageType === "category") {
+    return served;
+  }
+
+  if (canonical) {
+    if (canonical.startsWith("http")) {
+      try {
+        return new URL(canonical).pathname;
+      } catch {
+        return canonical;
+      }
+    }
+    return canonical.startsWith("/") ? canonical : `/${canonical}`;
+  }
+
+  return served;
 }
 
 export function buildTwoSegmentPageSlug(countrySlug: string, stateSlug: string): string {
@@ -511,11 +543,23 @@ export type SeoPageViewModel = {
 
 /** Normalize breadcrumb + related link hrefs before render. */
 export async function finalizeSeoPageViewModel(view: SeoPageViewModel): Promise<SeoPageViewModel> {
-  const [breadcrumbs, relatedLinks] = await Promise.all([
+  const [breadcrumbs, relatedLinks, introContent] = await Promise.all([
     normalizeBreadcrumbItems(view.breadcrumbs),
     normalizeRelatedLinks(view.relatedLinks),
+    view.page.introContent
+      ? sanitizeStoredIntroContent(
+          view.page.introContent,
+          view.page.pageType,
+          view.page.pageSlug,
+        )
+      : Promise.resolve(view.page.introContent),
   ]);
-  return { ...view, breadcrumbs, relatedLinks };
+  return {
+    ...view,
+    page: { ...view.page, introContent },
+    breadcrumbs,
+    relatedLinks,
+  };
 }
 
 function createSyntheticSeoPage(

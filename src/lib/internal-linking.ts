@@ -136,17 +136,17 @@ function slugToTitle(slug: string): string {
 
 /** Build the URL for a category page. */
 function categoryUrl(catSlug: string): string {
-  return `/india/${catSlug}`;
+  return `/category/${catSlug}`;
 }
 
-/** Build the URL for a city page. */
+/** Build the URL for a city landing page (two-segment category+city route). */
 function cityUrl(citySlug: string): string {
-  return `/india/${citySlug}`;
+  return `/escorts/${citySlug}`;
 }
 
 /** Build the URL for a category+city combination page. */
 function categoryCityUrl(catSlug: string, citySlug: string): string {
-  return `/india/${catSlug}/${citySlug}`;
+  return `/${catSlug}/${citySlug}`;
 }
 
 /** Return a random-seeming element from an array based on a hash seed. */
@@ -303,9 +303,9 @@ export function generateRelatedSearches(
   // Ensure at least 10 results by appending longtail suggestions if needed
   if (results.length < 10) {
     const fillers: RelatedSearch[] = [
-      { query: 'premium independent services', url: '/india/escorts', type: 'longtail' as const, anchor: 'Premium independent services', priority: 40 },
-      { query: 'verified classifieds India', url: '/india', type: 'longtail' as const, anchor: 'Verified classifieds across India', priority: 35 },
-      { query: 'top rated adult services', url: '/india/adult-services', type: 'longtail' as const, anchor: 'Top rated adult services', priority: 38 },
+      { query: 'premium independent services', url: '/category/escorts', type: 'longtail' as const, anchor: 'Premium independent services', priority: 40 },
+      { query: 'verified classifieds India', url: '/country/india', type: 'longtail' as const, anchor: 'Verified classifieds across India', priority: 35 },
+      { query: 'top rated adult services', url: '/category/adult-services', type: 'longtail' as const, anchor: 'Top rated adult services', priority: 38 },
     ];
     for (const filler of fillers) {
       if (results.length >= 10) break;
