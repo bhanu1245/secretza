@@ -110,19 +110,18 @@ export class QualityEngine {
       }
     }
 
-    const observer = this.config.observer ?? NO_OP_OBSERVER;
     if (result.errors.length > 0) {
-      observer.onEvent("QE_CONFIG_ERROR", {
+      this._safeObserverEvent("QE_CONFIG_ERROR", {
         errors: result.errors,
         engineVersion: this.config.engineVersion,
       });
     } else if (result.warnings.length > 0) {
-      observer.onEvent("QE_CONFIG_WARN", {
+      this._safeObserverEvent("QE_CONFIG_WARN", {
         warnings: result.warnings,
         engineVersion: this.config.engineVersion,
       });
     } else {
-      observer.onEvent("QE_INITIALIZED", {
+      this._safeObserverEvent("QE_INITIALIZED", {
         profileCount: this.config.profiles.length,
         moduleCount: this.config.modules.length,
         ruleCount: this.config.rules.length,
@@ -132,6 +131,34 @@ export class QualityEngine {
 
     this.initialized = true;
     return result;
+  }
+
+  /**
+   * Invoke the observer's onEvent method without allowing observer exceptions
+   * to propagate into the scoring pipeline.
+   */
+  private _safeObserverEvent(event: string, payload: Record<string, unknown>): void {
+    try {
+      (this.config.observer ?? NO_OP_OBSERVER).onEvent(event, payload);
+    } catch {
+      // Observer failures must never interrupt engine operation.
+    }
+  }
+
+  /**
+   * Invoke the observer's onMetric method without allowing observer exceptions
+   * to propagate into the scoring pipeline.
+   */
+  private _safeObserverMetric(
+    name: string,
+    value: number,
+    tags: Record<string, string>,
+  ): void {
+    try {
+      (this.config.observer ?? NO_OP_OBSERVER).onMetric(name, value, tags);
+    } catch {
+      // Observer failures must never interrupt engine operation.
+    }
   }
 
   /**
@@ -146,8 +173,7 @@ export class QualityEngine {
     _input: MetricsCollectorInput,
     _profileIdOverride?: ProfileId,
   ): ScoringResult {
-    const observer = this.config.observer ?? NO_OP_OBSERVER;
-    observer.onEvent("QE_SCORE_CALLED", { status: "not_implemented" });
+    this._safeObserverEvent("QE_SCORE_CALLED", { status: "not_implemented" });
     throw new NotImplementedError("score");
   }
 
@@ -269,8 +295,27 @@ export class QualityEngine {
     _warnings: ValidationError[],
   ): void {
     for (const profile of this.config.profiles) {
+      // Validate individual weights before summing
+      for (const m of profile.modules) {
+        if (!isFinite(m.weight) || isNaN(m.weight)) {
+          errors.push({
+            code: "MODULE_WEIGHT_NON_FINITE",
+            severity: "error",
+            message: `Profile "${profile.id}" module "${m.moduleId}" has non-finite weight: ${m.weight}`,
+            context: { profileId: profile.id, moduleId: m.moduleId, weight: m.weight },
+          });
+        } else if (m.weight < 0) {
+          errors.push({
+            code: "MODULE_WEIGHT_NEGATIVE",
+            severity: "error",
+            message: `Profile "${profile.id}" module "${m.moduleId}" has negative weight: ${m.weight}`,
+            context: { profileId: profile.id, moduleId: m.moduleId, weight: m.weight },
+          });
+        }
+      }
+
       const enabledModules = profile.modules.filter((m) => m.enabled);
-      const total = enabledModules.reduce((sum, m) => sum + m.weight, 0);
+      const total = enabledModules.reduce((sum, m) => sum + (isFinite(m.weight) ? m.weight : 0), 0);
       if (total !== 100) {
         errors.push({
           code: "PROFILE_WEIGHT_SUM_INVALID",
@@ -278,6 +323,33 @@ export class QualityEngine {
           message: `Profile "${profile.id}" enabled module weights sum to ${total}, expected 100`,
           context: { profileId: profile.id, weightSum: total },
         });
+      }
+
+      // Validate profile-level penalty definitions
+      for (const penalty of profile.penalties) {
+        if (!penalty.id || typeof penalty.id !== "string" || penalty.id.trim() === "") {
+          errors.push({
+            code: "PENALTY_MISSING_ID",
+            severity: "error",
+            message: `Profile "${profile.id}" has a penalty with an empty or missing id`,
+            context: { profileId: profile.id },
+          });
+        }
+        if (!isFinite(penalty.maxPenalty) || isNaN(penalty.maxPenalty)) {
+          errors.push({
+            code: "PENALTY_MAX_NON_FINITE",
+            severity: "error",
+            message: `Profile "${profile.id}" penalty "${penalty.id}" has non-finite maxPenalty: ${penalty.maxPenalty}`,
+            context: { profileId: profile.id, penaltyId: penalty.id, maxPenalty: penalty.maxPenalty },
+          });
+        } else if (penalty.maxPenalty < 0) {
+          errors.push({
+            code: "PENALTY_MAX_NEGATIVE",
+            severity: "error",
+            message: `Profile "${profile.id}" penalty "${penalty.id}" has negative maxPenalty: ${penalty.maxPenalty}`,
+            context: { profileId: profile.id, penaltyId: penalty.id, maxPenalty: penalty.maxPenalty },
+          });
+        }
       }
     }
   }
@@ -304,6 +376,19 @@ export class QualityEngine {
   ): void {
     for (const profile of this.config.profiles) {
       const scale = profile.gradeScale;
+
+      // Validate individual threshold entries
+      for (const g of scale) {
+        if (!isFinite(g.minScore) || isNaN(g.minScore)) {
+          errors.push({
+            code: "GRADE_THRESHOLD_NON_FINITE",
+            severity: "error",
+            message: `Profile "${profile.id}" gradeScale entry "${g.label}" has non-finite minScore: ${g.minScore}`,
+            context: { profileId: profile.id, label: g.label, minScore: g.minScore },
+          });
+        }
+      }
+
       const hasZero = scale.some((g) => g.minScore === 0);
       if (!hasZero) {
         errors.push({
@@ -322,6 +407,18 @@ export class QualityEngine {
           severity: "error",
           message: `Profile "${profile.id}" gradeScale contains duplicate minScore values`,
           context: { profileId: profile.id, scores },
+        });
+      }
+
+      // Duplicate grade labels are ambiguous — two thresholds with the same label
+      const labels = scale.map((g) => g.label);
+      const uniqueLabels = new Set(labels);
+      if (uniqueLabels.size !== labels.length) {
+        errors.push({
+          code: "GRADE_SCALE_DUPLICATE_LABEL",
+          severity: "error",
+          message: `Profile "${profile.id}" gradeScale contains duplicate grade labels`,
+          context: { profileId: profile.id, labels },
         });
       }
 
