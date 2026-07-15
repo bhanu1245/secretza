@@ -26,6 +26,7 @@ import {
   stableSortRecommendations,
   weightedAverage,
   weightedSum,
+  piecewiseLinear,
 } from "@/lib/seo-scoring-core";
 import type {
   GradeThreshold,
@@ -685,4 +686,91 @@ describe("aggregateModuleScores — determinism", () => {
     expect(res1.finalScore).toBe(res2.finalScore);
     expect(res1.grade).toBe(res2.grade);
   });
+});
+
+// ─── piecewiseLinear ─────────────────────────────────────────────────────────────
+
+describe("piecewiseLinear — guard errors", () => {
+  it("throws when fewer than 2 breakpoints", () => {
+    expect(() => piecewiseLinear(0, [[0, 0]])).toThrow("piecewiseLinear requires at least 2 breakpoints");
+  });
+  it("throws on empty breakpoints array", () => {
+    expect(() => piecewiseLinear(0, [])).toThrow("piecewiseLinear requires at least 2 breakpoints");
+  });
+  it("throws when x is Infinity", () => {
+    expect(() => piecewiseLinear(0, [[Infinity, 0], [1, 1]])).toThrow("non-finite");
+  });
+  it("throws when x is NaN", () => {
+    expect(() => piecewiseLinear(0, [[NaN, 0], [1, 1]])).toThrow("non-finite");
+  });
+  it("throws when y is Infinity", () => {
+    expect(() => piecewiseLinear(0, [[0, Infinity], [1, 1]])).toThrow("non-finite");
+  });
+  it("throws when y is NaN", () => {
+    expect(() => piecewiseLinear(0, [[0, NaN], [1, 1]])).toThrow("non-finite");
+  });
+});
+
+describe("piecewiseLinear — clamping", () => {
+  const CURVE: [number, number][] = [[0, 0], [100, 100]];
+  it("clamps below first breakpoint → first y", () => {
+    expect(piecewiseLinear(-50, CURVE)).toBe(0);
+  });
+  it("clamps above last breakpoint → last y", () => {
+    expect(piecewiseLinear(200, CURVE)).toBe(100);
+  });
+  it("exact first breakpoint returns first y", () => {
+    expect(piecewiseLinear(0, CURVE)).toBe(0);
+  });
+  it("exact last breakpoint returns last y", () => {
+    expect(piecewiseLinear(100, CURVE)).toBe(100);
+  });
+});
+
+describe("piecewiseLinear — interpolation", () => {
+  const CURVE: [number, number][] = [[0, 0], [100, 100]];
+  it("midpoint returns midpoint", () => {
+    expect(piecewiseLinear(50, CURVE)).toBe(50);
+  });
+  it("25% along returns 25", () => {
+    expect(piecewiseLinear(25, CURVE)).toBe(25);
+  });
+  it("handles descending y values", () => {
+    const desc: [number, number][] = [[0, 100], [100, 0]];
+    expect(piecewiseLinear(50, desc)).toBe(50);
+  });
+  it("interpolates in correct segment with multi-segment curve", () => {
+    const multi: [number, number][] = [[0, 0], [10, 50], [20, 100]];
+    expect(piecewiseLinear(5, multi)).toBe(25);
+    expect(piecewiseLinear(15, multi)).toBe(75);
+  });
+  it("works with unsorted input breakpoints", () => {
+    const unsorted: [number, number][] = [[100, 100], [0, 0], [50, 60]];
+    expect(piecewiseLinear(0, unsorted)).toBe(0);
+    expect(piecewiseLinear(100, unsorted)).toBe(100);
+    // Between 50 and 100: t=(75-50)/(100-50)=0.5 → 60+0.5*(100-60)=80
+    expect(piecewiseLinear(75, unsorted)).toBe(80);
+  });
+});
+
+describe("piecewiseLinear — NaN/Infinity input value", () => {
+  const CURVE: [number, number][] = [[0, 0], [100, 100]];
+  it("NaN value treated as 0 via safeNumber → clamp to first y", () => {
+    expect(piecewiseLinear(NaN, CURVE)).toBe(0);
+  });
+  it("Infinity value treated as 0 → clamp to first y", () => {
+    expect(piecewiseLinear(Infinity, CURVE)).toBe(0);
+  });
+  it("-Infinity value treated as 0 → clamp to first y", () => {
+    expect(piecewiseLinear(-Infinity, CURVE)).toBe(0);
+  });
+});
+
+describe("piecewiseLinear — exact breakpoint hits", () => {
+  const CURVE: [number, number][] = [[0, 0], [200, 25], [500, 70], [650, 87], [800, 100]];
+  it("exact x=0 → 0", () => expect(piecewiseLinear(0, CURVE)).toBe(0));
+  it("exact x=200 → 25", () => expect(piecewiseLinear(200, CURVE)).toBe(25));
+  it("exact x=500 → 70", () => expect(piecewiseLinear(500, CURVE)).toBe(70));
+  it("exact x=650 → 87", () => expect(piecewiseLinear(650, CURVE)).toBe(87));
+  it("exact x=800 → 100", () => expect(piecewiseLinear(800, CURVE)).toBe(100));
 });

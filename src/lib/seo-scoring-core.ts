@@ -241,6 +241,72 @@ export function applyScoreCap(score: number, cap: number): number {
   return Math.min(clampScore(score), cap);
 }
 
+// ─── Piecewise-linear scoring curve ──────────────────────────────────────────────
+
+/**
+ * Evaluate a piecewise-linear scoring curve at `value`.
+ *
+ * `points` is an array of [x, y] breakpoints. The function:
+ *   - Sorts breakpoints by x (ascending) before use, so input order is irrelevant.
+ *   - Returns the first y for values ≤ first x (left-clamp).
+ *   - Returns the last y  for values ≥ last x  (right-clamp).
+ *   - Linearly interpolates between bracketing breakpoints for in-range values.
+ *   - Sanitises `value` via safeNumber (NaN → 0, Infinity → 0).
+ *
+ * @throws {Error} if fewer than 2 breakpoints are provided.
+ * @throws {Error} if any x-value is non-finite.
+ * @throws {Error} if any y-value is non-finite.
+ *
+ * Edge cases:
+ *   piecewiseLinear(NaN,   [[0,0],[100,100]]) → 0   (value clamped via safeNumber)
+ *   piecewiseLinear(-50,   [[0,0],[100,100]]) → 0   (left-clamp to first y)
+ *   piecewiseLinear(150,   [[0,0],[100,100]]) → 100 (right-clamp to last y)
+ *   piecewiseLinear(50,    [[0,0],[100,100]]) → 50  (interpolated)
+ *
+ * Determinism:
+ *   Result is independent of the input array ordering of breakpoints.
+ */
+export function piecewiseLinear(value: number, points: [number, number][]): number {
+  if (points.length < 2) {
+    throw new Error(
+      `seo-scoring-core: piecewiseLinear requires at least 2 breakpoints, got ${points.length}`,
+    );
+  }
+
+  for (const [x, y] of points) {
+    if (!isFinite(x) || isNaN(x)) {
+      throw new Error(`seo-scoring-core: piecewiseLinear breakpoint x-value is non-finite: ${x}`);
+    }
+    if (!isFinite(y) || isNaN(y)) {
+      throw new Error(`seo-scoring-core: piecewiseLinear breakpoint y-value is non-finite: ${y}`);
+    }
+  }
+
+  const safe = safeNumber(value);
+
+  // Sort breakpoints by x ascending (non-mutating)
+  const sorted = [...points].sort((a, b) => a[0] - b[0]);
+
+  // Left-clamp
+  if (safe <= sorted[0]![0]) return sorted[0]![1];
+
+  // Right-clamp
+  if (safe >= sorted[sorted.length - 1]![0]) return sorted[sorted.length - 1]![1];
+
+  // Linear interpolation between bracketing pair
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const [x0, y0] = sorted[i]!;
+    const [x1, y1] = sorted[i + 1]!;
+    if (safe >= x0 && safe <= x1) {
+      const t = (safe - x0) / (x1 - x0);
+      return y0 + t * (y1 - y0);
+    }
+  }
+
+  // Unreachable — left/right clamps above guarantee a match
+  return sorted[sorted.length - 1]![1];
+}
+
 // ─── Grade assignment ────────────────────────────────────────────────────────────
 
 /**
