@@ -7,6 +7,7 @@ import {
   computeParagraphMinUniqueness,
   normalizeForComparison,
   textSimilarity,
+  tokenize,
   type SeoPageSnapshot,
 } from "@/lib/seo-quality";
 import {
@@ -102,8 +103,30 @@ export function semanticSimilarity(a: string, b: string): number {
   for (const bg of bgA) {
     if (bgB.has(bg)) intersection++;
   }
-  const union = new Set([...bgA, ...bgB]).size;
+  let union = bgA.size;
+  for (const bg of bgB) { if (!bgA.has(bg)) union++; }
   const bi = union === 0 ? 0 : intersection / union;
+  return uni * 0.35 + bi * 0.65;
+}
+
+/** Similarity from pre-computed Sets — avoids rebuilding Sets per call in tight loops. */
+function similarityFromSets(
+  tokensA: Set<string>, bgA: Set<string>,
+  tokensB: Set<string>, bgB: Set<string>,
+): number {
+  if (tokensA.size === 0 && tokensB.size === 0) return 1;
+  if (tokensA.size === 0 || tokensB.size === 0) return 0;
+  let uniIntersection = 0;
+  for (const t of tokensA) { if (tokensB.has(t)) uniIntersection++; }
+  let uniUnion = tokensA.size;
+  for (const t of tokensB) { if (!tokensA.has(t)) uniUnion++; }
+  const uni = uniUnion === 0 ? 0 : uniIntersection / uniUnion;
+  if (bgA.size === 0 && bgB.size === 0) return uni;
+  let bgIntersection = 0;
+  for (const bg of bgA) { if (bgB.has(bg)) bgIntersection++; }
+  let bgUnion = bgA.size;
+  for (const bg of bgB) { if (!bgA.has(bg)) bgUnion++; }
+  const bi = bgUnion === 0 ? 0 : bgIntersection / bgUnion;
   return uni * 0.35 + bi * 0.65;
 }
 
@@ -117,6 +140,15 @@ export function lexicalDiversityScore(text: string): number {
   return Math.min(1, unique.size / words.length);
 }
 
+type PeerParaEntry = { tokens: Set<string>; bg: Set<string> };
+const _peerParasCache = new Map<string, PeerParaEntry[]>();
+
+function buildPeerParasCacheKey(peerIntros: string[]): string {
+  // Count + first 50 chars of first and last intro — cheap and practically unique
+  const n = peerIntros.length;
+  return `${n}:${peerIntros[0]?.slice(0, 50) ?? ""}:${peerIntros[n - 1]?.slice(0, 50) ?? ""}`;
+}
+
 /** Find paragraphs exceeding similarity threshold vs peer corpus. */
 export function detectDuplicatePhrases(
   introContent: string,
@@ -126,11 +158,30 @@ export function detectDuplicatePhrases(
   const paragraphs = extractFingerprintParagraphs(introContent);
   const flagged: Array<{ paragraph: string; maxSimilarity: number }> = [];
 
+  // Cache peer paragraph Sets across calls with the same peer corpus
+  const cacheKey = buildPeerParasCacheKey(peerIntros);
+  let peerParasPrecomputed = _peerParasCache.get(cacheKey);
+  if (!peerParasPrecomputed) {
+    peerParasPrecomputed = peerIntros.flatMap((peer) =>
+      extractFingerprintParagraphs(peer).map((p) => ({
+        tokens: tokenize(p),
+        bg: bigrams(p),
+      })),
+    );
+    if (_peerParasCache.size >= 8) _peerParasCache.clear();
+    _peerParasCache.set(cacheKey, peerParasPrecomputed);
+  }
+
   for (const para of paragraphs) {
+    // Compute a-side Sets once per generated paragraph (not once per peer)
+    const paraTokens = tokenize(para);
+    const paraBg = bigrams(para);
     let maxSim = 0;
-    for (const peer of peerIntros) {
-      for (const peerPara of extractFingerprintParagraphs(peer)) {
-        maxSim = Math.max(maxSim, semanticSimilarity(para, peerPara));
+    for (const { tokens: peerTokens, bg: peerBg } of peerParasPrecomputed) {
+      const sim = similarityFromSets(paraTokens, paraBg, peerTokens, peerBg);
+      if (sim > maxSim) {
+        maxSim = sim;
+        if (maxSim > threshold) break; // already flagged — no need to check remaining peers
       }
     }
     if (maxSim > threshold) {

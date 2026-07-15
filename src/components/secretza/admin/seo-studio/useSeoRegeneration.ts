@@ -87,6 +87,20 @@ export function useSeoRegeneration() {
 
   const schemaToastShownRef = useRef(false);
 
+  const dryRunPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── URL session-ID helpers ──────────────────────────────────────────────────
+  const setUrlDryRunSession = useCallback((sessionId: string | null) => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (sessionId) {
+      url.searchParams.set("dryRunSession", sessionId);
+    } else {
+      url.searchParams.delete("dryRunSession");
+    }
+    window.history.replaceState(null, "", url.toString());
+  }, []);
+
 
 
   const handleFetchFailure = useCallback((data?: ApiErrorBody | null, fallbackMsg?: string) => {
@@ -177,6 +191,8 @@ export function useSeoRegeneration() {
 
       if (restoreActive) {
 
+        const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+
         setActiveRun((current) => {
 
           if (current) return current;
@@ -185,7 +201,11 @@ export function useSeoRegeneration() {
 
             list.find((r) =>
 
-              ["queued", "processing", "awaiting_confirmation"].includes(r.status),
+              ["queued", "processing", "awaiting_confirmation"].includes(r.status) &&
+
+              r.startedAt != null &&
+
+              Date.now() - new Date(r.startedAt).getTime() < TWO_HOURS_MS,
 
             ) ?? null
 
@@ -289,6 +309,41 @@ export function useSeoRegeneration() {
 
   }, [fetchRuns]);
 
+  // On mount, check for a persisted dry-run session in the URL and resume it
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("dryRunSession");
+    if (!sessionId) return;
+
+    void (async () => {
+      try {
+        const res = await apiFetch(`/api/seo/regenerate/dry-run?sessionId=${sessionId}`);
+        if (!res.ok) {
+          // Session expired or not found — remove stale URL param
+          setUrlDryRunSession(null);
+          return;
+        }
+        const data = await res.json();
+        if (data.status === "dry_run_processing") {
+          // Resume polling by restoring the activeRun stub
+          setActiveRun({ id: sessionId, status: "dry_run_processing" } as RunProgress);
+          toast.info("Resuming dry run in progress…");
+        } else if (data.status === "dry_run_completed" && data.sessionId) {
+          setDryRunSession({ sessionId: data.sessionId, dashboard: data.dashboard });
+          setDryRunItems((data.items as StudioItem[]) ?? []);
+          setActiveRun(data.run);
+          setReport(data.report);
+          toast.success("Dry run results restored from previous session");
+        } else {
+          setUrlDryRunSession(null);
+        }
+      } catch {
+        setUrlDryRunSession(null);
+      }
+    })();
+  }, []);
+
 
 
   useEffect(() => {
@@ -379,6 +434,83 @@ export function useSeoRegeneration() {
 
 
 
+  // Poll for async dry-run completion
+  useEffect(() => {
+
+    if (activeRun?.status !== "dry_run_processing" || !activeRun.id) return;
+
+    const sessionId = activeRun.id;
+
+    const poll = async () => {
+
+      try {
+
+        const res = await apiFetch(`/api/seo/regenerate/dry-run?sessionId=${sessionId}`);
+
+        if (!res.ok) return; // keep polling
+
+        const data = await res.json();
+
+        if (data.status === "dry_run_processing") return; // still running
+
+        if (dryRunPollRef.current) {
+
+          clearInterval(dryRunPollRef.current);
+
+          dryRunPollRef.current = null;
+
+        }
+
+        if (data.status === "dry_run_completed" && data.sessionId) {
+
+          setDryRunSession({ sessionId: data.sessionId, dashboard: data.dashboard });
+
+          setDryRunItems((data.items as StudioItem[]) ?? []);
+
+          setActiveRun(data.run);
+
+          setReport(data.report);
+
+          toast.success("Dry run completed — review previews before committing");
+
+        } else if (data.status === "dry_run_failed") {
+
+          setUrlDryRunSession(null);
+
+          toast.error(data.error ?? "Dry run failed");
+
+          setActiveRun(null);
+
+        }
+
+      } catch {
+
+        // network error — keep polling
+
+      }
+
+    };
+
+    void poll();
+
+    dryRunPollRef.current = setInterval(() => void poll(), POLL_MS);
+
+    return () => {
+
+      if (dryRunPollRef.current) {
+
+        clearInterval(dryRunPollRef.current);
+
+        dryRunPollRef.current = null;
+
+      }
+
+    };
+
+  }, [activeRun?.id, activeRun?.status]);
+
+
+
   const buildPayload = () => ({
 
     mode,
@@ -431,7 +563,16 @@ export function useSeoRegeneration() {
 
       resetConnectionState();
 
-      if (dryRun && data.sessionId) {
+      if (dryRun && data.sessionId && data.run?.status === "dry_run_processing") {
+
+        // Async dry-run: batch is running in background — start polling for completion
+        setUrlDryRunSession(data.sessionId as string);
+
+        setActiveRun(data.run);
+
+        toast.info("Dry run started — generating previews…");
+
+      } else if (dryRun && data.sessionId) {
 
         setDryRunSession({
 
@@ -669,6 +810,7 @@ export function useSeoRegeneration() {
   };
 
   const discardDryRun = () => {
+    setUrlDryRunSession(null);
     setDryRunSession(null);
     setDryRunItems([]);
     setActiveRun(null);

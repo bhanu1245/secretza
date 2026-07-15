@@ -92,15 +92,18 @@ let slugCaches: {
   countries: Set<string>;
   categories: Set<string>;
   cityPaths: Map<string, string>;
+  /** "countrySlug/stateSlug" pairs for all active states */
+  statePaths: Set<string>;
 } | null = null;
 
 export async function loadSlugCaches(): Promise<{
   countries: Set<string>;
   categories: Set<string>;
   cityPaths: Map<string, string>;
+  statePaths: Set<string>;
 }> {
   if (!slugCaches) {
-    const [countries, categories, cities] = await Promise.all([
+    const [countries, categories, cities, states] = await Promise.all([
       db.country.findMany({ where: { isActive: true }, select: { slug: true } }),
       db.category.findMany({ where: { isActive: true }, select: { slug: true } }),
       db.city.findMany({
@@ -109,6 +112,10 @@ export async function loadSlugCaches(): Promise<{
           slug: true,
           state: { select: { slug: true, country: { select: { slug: true } } } },
         },
+      }),
+      db.state.findMany({
+        where: { isActive: true },
+        select: { slug: true, country: { select: { slug: true } } },
       }),
     ]);
     const cityPaths = new Map<string, string>();
@@ -120,10 +127,17 @@ export async function loadSlugCaches(): Promise<{
         );
       }
     }
+    const statePaths = new Set<string>();
+    for (const state of states) {
+      if (state.country) {
+        statePaths.add(`${state.country.slug}/${state.slug}`);
+      }
+    }
     slugCaches = {
       countries: new Set(countries.map((c) => c.slug)),
       categories: new Set(categories.map((c) => c.slug)),
       cityPaths,
+      statePaths,
     };
   }
   return slugCaches;
@@ -177,56 +191,24 @@ export async function validateInternalHref(href: string): Promise<boolean> {
   if (segments.length === 0) return false;
 
   if (segments[0] === "category" && segments.length === 2) {
-    const cat = await db.category.findFirst({
-      where: { slug: segments[1], isActive: true },
-      select: { id: true },
-    });
-    return !!cat;
+    return caches.categories.has(segments[1]!);
   }
 
   if (segments[0] === "country" && segments.length === 2) {
-    const country = await db.country.findFirst({
-      where: { slug: segments[1], isActive: true },
-      select: { id: true },
-    });
-    return !!country;
+    return caches.countries.has(segments[1]!);
   }
 
   if (segments.length === 3) {
     const [countrySlug, stateSlug, citySlug] = segments;
-    const city = await db.city.findFirst({
-      where: {
-        slug: citySlug,
-        isActive: true,
-        state: { slug: stateSlug, country: { slug: countrySlug } },
-      },
-      select: { id: true },
-    });
-    return !!city;
+    return caches.cityPaths.get(citySlug!) === `/${countrySlug}/${stateSlug}/${citySlug}`;
   }
 
   if (segments.length === 2) {
     const [first, second] = segments;
-    const state = await db.state.findFirst({
-      where: { slug: second, isActive: true, country: { slug: first } },
-      select: { id: true },
-    });
-    if (state) return true;
-
-    const city = await db.city.findFirst({
-      where: { slug: second, isActive: true },
-      select: { id: true },
-    });
-    if (!city) return false;
-
-    const category = await db.category.findFirst({
-      where: { slug: first, isActive: true },
-      select: { id: true },
-    });
-    if (category) return true;
-
-    const isKeyword = SEO_LONGTAIL_KEYWORDS.some((k) => k.slug === first);
-    return isKeyword;
+    if (caches.statePaths.has(`${first}/${second}`)) return true;
+    if (!caches.cityPaths.has(second!)) return false;
+    if (caches.categories.has(first!)) return true;
+    return SEO_LONGTAIL_KEYWORDS.some((k) => k.slug === first);
   }
 
   return false;

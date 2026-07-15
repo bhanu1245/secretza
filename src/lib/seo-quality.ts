@@ -113,7 +113,7 @@ const BOILERPLATE_TOKENS = new Set([
 ]);
 
 /** Extract meaningful tokens (4+ chars) for similarity, de-emphasizing boilerplate. */
-function tokenize(text: string): Set<string> {
+export function tokenize(text: string): Set<string> {
   return new Set(
     normalizeForComparison(text)
       .split(/\s+/)
@@ -131,7 +131,8 @@ export function textSimilarity(a: string, b: string): number {
   for (const token of setA) {
     if (setB.has(token)) intersection++;
   }
-  const union = new Set([...setA, ...setB]).size;
+  let union = setA.size;
+  for (const token of setB) { if (!setA.has(token)) union++; }
   return union === 0 ? 0 : intersection / union;
 }
 

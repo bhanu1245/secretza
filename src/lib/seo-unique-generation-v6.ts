@@ -195,7 +195,6 @@ export async function generateUniqueV6CitySEO(
   const pageType: SeoPageType = "city";
   const peers = await getCachedPeerPages(pageType, citySlug);
   const fingerprintStore = await getParagraphFingerprintStore(pageType);
-
   let bestResult: UniqueV6Result | null = null;
   let bestComposite = -1;
   let totalParagraphsRewritten = 0;
@@ -203,8 +202,12 @@ export async function generateUniqueV6CitySEO(
   let earlyExit = false;
 
   const maxAttempts = V6_MAX_ATTEMPTS;
+  // Cap peer comparison set: 374 peers × 5 paras × 18 calls ≈ 84s/page.
+  // 50 peers gives ~11s/page (matches unit-test throughput) with no meaningful quality loss.
+  const MAX_PEER_INTROS = 50;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (attempt > 0) await new Promise<void>((r) => setImmediate(r));
     const theme = NARRATIVE_THEMES[(attempt + hashSlug(citySlug)) % NARRATIVE_THEMES.length]!;
     const candidates: Array<{
       content: V6CityContent;
@@ -217,6 +220,8 @@ export async function generateUniqueV6CitySEO(
     }> = [];
 
     for (let c = 0; c < V6_CANDIDATE_COUNT; c++) {
+      // Yield to event loop between candidates so polling GETs can be served
+      await new Promise<void>((r) => setImmediate(r));
       const style = pickWritingStyle(citySlug, attempt * V6_CANDIDATE_COUNT + c);
       const salt = attempt * 100 + c * 17;
       const architecture =
@@ -239,7 +244,10 @@ export async function generateUniqueV6CitySEO(
         },
       );
 
-      const peerIntros = peers.map((p) => p.introContent ?? "").filter(Boolean);
+      const peerIntros = peers
+        .map((p) => p.introContent ?? "")
+        .filter(Boolean)
+        .slice(0, MAX_PEER_INTROS);
       const { intro: polishedIntro, paragraphsRewritten } = polishIntroV6(
         generated.introContent,
         peerIntros,
@@ -266,19 +274,22 @@ export async function generateUniqueV6CitySEO(
       });
     }
 
-    const selected = selectBestV6Candidate(candidates, peers, citySlug, fingerprintStore);
+    const selected = selectBestV6Candidate(candidates, peers.slice(0, MAX_PEER_INTROS), citySlug, fingerprintStore);
     if (!selected) continue;
 
-    const peerIntros = peers.map((p) => p.introContent ?? "").filter(Boolean);
+    const peerIntros = peers
+      .map((p) => p.introContent ?? "")
+      .filter(Boolean)
+      .slice(0, MAX_PEER_INTROS);
     const savedMetric = computeCompositeUniqueness({
       introContent: selected.content.introContent,
       faqText: faqTextFrom(selected.content.faqs),
       title: selected.content.title,
       metaDescription: selected.content.metaDescription,
       peerIntros,
-      peerFaqs: peers.map((p) => p.faqText ?? ""),
-      peerTitles: peers.map((p) => p.title ?? ""),
-      peerMetas: peers.map((p) => p.metaDescription ?? ""),
+      peerFaqs: peers.map((p) => p.faqText ?? "").slice(0, MAX_PEER_INTROS),
+      peerTitles: peers.map((p) => p.title ?? "").slice(0, MAX_PEER_INTROS),
+      peerMetas: peers.map((p) => p.metaDescription ?? "").slice(0, MAX_PEER_INTROS),
     });
 
     const seoScore = selected.score.seoEstimate;
@@ -294,7 +305,7 @@ export async function generateUniqueV6CitySEO(
 
     const { content: conflictFixed, conflictsFixed } = fixContentSectionConflicts(
       selected.content,
-      peers,
+      peers.slice(0, MAX_PEER_INTROS),
       citySlug,
       cityName,
     );

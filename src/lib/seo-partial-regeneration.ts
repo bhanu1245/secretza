@@ -58,8 +58,9 @@ export async function tryPartialCityRegeneration(input: {
 
   const priorUnique = input.existing.uniquenessScore ?? 0;
   if (priorUnique < 50) return null;
-
-  const peers = await getCachedPeerPages(input.pageType as SeoPageType, input.pageSlug);
+  const allPeers = await getCachedPeerPages(input.pageType as SeoPageType, input.pageSlug);
+  // Cap to 50 peers: 374 peers × comparisons ≈ 51s/page; 50 peers ≈ 7s with no quality loss
+  const peers = allPeers.slice(0, 50);
   const peerIntros = peers.map((p) => p.introContent ?? "").filter(Boolean);
 
   const paragraphs = extractFingerprintParagraphs(intro);

@@ -17,6 +17,7 @@ import {
   computePageQualityMetrics,
   type SeoPageType,
 } from "@/lib/seo-page-service";
+import { getCachedPeerPages } from "@/lib/seo-peer-cache";
 import {
   buildLinkContextFromPage,
   sanitizeSeoContentLinks,
@@ -192,6 +193,8 @@ export async function buildSeoPagePreview(input: {
   generated.content = await sanitizeSeoContentLinks(generated.content, linkContext);
 
   const introContent = resolveIntroContentForStorage(generated.content);
+  // Cap peer set for scoring: 374 peers × textSimilarity loop ≈ 50s; 50 peers ≈ 7s
+  const scoringPeers = (await getCachedPeerPages(input.pageType as SeoPageType, input.pageSlug)).slice(0, 50);
   const metrics = await computePageQualityMetrics(
     input.pageType as SeoPageType,
     input.pageSlug,
@@ -201,6 +204,7 @@ export async function buildSeoPagePreview(input: {
       featuredImage: existing?.featuredImage,
       canonicalUrl: generated.canonicalUrl ?? existing?.canonicalUrl ?? "",
       excludePageId: existing?.id,
+      peers: scoringPeers,
     },
   );
 
@@ -334,6 +338,7 @@ export async function runDryRunBatch(input: {
   pages: Array<{ pageType: string; pageSlug: string }>;
   mode?: UniversalSeoMode;
   concurrency?: number;
+  sessionId?: string;
 }): Promise<{
   sessionId: string;
   dryRun: true;
@@ -342,21 +347,28 @@ export async function runDryRunBatch(input: {
   dashboard: DryRunBatchDashboard;
   errors: Array<{ pageSlug: string; error: string }>;
 }> {
-  const sessionId = randomUUID();
+  const sessionId = input.sessionId ?? randomUUID();
   const mode = input.mode ?? "regenerate";
   const concurrency = input.concurrency ?? 3;
   const previews: SeoDryRunPreview[] = [];
   const errors: Array<{ pageSlug: string; error: string }> = [];
 
   for (let i = 0; i < input.pages.length; i += concurrency) {
+    // Yield to the event loop between chunks so polling GET requests can be served
+    await new Promise((r) => setImmediate(r));
     const chunk = input.pages.slice(i, i + concurrency);
+    const PAGE_TIMEOUT_MS = 90_000;
     const results = await Promise.all(
       chunk.map(async (p) => {
-        const result = await buildSeoPagePreview({
-          pageType: p.pageType,
-          pageSlug: p.pageSlug,
-          mode,
-        });
+        const result = await Promise.race([
+          buildSeoPagePreview({ pageType: p.pageType, pageSlug: p.pageSlug, mode }),
+          new Promise<{ ok: false; error: string }>((resolve) =>
+            setTimeout(
+              () => resolve({ ok: false, error: "Page generation timed out (90s)" }),
+              PAGE_TIMEOUT_MS,
+            ),
+          ),
+        ]);
         return { pageSlug: p.pageSlug, result };
       }),
     );
